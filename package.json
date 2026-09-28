@@ -1,0 +1,22 @@
+{
+  "name": "phaser-topdown-prototype",
+  "version": "1.0.0",
+  "description": "Prototipo 2D Top-Down en HTML5 con Phaser.js",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "generate:map": "node scripts/generate_campaign_map.js",
+    "patch:map": "node scripts/patch_map2.js"
+  },
+  "keywords": [
+    "phaser",
+    "topdown",
+    "game",
+    "prototype"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "ws": "^8.22.0"
+  }
+}

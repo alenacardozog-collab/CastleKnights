@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CastleKnight | RPG 2D Medieval</title>
+  <meta name="description" content="CastleKnight - Videojuego Top-Down RPG 2D de acción y fantasía medieval.">
+
+  <!-- Google Fonts: Pixel Art Fonts (Press Start 2P & VT323) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+
+  <!-- Phaser 3 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+
+  <!-- Custom Styles (CastleKnight Theme) -->
+  <link rel="stylesheet" href="styles.css?v=7.0">
+</head>
+<body>
+
+  <!-- Header Navigation (Rustic Timber Beam) -->
+  <header class="header-bar">
+    <div class="title-container">
+      <span class="title-badge">RPG 2D</span>
+      <h1 class="game-title">CASTLEKNIGHT</h1>
+    </div>
+    <div class="header-actions">
+      <button id="btn-top-menu" class="btn btn-hud-menu" title="Abrir Menú Principal / Opciones (ESC)">
+        <span>🏰</span> MENÚ
+      </button>
+      <button id="btn-sound" class="btn" title="Alternar Sonido (Mute/Unmute)">
+        <span id="sound-icon">🔊</span> SONIDO
+      </button>
+      <button id="btn-fullscreen" class="btn btn-primary" title="Alternar Pantalla Completa (F)">
+        <span>⛶</span> FULLSCREEN
+      </button>
+      <button id="btn-dev-toggle" class="btn btn-dev" title="Alternar Modo Desarrollador (F2 / M)">
+        <span>🛠️</span> MODO DEV
+      </button>
+    </div>
+  </header>
+
+  <!-- Developer Mode Toolbar (Parchment & Dark Timber) -->
+  <section id="dev-toolbar" class="dev-toolbar hidden" aria-label="Herramientas del Modo Desarrollador">
+    <div class="dev-toolbar-row">
+      <div class="dev-toolbar-group">
+        <div class="dev-badge">🛠️ MODO DEV</div>
+        <div class="dev-tabs">
+          <button id="dev-tab-hitbox" class="dev-tab active" data-mode="hitbox" title="Editar Hitboxes del escenario">
+            🧱 HITBOXES (<span id="dev-hitbox-count">0</span>)
+          </button>
+          <button id="dev-tab-objects" class="dev-tab" data-mode="objects" title="Editar Posición de Objetos del mapa">
+            📦 OBJETOS (<span id="dev-object-count">0</span>)
+          </button>
+          <button id="dev-tab-spawns" class="dev-tab" data-mode="spawns" title="Configurar y probar spawns de enemigos">
+            🚩 SPAWNS (<span id="dev-spawn-count">0</span>)
+          </button>
+        </div>
+      </div>
+
+      <div class="dev-toolbar-group">
+        <div class="dev-field dev-field-quick-jump">
+          <label class="dev-label" for="dev-quick-jump">IR A:</label>
+          <select id="dev-quick-jump" class="dev-select">
+            <option value="">Buscar elemento...</option>
+          </select>
+        </div>
+
+        <div class="dev-field">
+          <label class="dev-label" for="dev-grid-snap">SNAP:</label>
+          <select id="dev-grid-snap" class="dev-select">
+            <option value="32" selected>32 px</option>
+            <option value="16">16 px</option>
+            <option value="8">8 px</option>
+            <option value="0">Libre</option>
+          </select>
+        </div>
+
+        <button id="dev-btn-toggle-grid" class="dev-btn dev-toggle active" title="Alternar Rejilla 32x32 (G)">
+          <span>▦</span> REJILLA
+        </button>
+        <button id="dev-btn-toggle-pause" class="dev-btn dev-toggle active" title="Pausar/Reanudar IA Enemigos">
+          <span id="dev-pause-icon">⏸️</span> PAUSA IA
+        </button>
+      </div>
+
+      <div class="dev-toolbar-group dev-actions-group">
+        <button id="dev-btn-palette-toggle" class="dev-btn dev-btn-primary" title="Abrir/Cerrar Catálogo de Props">
+          <span>📦</span> PALETA PROPS
+        </button>
+        <button id="dev-btn-fit-all" class="dev-btn btn-fit-pixels" title="Ajusta la caja de colisión al elemento seleccionado (A)">
+          <span>🎯</span> AJUSTAR COLISIÓN
+        </button>
+        <button id="dev-btn-random-map" class="dev-btn btn-random-map" title="Generar mapa aleatorio predeterminado con fondo de césped y colisiones">
+          <span>🎲</span> MAPA ALEATORIO
+        </button>
+        <button id="dev-btn-play-map" class="dev-btn dev-btn-save" title="Probar y Jugar en este mapa inmediatamente">
+          <span>▶️</span> JUGAR MAPA
+        </button>
+        <button id="dev-btn-save" class="dev-btn dev-btn-save" title="Guardar cambios en almacenamiento local">
+          <span>💾</span> GUARDAR
+        </button>
+        <button id="dev-btn-export" class="dev-btn" title="Exportar o Importar configuración de mapa">
+          <span>📤</span> EXPORTAR
+        </button>
+        <button id="dev-btn-reset" class="dev-btn dev-btn-danger" title="Restablecer mapa original">
+          <span>🔄</span> RESTABLECER
+        </button>
+        <button id="dev-btn-close" class="dev-btn dev-btn-close" title="Volver al Menú Principal (ESC / F2)">
+          <span>✕ MENÚ</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick instructions bar inside toolbar -->
+    <div class="dev-toolbar-hints">
+      <span>💡 <strong>Click en Paleta:</strong> Seleccionar Asset</span>
+      <span>• <strong>Click en Mapa:</strong> Colocar Asset</span>
+      <span>• <strong>Arrastrar:</strong> Mover</span>
+      <span>• <strong>A:</strong> Ajustar Colisión a Píxeles</span>
+      <span>• <strong>Click Derecho:</strong> Cancelar Selección / Mover Cámara</span>
+      <span>• <strong>Supr:</strong> Borrar</span>
+      <span>• <strong>Ctrl+D:</strong> Duplicar</span>
+    </div>
+  </section>
+
+  <!-- Game Main Viewport Wrapper -->
+  <main class="game-viewport-wrapper" id="game-wrapper">
+
+    <!-- Map Editor Floating Asset Palette Drawer -->
+    <div id="editor-asset-palette" class="editor-asset-palette hidden" aria-label="Catálogo de Assets y Props">
+      <div class="editor-palette-header">
+        <div class="palette-title-group">
+          <span class="palette-title">📦 CATÁLOGO DE ASSETS (ASSETS/MAP)</span>
+          <label class="palette-toggle-opt" title="Crea automáticamente la caja de colisión ajustada a los píxeles del PNG al estamparlo en el mapa">
+            <input type="checkbox" id="chk-auto-hitbox" checked />
+            <span>Auto-colisión a píxeles</span>
+          </label>
+        </div>
+        <div class="palette-filters">
+          <button class="palette-filter-btn active" data-cat="all">TODOS</button>
+          <button class="palette-filter-btn" data-cat="buildings">EDIFICIOS</button>
+          <button class="palette-filter-btn" data-cat="trees">ÁRBOLES</button>
+          <button class="palette-filter-btn" data-cat="rocks">ROCAS</button>
+          <button class="palette-filter-btn" data-cat="props">MUEBLES</button>
+          <button class="palette-filter-btn" data-cat="lights">FUEGO/LUZ</button>
+          <button id="palette-close" class="palette-close-btn" title="Cerrar Catálogo">✕</button>
+        </div>
+      </div>
+      <div class="editor-palette-grid" id="editor-palette-grid">
+        <!-- Injected dynamically with all 41 assets from assets/map -->
+      </div>
+    </div>
+    
+    <!-- Start Menu Overlay (Intro Video & Golden CastleKnight Title) -->
+    <div id="start-menu-overlay" class="start-menu-overlay">
+      <video id="intro-video" class="intro-bg-video" autoplay loop muted playsinline preload="auto" poster="assets/intro/portadaIntro.png">
+        <source src="assets/intro/videointro.mp4?v=orig" type="video/mp4">
+      </video>
+      <div class="start-menu-vignette"></div>
+      <div class="start-menu-content">
+        <div class="start-menu-badge">✦ REINO MEDIEVAL ✦</div>
+        <h1 class="start-menu-title" id="start-menu-title">CastleKnight</h1>
+        <nav class="start-menu-nav" aria-label="Menu Principal">
+          <button id="btn-menu-play" class="start-menu-btn" title="Iniciar Partida — Modo Práctica">
+            <span>INICIAR PARTIDA</span>
+          </button>
+          <button id="btn-menu-campaign" class="start-menu-btn btn-menu-campaign" title="Modo Campaña — Mapa del reino">
+            <span>CAMPAÑA</span>
+          </button>
+          <button id="btn-menu-editor" class="start-menu-btn btn-menu-editor" title="Abrir el Creador y Editor de Mapas">
+            <span>CREADOR DE MAPA</span>
+          </button>
+          <button id="btn-menu-options" class="start-menu-btn" title="Configurar controles de teclado y opciones">
+            <span>OPCIONES</span>
+          </button>
+          <button id="btn-menu-exit" class="start-menu-btn" title="Salir del juego">
+            <span>SALIR DEL JUEGO</span>
+          </button>
+        </nav>
+        <div class="start-menu-footer">
+          <span>AVENTURA Y COMBATE EN LA FORTALEZA DE LOS CABALLEROS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Character Selection Modal (Campaign & Practice) -->
+    <div id="hero-selection-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="hero-modal-title">
+      <div class="modal-box hero-selection-modal-box">
+        <div class="hero-modal-header">
+          <div class="hero-modal-badge">✦ ELIGE TU DESTINO ✦</div>
+          <h2 id="hero-modal-title" class="hero-modal-title">SELECCIONA TU HÉROE</h2>
+          <p id="hero-modal-subtitle" class="hero-modal-subtitle">Modo Campaña — Fortaleza de los Caballeros</p>
+        </div>
+
+        <div class="hero-selection-grid">
+          <!-- Soldier Card -->
+          <div class="hero-select-card active" data-hero="soldier" id="hero-card-soldier" tabindex="0" role="button" aria-pressed="true">
+            <div class="hero-card-frame-wrapper frame-soldier">
+              <img src="assets/UI/SoldierPortraid.png" class="hero-card-portrait" alt="Soldado Caballero">
+              <span class="hero-card-check">✓</span>
+            </div>
+            <div class="hero-card-info">
+              <h3 class="hero-card-name">CABALLERO</h3>
+              <div class="hero-card-class">Guerrero de Acero</div>
+              <div class="hero-card-stats">
+                <div class="hero-stat-row">
+                  <span class="stat-label">⚔️ Combate:</span>
+                  <span class="stat-val">Espada & Escudo</span>
+                </div>
+                <div class="hero-stat-row">
+                  <span class="stat-label">🛡️ Defensa:</span>
+                  <span class="stat-val">Armadura de Malla</span>
+                </div>
+                <div class="hero-stat-row">
+                  <span class="stat-label">⚡ Habilidad:</span>
+                  <span class="stat-val">Torbellino 360° & Embestida</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wizard Card -->
+          <div class="hero-select-card" data-hero="wizard" id="hero-card-wizard" tabindex="0" role="button" aria-pressed="false">
+            <div class="hero-card-frame-wrapper frame-wizard">
+              <img src="assets/UI/Wizard.portraid.png" class="hero-card-portrait" alt="Mago Arcano">
+              <span class="hero-card-check">✓</span>
+            </div>
+            <div class="hero-card-info">
+              <h3 class="hero-card-name">MAGO ARCANO</h3>
+              <div class="hero-card-class">Maestro Elemental</div>
+              <div class="hero-card-stats">
+                <div class="hero-stat-row">
+                  <span class="stat-label">🔮 Combate:</span>
+                  <span class="stat-val">Magia a Distancia</span>
+                </div>
+                <div class="hero-stat-row">
+                  <span class="stat-label">🛡️ Defensa:</span>
+                  <span class="stat-val">Manto & Reflejo</span>
+                </div>
+                <div class="hero-stat-row">
+                  <span class="stat-label">⚡ Habilidad:</span>
+                  <span class="stat-val">Bolas de Fuego & Hielo</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-modal-actions">
+          <button id="btn-hero-confirm" class="start-menu-btn hero-btn-confirm" title="Iniciar partida con el héroe seleccionado">
+            <span class="btn-decor"><img src="assets/UI/icons/icon_check.png" class="btn-menu-icon" alt=""></span>
+            <span id="hero-btn-confirm-text">¡INICIAR AVENTURA!</span>
+            <span class="btn-decor"><img src="assets/UI/icons/icon_check.png" class="btn-menu-icon" alt=""></span>
+          </button>
+          <button id="btn-hero-cancel" class="start-menu-btn hero-btn-cancel" title="Volver al Menú Principal">
+            <span class="btn-decor"><img src="assets/UI/icons/icon_close.png" class="btn-menu-icon" alt=""></span>
+            <span>VOLVER</span>
+            <span class="btn-decor"><img src="assets/UI/icons/icon_close.png" class="btn-menu-icon" alt=""></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legacy Práctica Confirmation Modal (Hidden / fallback) -->
+    <div id="practica-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="practica-modal-title" style="display:none;">
+      <div class="modal-box practica-modal-box">
+        <h2 id="practica-modal-title" class="practica-modal-title">PRÁCTICA</h2>
+      </div>
+    </div>
+
+    <!-- Top HUD Overlay (Fantasy RPG Theme with Health Bar & UI Slices) -->
+    <div class="in-game-hud">
+      <div class="hud-left">
+        <!-- Fantasy RPG Health & Hero Card -->
+        <div class="hud-player-card">
+          <div class="hud-portrait-wrap">
+            <img id="hud-portrait-img" src="assets/UI/SoldierPortraid.png" class="hud-portrait-img" alt="Héroe">
+          </div>
+          <div class="hud-player-info">
+            <div class="hud-hero-meta">
+              <span id="hud-hero-name" class="hud-hero-name">CABALLERO</span>
+              <span class="hud-hero-level">NIV. 1</span>
+            </div>
+            <!-- Health Bar with Dynamic Red Fill and Pixel Art Hearts -->
+            <div class="hud-hp-container" title="Puntos de Vida">
+              <div class="hud-hp-bar-track">
+                <div id="hud-hp-fill" class="hud-hp-fill" style="width: 100%;"></div>
+              </div>
+              <div class="hud-hearts-row">
+                <img id="hud-heart-1" src="assets/UI/icons/heart_full.png" class="hud-pixel-heart" alt="Vida 1">
+                <img id="hud-heart-2" src="assets/UI/icons/heart_full.png" class="hud-pixel-heart" alt="Vida 2">
+                <img id="hud-heart-3" src="assets/UI/icons/heart_full.png" class="hud-pixel-heart" alt="Vida 3">
+              </div>
+            </div>
+            <!-- Mana / Stamina Energy Bar -->
+            <div class="hud-mana-container" id="hud-mana-container" title="Stamina (Aguante) / Energía Arcana">
+              <div class="hud-mana-bar-track">
+                <div id="hud-mana-fill" class="hud-mana-fill" style="width: 100%;"></div>
+                <div class="hud-mana-notch-50" title="Marca de 50% de Stamina (Coste de Dash)"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Score and Kills Parchment Ledger with UI Icons -->
+        <div class="stats-badge">
+          <div class="stat-item" title="Enemigos derrotados">
+            <img src="assets/UI/icons/sword_blue.png" class="hud-icon-sm" alt="Bajas">
+            <span>BAJAS:</span> <span id="stat-kills">0</span>
+          </div>
+          <div class="stat-item" title="Puntuación de gloria">
+            <img src="assets/UI/icons/coin_sack.png" class="hud-icon-sm" alt="Oro">
+            <span>GLORIA:</span> <span id="stat-score">0</span>
+          </div>
+          <div class="stat-item" title="Oleada de batalla">
+            <img src="assets/UI/icons/scroll_icon.png" class="hud-icon-sm" alt="Oleada">
+            <span>OLEADA:</span> <span id="stat-wave">1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Character Switcher & In-Game Menu / Exit Buttons -->
+      <div class="hud-right">
+        <button id="btn-hud-menu-btn" class="btn-hud-menu" title="Menú de Pausa y Opciones (ESC)">
+          <img src="assets/UI/icons/icon_gear.png" class="hud-btn-icon" alt=""> <span>MENÚ</span>
+        </button>
+        <button id="btn-hud-exit-btn" class="btn-hud-menu btn-hud-exit" title="Salir al Menú Principal">
+          <img src="assets/UI/icons/icon_home.png" class="hud-btn-icon" alt=""> <span>SALIR</span>
+        </button>
+        <div class="hero-selector" title="Seleccionar personaje activo (1 o 2)">
+          <button id="btn-hero-soldier" class="hero-btn active" data-hero="soldier" title="Cambiar a Caballero">
+            <img src="assets/UI/icons/sword_gold.png" class="hero-selector-icon" alt=""> <span>SOLDADO</span>
+          </button>
+          <button id="btn-hero-wizard" class="hero-btn" data-hero="wizard" title="Cambiar a Mago Arcano">
+            <img src="assets/UI/icons/potion_blue.png" class="hero-selector-icon" alt=""> <span>MAGO</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ready for Battle Floating Banner / Button (Practice & Campaign) -->
+    <div id="ready-prompt-container" class="ready-prompt-container hidden" role="region" aria-label="Iniciar combate">
+      <div class="ready-prompt-content">
+        <button id="btn-ready-combat" class="btn-ready-combat" title="Comenzar el combate y las oleadas de enemigos (ENTER)">
+          <span class="btn-ready-icon"><img src="assets/UI/icons/sword_blue.png" class="btn-ready-icon-img" alt=""></span>
+          <span class="btn-ready-text">¡ESTOY LISTO!</span>
+          <span class="btn-ready-icon"><img src="assets/UI/icons/sword_blue.png" class="btn-ready-icon-img" alt=""></span>
+        </button>
+        <div class="ready-prompt-subtext">Explora el mapa y pulsa cuando estés preparado para el combate</div>
+      </div>
+    </div>
+
+    <!-- Phaser Canvas Container -->
+    <div id="game-canvas-container"></div>
+
+    <!-- Game Over Modal (Epitaph Parchment on Oak Timber) -->
+    <div class="modal-overlay" id="game-over-modal">
+      <div class="modal-card">
+        <div class="epitaph-header">✦ EPITAFIO DE LA TABERNA ✦</div>
+        <h2 class="modal-title">¡HAS PERECIDO!</h2>
+        <p class="modal-subtitle">Tu cuerpo descansa bajo la tierra húmeda del cementerio...</p>
+        <div class="modal-stats">
+          <div class="modal-stats-item">
+            <span class="val" id="final-kills">0</span>
+            <span class="lbl">Bajas</span>
+          </div>
+          <div class="modal-stats-item">
+            <span class="val" id="final-score">0</span>
+            <span class="lbl">Gloria</span>
+          </div>
+          <div class="modal-stats-item">
+            <span class="val" id="final-time">0s</span>
+            <span class="lbl">Tiempo</span>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+          <button id="btn-restart" class="wooden-sign-btn">
+            <span class="btn-nail">▪</span>
+            <span><img src="assets/UI/icons/sword_blue.png" class="btn-menu-icon" alt=""> REINTENTAR BATALLA</span>
+            <span class="btn-nail">▪</span>
+          </button>
+          <button id="btn-gameover-menu" class="wooden-sign-btn btn-exit-action" style="padding: 10px; font-size: 11px;">
+            <span class="btn-nail">▪</span>
+            <span><img src="assets/UI/icons/icon_home.png" class="btn-menu-icon" alt=""> SALIR AL MENÚ PRINCIPAL</span>
+            <span class="btn-nail">▪</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unified Options Modal (Sound, Display, and Keyboard Controls) -->
+    <div class="modal-overlay" id="options-modal">
+      <div class="modal-card options-modal-card">
+        <div class="epitaph-header">✦ AJUSTES DE CASTLEKNIGHT ✦</div>
+        <h2 class="modal-title">OPCIONES DEL JUEGO</h2>
+        <p class="modal-subtitle">Ajusta los efectos de sonido, pantalla y personaliza las teclas a tu gusto:</p>
+
+        <!-- Quick Settings: Audio & Fullscreen -->
+        <div class="options-quick-row">
+          <button id="btn-opt-audio" class="opt-card-btn opt-card-quick" title="Alternar Sonido">
+            <div class="opt-card-icon" id="opt-sound-icon"><img src="assets/UI/icons/icon_sound_on.png" class="opt-card-img" alt=""></div>
+            <div class="opt-card-body">
+              <span class="opt-card-title">SONIDO</span>
+              <span class="opt-card-desc" id="opt-sound-status">Efectos activados</span>
+            </div>
+            <div class="opt-card-badge" id="opt-sound-badge">ON</div>
+          </button>
+
+          <button id="btn-opt-fullscreen" class="opt-card-btn opt-card-quick" title="Alternar Pantalla Completa (F)">
+            <div class="opt-card-icon">⛶</div>
+            <div class="opt-card-body">
+              <span class="opt-card-title">PANTALLA</span>
+              <span class="opt-card-desc">Modo Fullscreen (F)</span>
+            </div>
+            <div class="opt-card-badge">F</div>
+          </button>
+        </div>
+
+        <!-- Keyboard Configuration Section -->
+        <div class="options-section-divider">
+          <span>✦ CONFIGURACIÓN DE TECLAS DEL TECLADO ✦</span>
+        </div>
+        <p class="modal-subtitle keybind-instruction">Haz clic sobre cualquier tecla para reasignarla presionando la nueva tecla deseada:</p>
+
+        <div class="options-container">
+          <div class="keybinds-grid" id="keybinds-grid">
+            <!-- Populated dynamically by KeybindsManager -->
+          </div>
+        </div>
+
+        <!-- Actions Footer -->
+        <div class="options-actions">
+          <button id="btn-reset-keybinds" class="dev-btn dev-btn-danger" title="Restablecer teclas por defecto">
+            <img src="assets/UI/icons/icon_play.png" class="hud-btn-icon" alt=""> <span>RESTABLECER TECLAS</span>
+          </button>
+          <button id="btn-close-options" class="wooden-sign-btn">
+            <span class="btn-nail">▪</span>
+            <span><img src="assets/UI/icons/icon_close.png" class="btn-menu-icon" alt=""> VOLVER AL MENÚ</span>
+            <span class="btn-nail">▪</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exit Confirmation Modal -->
+    <div class="modal-overlay" id="exit-modal">
+      <div class="modal-card">
+        <div class="epitaph-header">✦ SALIDA DE LA FORTALEZA ✦</div>
+        <h2 class="modal-title">¿DESEAS SALIR DEL JUEGO?</h2>
+        <p class="modal-subtitle">Puedes volver a la pantalla de inicio o cerrar la ventana del juego.</p>
+        <div class="exit-actions">
+          <button id="btn-cancel-exit" class="wooden-sign-btn">
+            <span class="btn-nail">▪</span>
+            <span><img src="assets/UI/icons/icon_close.png" class="btn-menu-icon" alt=""> VOLVER AL MENÚ PRINCIPAL</span>
+            <span class="btn-nail">▪</span>
+          </button>
+          <button id="btn-confirm-exit" class="dev-btn dev-btn-danger">
+            <img src="assets/UI/icons/icon_home.png" class="hud-btn-icon" alt=""> <span>CERRAR JUEGO</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Farewell Modal (fallback) -->
+    <div class="modal-overlay" id="farewell-modal">
+      <div class="modal-card farewell-card">
+        <div class="epitaph-header">✦ CASTLEKNIGHT ✦</div>
+        <h2 class="modal-title">HAS ABANDONADO LA BATALLA</h2>
+        <p class="modal-subtitle">¡Gracias por jugar a CastleKnight! Descansa en la taberna y recupera tus fuerzas para la próxima refriega.</p>
+        <button id="btn-farewell-return" class="wooden-sign-btn">
+          <span class="btn-nail">▪</span>
+          <span><img src="assets/UI/icons/icon_home.png" class="btn-menu-icon" alt=""> VOLVER AL MENÚ PRINCIPAL</span>
+          <span class="btn-nail">▪</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- In-Game Pause Menu Modal -->
+    <div class="modal-overlay" id="pause-modal">
+      <div class="modal-card">
+        <div class="epitaph-header">✦ PAUSA DE BATALLA ✦</div>
+        <h2 class="modal-title">MENÚ DE PAUSA</h2>
+        <p class="modal-subtitle">El combate aguarda tu próxima orden...</p>
+        <div class="pause-actions">
+          <button id="btn-pause-resume" class="wooden-sign-btn">
+            <span class="btn-nail">▪</span>
+            <span><img src="assets/UI/icons/icon_play.png" class="btn-menu-icon" alt=""> CONTINUAR BATALLA</span>
+            <span class="btn-nail">▪</span>
+          </button>
+          <button id="btn-pause-options" class="dev-btn dev-btn-primary">
+            <img src="assets/UI/icons/icon_gear.png" class="hud-btn-icon" alt=""> <span>OPCIONES Y TECLAS</span>
+          </button>
+          <button id="btn-pause-restart" class="dev-btn">
+            <img src="assets/UI/icons/sword_blue.png" class="hud-btn-icon" alt=""> <span>REINICIAR PARTIDA</span>
+          </button>
+          <button id="btn-pause-mainmenu" class="wooden-sign-btn btn-exit-action">
+            <span class="btn-nail">▪</span>
+            <span><img src="assets/UI/icons/icon_home.png" class="btn-menu-icon" alt=""> SALIR DEL JUEGO</span>
+            <span class="btn-nail">▪</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Developer Mode Floating Inspector (Parchment Card) -->
+    <aside id="dev-inspector" class="dev-inspector hidden" aria-label="Inspector de elemento seleccionado">
+      <div class="dev-inspector-header">
+        <span id="dev-inspector-title">🧱 HITBOX #1</span>
+        <button id="dev-inspector-close" class="dev-inspector-close-btn" title="Cerrar Inspector">✕</button>
+      </div>
+      <div class="dev-inspector-body">
+        <div class="dev-inspector-row">
+          <span class="dev-inspector-label">Pos X:</span>
+          <div class="dev-number-stepper">
+            <button class="step-btn" data-field="x" data-delta="-32">-32</button>
+            <button class="step-btn" data-field="x" data-delta="-1">-1</button>
+            <input type="number" id="inp-dev-x" class="dev-input" />
+            <button class="step-btn" data-field="x" data-delta="1">+1</button>
+            <button class="step-btn" data-field="x" data-delta="32">+32</button>
+          </div>
+        </div>
+        <div class="dev-inspector-row">
+          <span class="dev-inspector-label">Pos Y:</span>
+          <div class="dev-number-stepper">
+            <button class="step-btn" data-field="y" data-delta="-32">-32</button>
+            <button class="step-btn" data-field="y" data-delta="-1">-1</button>
+            <input type="number" id="inp-dev-y" class="dev-input" />
+            <button class="step-btn" data-field="y" data-delta="1">+1</button>
+            <button class="step-btn" data-field="y" data-delta="32">+32</button>
+          </div>
+        </div>
+        <div class="dev-inspector-row" id="dev-row-w">
+          <span class="dev-inspector-label">Ancho (W):</span>
+          <div class="dev-number-stepper">
+            <button class="step-btn" data-field="w" data-delta="-32">-32</button>
+            <button class="step-btn" data-field="w" data-delta="-1">-1</button>
+            <input type="number" id="inp-dev-w" class="dev-input" />
+            <button class="step-btn" data-field="w" data-delta="1">+1</button>
+            <button class="step-btn" data-field="w" data-delta="32">+32</button>
+          </div>
+        </div>
+        <div class="dev-inspector-row" id="dev-row-h">
+          <span class="dev-inspector-label">Alto (H):</span>
+          <div class="dev-number-stepper">
+            <button class="step-btn" data-field="h" data-delta="-32">-32</button>
+            <button class="step-btn" data-field="h" data-delta="-1">-1</button>
+            <input type="number" id="inp-dev-h" class="dev-input" />
+            <button class="step-btn" data-field="h" data-delta="1">+1</button>
+            <button class="step-btn" data-field="h" data-delta="32">+32</button>
+          </div>
+        </div>
+        <div class="dev-inspector-row hidden" id="dev-row-name">
+          <span class="dev-inspector-label">Nombre:</span>
+          <input type="text" id="inp-dev-name" class="dev-input dev-input-text" />
+        </div>
+
+        <!-- Hitbox Advanced Options: Type, Presets, Flip, Lock -->
+        <div id="dev-hitbox-options" class="dev-hitbox-options">
+          <div class="dev-inspector-row" id="dev-row-type">
+            <span class="dev-inspector-label">Tipo:</span>
+            <select id="inp-dev-hitbox-type" class="dev-select dev-select-full" title="Comportamiento físico de la hitbox">
+              <option value="solid">🧱 Sólido (Muro/Pared)</option>
+              <option value="low">🪵 Obstáculo Bajo (Flechas pasan)</option>
+              <option value="hazard">⚠️ Zona Peligro (Daña 1 HP)</option>
+              <option value="slow">🌿 Terreno Difícil (Ralentiza 50%)</option>
+            </select>
+          </div>
+
+          <div class="dev-inspector-row dev-inspector-presets" id="dev-row-presets">
+            <span class="dev-inspector-label">Presets:</span>
+            <div class="dev-preset-buttons">
+              <button class="preset-btn" data-w="32" data-h="32">32x32</button>
+              <button class="preset-btn" data-w="64" data-h="32">64x32</button>
+              <button class="preset-btn" data-w="32" data-h="64">32x64</button>
+              <button class="preset-btn" data-w="128" data-h="32">128x32</button>
+              <button class="preset-btn" data-w="32" data-h="128">32x128</button>
+              <button class="preset-btn" data-w="256" data-h="32">256x32</button>
+            </div>
+          </div>
+
+          <div class="dev-inspector-row">
+            <button id="dev-btn-fit-pixels" class="btn-fit-pixels" style="width: 100%;" title="Ajusta la caja de colisión exactamente a los píxeles del PNG sin sobresalir (A)">
+              <span>🎯</span> AJUSTAR A PÍXELES DEL PNG (A)
+            </button>
+          </div>
+
+          <div class="dev-inspector-row dev-inspector-tools" id="dev-row-tools">
+            <button id="dev-btn-flip-wh" class="dev-btn dev-btn-sm" title="Invertir Ancho por Alto (Rotar 90°)">
+              <span>🔄</span> INVERTIR W/H
+            </button>
+            <button id="dev-btn-align-tile" class="dev-btn dev-btn-sm" title="Alinear a baldosa de 32px">
+              <span>📐</span> ALINEAR 32
+            </button>
+            <button id="dev-btn-lock" class="dev-btn dev-btn-sm" title="Bloquear o desbloquear posición">
+              <span id="dev-lock-icon">🔓</span> BLOQUEAR
+            </button>
+          </div>
+        </div>
+
+        <!-- Enemy Spawn Specific Controls -->
+        <div id="dev-spawn-fields" class="dev-spawn-fields hidden">
+          <div class="dev-inspector-row">
+            <span class="dev-inspector-label">Enemigo:</span>
+            <select id="inp-dev-spawn-enemy" class="dev-select dev-select-full">
+              <option value="clash">⚔️ Opuesto al Héroe</option>
+              <option value="orc">🪓 Siempre Orco</option>
+              <option value="soldier">🛡️ Siempre Soldado</option>
+              <option value="mixed">🎲 Horda Mixta</option>
+            </select>
+          </div>
+          <div class="dev-inspector-row">
+            <span class="dev-inspector-label">Oleada Min:</span>
+            <select id="inp-dev-spawn-wave" class="dev-select dev-select-full">
+              <option value="1">Oleada 1 (Desde inicio)</option>
+              <option value="2">Oleada 2 (Min 0:30)</option>
+              <option value="3">Oleada 3 (Min 1:00)</option>
+              <option value="4">Oleada 4 (Min 1:30)</option>
+              <option value="5">Oleada 5+ (Asedio)</option>
+            </select>
+          </div>
+          <div class="dev-inspector-row">
+            <span class="dev-inspector-label">Radio Área:</span>
+            <select id="inp-dev-spawn-radius" class="dev-select dev-select-full">
+              <option value="0">0 px (Punto Exacto)</option>
+              <option value="32">32 px (Radio Corto)</option>
+              <option value="48" selected>48 px (Radio Medio)</option>
+              <option value="64">64 px (Radio Amplio)</option>
+              <option value="96">96 px (Área Grande)</option>
+            </select>
+          </div>
+          <div class="dev-inspector-row">
+            <span class="dev-inspector-label">Estado:</span>
+            <button id="dev-btn-spawn-active" class="dev-btn dev-btn-save dev-btn-full">
+              <span>🟢</span> ACTIVO (GENERANDO)
+            </button>
+          </div>
+          <div class="dev-inspector-row">
+            <button id="dev-btn-spawn-test" class="dev-btn dev-btn-primary dev-btn-full" title="Invocar un enemigo inmediatamente en este punto">
+              <span>⚡</span> INVOCAR ENEMIGO AHORA
+            </button>
+          </div>
+        </div>
+
+        <div class="dev-inspector-actions">
+          <button id="dev-btn-duplicate" class="dev-btn" title="Duplicar elemento (Ctrl+D)">📄 DUPLICAR</button>
+          <button id="dev-btn-delete" class="dev-btn dev-btn-danger" title="Eliminar elemento (Supr)">🗑️ ELIMINAR</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Developer Mode Object Catalog Modal -->
+    <div id="dev-catalog-modal" class="modal-overlay">
+      <div class="modal-card dev-modal-card">
+        <div class="epitaph-header">✦ CATÁLOGO DE OBJETOS ✦</div>
+        <h2 class="modal-title">AÑADIR OBJETO AL ESCENARIO</h2>
+        <p class="modal-subtitle">Selecciona un elemento para colocarlo en el mapa de la taberna:</p>
+        <div class="dev-catalog-grid">
+          <button class="catalog-item" data-type="fireplace" data-name="Chimenea Rústica" data-w="64" data-h="64">
+            <span class="catalog-icon">🔥</span>
+            <span class="catalog-title">Chimenea</span>
+            <span class="catalog-desc">Fuego animado y luz cálida (64x64)</span>
+          </button>
+          <button class="catalog-item" data-type="door" data-name="Puerta de Roble" data-w="64" data-h="64">
+            <span class="catalog-icon">🚪</span>
+            <span class="catalog-title">Puerta Roble</span>
+            <span class="catalog-desc">Entrada/salida taberna (64x64)</span>
+          </button>
+          <button class="catalog-item" data-type="barrel" data-name="Barril de Cerveza" data-w="32" data-h="32">
+            <span class="catalog-icon">🛢️</span>
+            <span class="catalog-title">Barril Roble</span>
+            <span class="catalog-desc">Barril de sidra/cerveza (32x32)</span>
+          </button>
+          <button class="catalog-item" data-type="table" data-name="Mesa de Taberna" data-w="64" data-h="48">
+            <span class="catalog-icon">🪵</span>
+            <span class="catalog-title">Mesa Comedor</span>
+            <span class="catalog-desc">Mesa de madera maciza (64x48)</span>
+          </button>
+          <button class="catalog-item" data-type="chair" data-name="Silla de Taberna" data-w="32" data-h="32">
+            <span class="catalog-icon">🪑</span>
+            <span class="catalog-title">Silla Madera</span>
+            <span class="catalog-desc">Asiento para parroquianos (32x32)</span>
+          </button>
+          <button class="catalog-item" data-type="chest" data-name="Cofre de Tesoro" data-w="32" data-h="32">
+            <span class="catalog-icon">📦</span>
+            <span class="catalog-title">Cofre de Hierro</span>
+            <span class="catalog-desc">Almacén de botín y oro (32x32)</span>
+          </button>
+          <button class="catalog-item" data-type="bookshelf" data-name="Estantería de Libros" data-w="48" data-h="64">
+            <span class="catalog-icon">📚</span>
+            <span class="catalog-title">Estantería</span>
+            <span class="catalog-desc">Grimorios y manuscritos (48x64)</span>
+          </button>
+          <button class="catalog-item" data-type="torch" data-name="Candil de Pared" data-w="32" data-h="32">
+            <span class="catalog-icon">🕯️</span>
+            <span class="catalog-title">Candil Pared</span>
+            <span class="catalog-desc">Lámpara con fulgor cálido (32x32)</span>
+          </button>
+          <button class="catalog-item" data-type="enemy_spawn" data-name="Spawn Enemigos" data-w="32" data-h="32">
+            <span class="catalog-icon">🚩</span>
+            <span class="catalog-title">Spawn Enemigo</span>
+            <span class="catalog-desc">Punto de oleada de orcos (32x32)</span>
+          </button>
+          <button class="catalog-item" data-type="player_spawn" data-name="Spawn Jugador" data-w="32" data-h="32">
+            <span class="catalog-icon">👤</span>
+            <span class="catalog-title">Inicio Héroe</span>
+            <span class="catalog-desc">Punto de reaparición inicial</span>
+          </button>
+        </div>
+        <button id="dev-catalog-close" class="wooden-sign-btn dev-sign-btn">
+          <span class="btn-nail">▪</span>
+          <span>CANCELAR</span>
+          <span class="btn-nail">▪</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Developer Mode Export/Import Modal -->
+    <div id="dev-export-modal" class="modal-overlay">
+      <div class="modal-card dev-modal-card">
+        <div class="epitaph-header">✦ GESTIÓN DE CONFIGURACIÓN ✦</div>
+        <h2 class="modal-title">EXPORTAR / IMPORTAR MAPA</h2>
+        <p class="modal-subtitle">Guarda tu diseño, descárgalo o pégalo directamente en tu código:</p>
+        
+        <div class="dev-export-tabs">
+          <button id="dev-tab-exp-js" class="dev-tab active" data-exp-mode="js">CÓDIGO JS</button>
+          <button id="dev-tab-exp-json" class="dev-tab" data-exp-mode="json">JSON PURO</button>
+        </div>
+
+        <textarea id="dev-export-textarea" class="dev-export-textarea" spellcheck="false"></textarea>
+
+        <div class="dev-export-actions">
+          <button id="dev-btn-copy-code" class="dev-btn dev-btn-primary">📋 COPIAR AL PORTAPAPELES</button>
+          <button id="dev-btn-download-json" class="dev-btn dev-btn-save">📥 DESCARGAR JSON</button>
+          <button id="dev-btn-apply-import" class="dev-btn">📤 APLICAR DESDE TEXTO</button>
+          <button id="dev-export-close" class="dev-btn dev-btn-danger">CERRAR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div id="dev-toast" class="dev-toast hidden">
+      <span id="dev-toast-icon">💾</span>
+      <span id="dev-toast-msg">¡Configuración guardada exitosamente!</span>
+    </div>
+
+  </main>
+
+  <!-- Controls Reference Bar (Oak Worktable Ledge) -->
+  <footer class="controls-bar">
+    <div class="control-pill">
+      <span class="key-cap">W</span>
+      <span class="key-cap">A</span>
+      <span class="key-cap">S</span>
+      <span class="key-cap">D</span>
+      <span>MOVERSE</span>
+    </div>
+    <div class="control-pill">
+      <span class="key-cap">ESPACIO</span> / <span class="key-cap">CLICK IZQ</span>
+      <span>ATACAR</span>
+    </div>
+    <div class="control-pill">
+      <span class="key-cap">K</span> / <span class="key-cap">CLICK DER</span>
+      <span>ESPECIAL</span>
+    </div>
+    <div class="control-pill">
+      <span class="key-cap">SHIFT</span>
+      <span>DASH (SOLDADO)</span>
+    </div>
+    <div class="control-pill">
+      <span class="key-cap">E</span> / <span class="key-cap">Q</span>
+      <span>GIRO (SOLDADO)</span>
+    </div>
+    <div class="control-pill">
+      <span class="key-cap">1</span> / <span class="key-cap">2</span>
+      <span>CAMBIAR HÉROE</span>
+    </div>
+    <div class="control-pill">
+      <span class="key-cap">F</span>
+      <span>FULLSCREEN</span>
+    </div>
+    <div class="control-pill">
+      <span class="key-cap">F2</span> / <span class="key-cap">M</span>
+      <span>MODO DEV</span>
+    </div>
+    <div class="control-pill">
+      <span class="key-cap">P</span>
+      <span>HITBOXES</span>
+    </div>
+  </footer>
+
+  <!-- Assets Data (Base64 fallback for local file opening without server) -->
+  <script src="js/assets_data.js"></script>
+  <!-- Embedded Map Data (instant offline & file:// support) -->
+  <script src="js/mapa1_data.js"></script>
+  <!-- Embedded Campaign Map Data (assets/map2/map1.json) -->
+  <script src="js/map2_data.js"></script>
+  <!-- Embedded Map Tilesets & Art Data (100% offline & file:// support without CORS) -->
+  <script src="js/map_assets_base64.js"></script>
+  <!-- Game Logic Script -->
+  <script src="js/game.js?v=8.0"></script>
+</body>
+</html>
