@@ -3148,6 +3148,7 @@ class MainGameScene extends Phaser.Scene {
       const ret = this._interiorReturn || { x: 250, y: 340, zoom: 1.5 };
       this.currentInterior = null;
       this.physics.world.setBounds(0, 0, this.mapWidth, this.mapHeight);
+      this.setPlayerIndoorScale(false);
       this.placePlayerFeetAt(ret.x, ret.y);
       cam.setBounds(0, 0, this.mapWidth, this.mapHeight);
       cam.setZoom(ret.zoom || 1.5);
@@ -3190,12 +3191,33 @@ class MainGameScene extends Phaser.Scene {
     const zoom = Math.min(cam.width / (area.w + 56), cam.height / (area.h + 56));
     cam.setZoom(Phaser.Math.Clamp(Math.floor(zoom * 10) / 10, 1.6, 2.6));
     cam.centerOn(area.x + area.w / 2, area.y + area.h / 2);
+    this.setPlayerIndoorScale(true);
     this.placePlayerFeetAt(at.x, at.y);
   }
 
   /**
    * Move the player so that the CENTER-TOP of the feet hitbox lands on (x, y).
    */
+  /**
+   * Indoors the hero is drawn bigger so it matches the furniture; the feet hitbox
+   * keeps the same real size (about 19x10 px) so doorways still fit.
+   */
+  setPlayerIndoorScale(indoors) {
+    const p = this.player;
+    if (!p || !p.body) return;
+    const OUT = 1.2, IN = 1.75;
+    if (indoors) {
+      const k = OUT / IN, w = 16 * k, h = 8 * k;
+      p.setScale(IN);
+      p.body.setSize(w, h);
+      p.body.setOffset(50 - w / 2, 60 - h);
+    } else {
+      p.setScale(OUT);
+      p.body.setSize(16, 8);
+      p.body.setOffset(42, 52);
+    }
+  }
+
   placePlayerFeetAt(x, y) {
     const p = this.player;
     const b = p.body;
@@ -3458,6 +3480,7 @@ class MainGameScene extends Phaser.Scene {
       this.cameras.main.setZoom((this._interiorReturn && this._interiorReturn.zoom) || 1.5);
       if (this.player) this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
     }
+    if (this.currentInterior) this.setPlayerIndoorScale(false);
     this.currentInterior = null;
     this._interiorReturn = null;
     this._doorTransition = false;
@@ -5004,6 +5027,8 @@ class MainGameScene extends Phaser.Scene {
     let vx = 0;
     let vy = 0;
 
+    const left = (this.keyMoveLeft && this.keyMoveLeft.isDown) || this.cursors.left.isDown;
+    const right = (this.keyMoveRight && this.keyMoveRight.isDown) || this.cursors.right.isDown;
     const up = (this.keyMoveUp && this.keyMoveUp.isDown) || this.cursors.up.isDown;
     const down = (this.keyMoveDown && this.keyMoveDown.isDown) || this.cursors.down.isDown;
 
@@ -6182,6 +6207,7 @@ class MainGameScene extends Phaser.Scene {
     this.player.setScale(1.20);
     this.player.body.setSize(16, 8);
     this.player.body.setOffset(42, 52);
+    if (this.currentInterior) this.setPlayerIndoorScale(true);
 
     // Update active hero button in DOM
     document.querySelectorAll('.hero-btn').forEach(btn => {
