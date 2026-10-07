@@ -25,7 +25,10 @@ const CASTLE_ASSET_KEYS = [
   'wall_side_l', 'wall_side_r',
   // castle grounds v4 (SpriteLab): wall walk and royal garden paintings, drawbridge deck, towers, garden and rampart props
   'ground_walls', 'ground_garden', 'drawdeck', 'tower', 'hedge', 'rose_pink', 'rose_white', 'urn', 'topiary_ball', 'topiary_cone', 'sundial', 'cherry',
-  'queen', 'rosearch', 'gazebo', 'gbench', 'telescope', 'arrowbarrel', 'arrowcrates', 'spears', 'ballista', 'cannonballs', 'stool'
+  'queen', 'rosearch', 'gazebo', 'gbench', 'telescope', 'arrowbarrel', 'arrowcrates', 'spears', 'ballista', 'cannonballs', 'stool',
+  // training yard (SpriteLab props + wooden pieces drawn by the map generator)
+  'ground_training', 't_armor', 't_arrowpost', 't_barrel', 't_bench_h', 't_bench_v', 't_bowrack', 't_bows', 't_crates', 't_dummy', 't_fence_h', 't_fence_v',
+  't_hay', 't_hay3', 't_log_d1', 't_log_d2', 't_log_h', 't_log_v', 't_quintain', 't_spears', 't_swords', 't_target', 't_target2', 't_tent', 't_tripod'
 ];
 
 /** Castle sprite sheets ('cs_<name>'): [frame width, frame height]. The flame size comes with the art (CASTLE_FIRE). */
@@ -42,6 +45,8 @@ const MAP_SHEETS = {
   ru_mill_anim: { file: 'assets/ruins/mill_anim.png', fw: 112, fh: 160, anims: { ru_mill_turn: { frames: [0, 1, 2, 3, 4, 5, 6, 7, 8], fps: 4, yoyo: true } } },
   ru_scarecrow_anim: { file: 'assets/ruins/scarecrow_anim.png', fw: 64, fh: 64, anims: { ru_scarecrow_flap: { frames: [0, 1, 2, 3, 4, 5, 6, 7, 8], fps: 8 } } },
   cs_banner_anim: { file: 'assets/castle/banner_anim.png', fw: 28, fh: 44, anims: { cs_banner_wave: { frames: [0, 1, 2, 3], fps: 6, yoyo: true } } },
+  cs_banner_red_anim: { file: 'assets/castle/banner_red_anim.png', fw: 28, fh: 44, anims: { cs_banner_red_wave: { frames: [0, 1, 2, 3], fps: 6, yoyo: true } } },
+  cs_banner_blue_anim: { file: 'assets/castle/banner_blue_anim.png', fw: 28, fh: 44, anims: { cs_banner_blue_wave: { frames: [0, 1, 2, 3], fps: 6, yoyo: true } } },
   cs_gfountain_anim: { file: 'assets/castle/gfountain_anim.png', fw: 96, fh: 96, anims: { cs_gfountain_flow: { frames: [1, 2, 3, 2], fps: 6 } } }
 };
 

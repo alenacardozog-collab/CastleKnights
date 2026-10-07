@@ -85,7 +85,10 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     yard.colliders.push({ x: 0, y: 0, w: 640, h: CW + 2 });
     yard.colliders.push({ x: 0, y: 0, w: 76, h: 164 });           // corner towers
     yard.colliders.push({ x: 564, y: 0, w: 76, h: 164 });
-    yard.colliders.push({ x: 0, y: 0, w: 14, h: 560 });
+    yard.colliders.push({ x: 0, y: 0, w: 14, h: 270 });           // west wall, with the gate to the training yard
+    yard.colliders.push({ x: 0, y: 316, w: 14, h: 244 });
+    yard.exits.push({ x: 0, y: 270, w: 12, h: 46, key: 'walk', to: 'training', arrive: { x: 440, y: 436 } });
+    talker(yard, 30, 292, ['← Patio de armas ⚔️'], 30);
     yard.colliders.push({ x: 626, y: 0, w: 14, h: 200 });         // east wall, with the garden gate
     yard.colliders.push({ x: 626, y: 248, w: 14, h: 312 });
     yard.exits.push({ x: 628, y: 200, w: 12, h: 48, key: 'walk', to: 'garden', arrive: { x: 46, y: 342 } });
@@ -133,7 +136,6 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     place(yard, 'Barrel_Small_Empty', 92, 186, 14, 8);
     place(yard, 'Barrel_Small_Empty', 106, 196, 14, 8);
     place(yard, 'Sack_3', 166, 190, 14, 6);
-    place(yard, 'Crate_Water_1', 60, 296, 26, 10);
     // garden (left lawn)
     place(yard, 'Tree_Emerald_2', 62, 430, 14, 9);
     place(yard, 'Tree_Emerald_1', 132, 496, 14, 9);
@@ -200,6 +202,31 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     talker(garden, 610, 244, ['Un templete fresco junto al estanque'], 36);
     garden.exits.push({ x: 0, y: 318, w: 12, h: 52, key: 'walk', to: 'courtyard', arrive: { x: 606, y: 226 } });
     areas.garden = garden;
+
+    // ---------------- TRAINING YARD (outdoor, 832x464) — laid out after the reference picture of the user:
+    // dummies' pen and sparring rings on the left, archery range on the right, armoury tents and racks under the north wall.
+    const TM = CM.training || { w: 832, h: 464, items: [], cols: [] };
+    const training = outdoorArea(TM, { groundKey: 'cs_ground_training', surface: 'dirt', title: 'Patio de Armas', spawn: { x: 440, y: 436 },
+      ambient: [['amb_courtyard', 0.45]], grade: 0xffffff });      // plain daylight: the colours are the ones of the reference
+    fromData(training, TM);
+    training.items.push({ key: 'cs_banner_red_anim', anim: 'cs_banner_red_wave', x: 393, baseY: 462, scale: 1, shadow: 10 });
+    training.items.push({ key: 'cs_banner_blue_anim', anim: 'cs_banner_blue_wave', x: 492, baseY: 462, scale: 1, shadow: 10 });
+    [172, 390, 455, 664].forEach(x => torch(training, x, 106));        // torches on the north wall
+    // the master-at-arms by the racks, recruits drilling in the pen and in the ring, an archer at the line
+    person(training, 'soldier_idle', 'soldier_idle', 452, 168, { scale: 1.2 });
+    talker(training, 452, 172, ['¡Postura firme, recluta! 🛡️', 'Cien golpes al muñeco antes de comer', 'Las armas están en los armeros; cuidadlas'], 44);
+    training.actors.push({ type: 'walker', key: 'soldier_idle', idle: 'soldier_idle', walk: 'soldier_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 30,
+      pts: [[112, 250, 2400], [150, 300, 2200], [112, 302, 1400]], lines: ['¡Uno, dos... estocada!', 'Este muñeco no se rinde 😅'] });
+    training.actors.push({ type: 'walker', key: 'soldier_idle', idle: 'soldier_idle', walk: 'soldier_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 26,
+      pts: [[270, 262, 1200], [314, 262, 1200], [292, 284, 1800]], lines: ['Entrad al círculo si os atrevéis ⚔️', 'Aquí se entrena cuerpo a cuerpo'] });
+    person(training, 'soldier_idle', 'soldier_idle', 616, 330, { scale: 1.2 });
+    talker(training, 616, 334, ['No crucéis la línea mientras disparan 🏹', 'A cincuenta pasos, siempre al centro'], 40);
+    talker(training, 422, 118, ['La puerta de los barracones está cerrada'], 30);
+    talker(training, 198, 118, ['Depósito de la intendencia. Cerrado.'], 26);
+    talker(training, 250, 170, ['Carpas del armero: afilado y reparación 🔧'], 40);
+    training.fx.push({ type: 'dust', x: 60, y: 180, w: 300, h: 240 });
+    training.exits.push({ x: 380, y: 448, w: 126, h: 16, key: 'down', to: 'courtyard', arrive: { x: 30, y: 300 }, hint: '▼ Volver al patio' });
+    areas.training = training;
 
     // ---------------- GREAT HALL / THRONE ROOM (long room: the camera follows the hero)
     const th = makeArea(480, 560, THEMES.hall, { frontDoorX: 226, exitTo: 'courtyard', exitArrive: { x: 320, y: 182 } });

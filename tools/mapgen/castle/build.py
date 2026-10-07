@@ -262,20 +262,285 @@ wm.shadows(alpha=.26); wm.preview('pv_walls.png', 'dbg_walls.png')
 wm.reach((96, 190), {'east tower': (864, 190), 'gatehouse': (480, 200), 'telescope': (890, 250)})
 DATA['walls'] = export(wm, 'walls', {'hatch': [[96, 156], [864, 156]]})
 
+# ================================================================= TRAINING YARD (832x464)
+# Laid out after a reference picture (1024x572): positions below are in reference pixels and scaled by K.
+K = 0.8125; P = lambda x, y: (round(x * K), round(y * K))
+TG = Tileset('../raw/ts_tgrass.png'); TC = Tileset('../raw/ts_tcobble.png')        # kept as Tiled tilesets; the yard itself is painted below
+for n in 'wall door tent dummy target swords spears armor hay3 hay crates barrel arrowpost bows quintain'.split(): S['t_' + n] = load('../raw/t_%s.png' % n)
+for n in ('tower', 'ctower', 'wall2'): S['t_' + n] = load('../raw/t_%s.png' % n)
+# pull the props towards the palette of the reference so wood, straw and steel sit in the same family as the ground
+REFPAL = np.array([(0x59, 0x50, 0x44), (0x8b, 0x7e, 0x69), (0x3b, 0x38, 0x2d), (0xa6, 0x84, 0x57), (0x62, 0x60, 0x50), (0x22, 0x18, 0x0e), (0x54, 0x40, 0x33), (0x71, 0x6b, 0x5a), (0xa9, 0x9a, 0x79),
+                   (0x7b, 0x6f, 0x5f), (0x8c, 0x6d, 0x50), (0xa1, 0x87, 0x5e), (0x97, 0x84, 0x5a), (0xc9, 0xa2, 0x4a), (0xe0, 0xc0, 0x68), (0xa8, 0x3c, 0x2e), (0xd8, 0xd2, 0xc0), (0x9a, 0x9a, 0x94), (0x6e, 0x4a, 0x30), (0xc4, 0xb4, 0x8c)], float)
+def harmonize(im, k=.45):
+    a = np.array(im).astype(float); rgb = a[..., :3]; dist = ((rgb[:, :, None, :] - REFPAL[None, None]) ** 2).sum(-1); near = REFPAL[dist.argmin(-1)]
+    a[..., :3] = rgb * (1 - k) + near * k; return Image.fromarray(a.astype('uint8'))
+for n in 'door tent dummy target swords spears armor hay3 hay crates barrel arrowpost bows quintain'.split(): S['t_' + n] = harmonize(S['t_' + n])
+m = Map(832, 464, 21)
+# ---- ground painted pixel by pixel in the colours of the reference (clean flats, organic edges, no square tiles)
+HX = lambda h: tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
+GR, GR_L, GR_D, GR_E = HX('#62803a'), HX('#728344'), HX('#55703a'), HX('#4c6431')
+DT, DT_D, DT_L, DT_S = HX('#a68558'), HX('#97784e'), HX('#b3936a'), HX('#8c6d50')
+ST = [HX('#868170'), HX('#918b7b'), HX('#7b6f5f'), HX('#a09a88')]; ST_S, ST_G = HX('#595044'), HX('#5c6a40')
+Wm, Hm = m.W, m.H; YY, XX = np.mgrid[0:Hm, 0:Wm].astype(float)
+def blob(lst):
+    f = np.full((Hm, Wm), 9.0)
+    for cx, cy, rx, ry in lst: f = np.minimum(f, ((XX - cx * K) / (rx * K)) ** 2 + ((YY - cy * K) / (ry * K)) ** 2)
+    return f
+wob = (noise(Wm, Hm, 44, 61) - .5) * .5 + (noise(Wm, Hm, 14, 62) - .5) * .26 + (noise(Wm, Hm, 5, 63) - .5) * .1
+dirt = blob([(250, 370, 178, 150), (350, 215, 112, 42), (720, 392, 178, 122), (700, 250, 112, 46), (505, 290, 72, 40), (880, 300, 60, 122), (150, 250, 82, 52)]) + wob < 1
+dirt &= ~(blob([(250, 345, 34, 26), (470, 400, 44, 60), (745, 430, 40, 30), (700, 318, 30, 18), (400, 470, 30, 30), (560, 440, 30, 46)]) + wob * .8 < 1)
+rng = np.random.RandomState(7)
+g = np.zeros((Hm, Wm, 3), float); g[:] = GR; g[dirt] = DT
+wear = noise(Wm, Hm, 30, 81) * .6 + noise(Wm, Hm, 11, 82) * .4                       # trodden (lighter) and damp (darker) patches, as flat shapes
+g[dirt & (wear > .60)] = HX('#af8e60'); g[dirt & (wear < .37)] = HX('#9d7c51')
+lush = noise(Wm, Hm, 36, 83) * .6 + noise(Wm, Hm, 12, 84) * .4
+g[(~dirt) & (lush > .62)] = HX('#6a8840'); g[(~dirt) & (lush < .36)] = HX('#5b7837')
+r1 = rng.rand(Hm, Wm)
+g[(~dirt) & (r1 < .010)] = GR_L; g[(~dirt) & (r1 > .992)] = GR_D
+g[dirt & (r1 < .012)] = DT_D; g[dirt & (r1 > .993)] = DT_L
+# tufts of grass (little "v") and blades creeping over the dirt along the edge
+def nb(mk, dx, dy): return np.roll(np.roll(mk, dy, 0), dx, 1)
+edge_g = (~dirt) & (nb(dirt, 1, 0) | nb(dirt, -1, 0) | nb(dirt, 0, 1) | nb(dirt, 0, -1))          # grass pixels touching dirt
+edge_g2 = (~dirt) & ~edge_g & (nb(edge_g, 1, 0) | nb(edge_g, -1, 0) | nb(edge_g, 0, 1) | nb(edge_g, 0, -1))
+g[edge_g] = GR_E; g[edge_g2 & (rng.rand(Hm, Wm) < .6)] = GR_D
+g[dirt & nb(~dirt, 0, 1) & ~nb(dirt, 0, 1) == True] = g[dirt & nb(~dirt, 0, 1) & ~nb(dirt, 0, 1) == True]
+under = dirt & nb(~dirt, 0, 1)                                                                     # dirt right below grass: a thin shadow gives the turf some thickness
+g[under] = DT_S
+ys, xs = np.nonzero(edge_g)
+for i in rng.choice(len(ys), len(ys) // 5, replace=False):
+    y, x = ys[i], xs[i]; dx, dy = rng.randint(-2, 3), rng.randint(-2, 3)
+    for t in range(rng.randint(1, 4)):
+        yy, xx = y + dy * t // 2, x + dx * t // 2
+        if 0 <= yy < Hm and 0 <= xx < Wm and dirt[yy, xx]: g[yy, xx] = GR_E if t else GR
+for _ in range(1500):
+    x, y = rng.randint(3, Wm - 4), rng.randint(3, Hm - 4)
+    if not dirt[y - 2:y + 3, x - 2:x + 3].any():
+        c = HX('#7c9448') if rng.rand() < .6 else GR_E; g[y, x] = c; g[y - 1, x - 1] = c; g[y - 1, x + 1] = c
+        if rng.rand() < .25: g[y - 2, x - 2] = c; g[y - 2, x + 2] = c; g[y - 2, x] = c
+for _ in range(110):                                                                 # tiny wild flowers
+    x, y = rng.randint(3, Wm - 4), rng.randint(130, Hm - 4)
+    if not dirt[y - 3:y + 4, x - 3:x + 4].any():
+        c = [(232, 226, 200), (226, 196, 92), (214, 120, 110)][rng.randint(3)]; g[y, x] = c; g[y - 1, x] = c; g[y, x + 1] = c; g[y + 1, x] = GR_E
+for _ in range(260):                                                                               # pebbles and scuffs on the dirt
+    x, y = rng.randint(2, Wm - 3), rng.randint(2, Hm - 3)
+    if dirt[y - 1:y + 2, x - 1:x + 3].all(): g[y, x:x + 2] = DT_L if rng.rand() < .5 else DT_D; g[y + 1, x:x + 2] = DT_S if rng.rand() < .3 else g[y + 1, x:x + 2]
+# cobbled path: separate stones, dense in the middle and thinning out into the grass
+occ = np.zeros((Hm, Wm), bool)
+def path_stones(x0, ya, yb, half=21):
+    for _ in range(int((yb - ya) * 9)):
+        y = rng.randint(ya, yb); t = (y - ya) / max(1, yb - ya); fade = min(1, 4 * min(t, 1 - t) + .25)
+        dx = rng.normal(0, half * .5); x = int(x0 + dx + 5 * math.sin(y * .05))
+        if abs(dx) > half or rng.rand() > fade * (1 - (abs(dx) / half) ** 2 * .6): continue
+        w, h = rng.randint(5, 12), rng.randint(4, 8)
+        if y + h + 2 >= Hm or x < 2 or x + w + 2 >= Wm or occ[y - 1:y + h + 2, x - 1:x + w + 2].any(): continue
+        occ[y:y + h + 1, x:x + w + 1] = True; c = ST[rng.randint(len(ST))]
+        g[y:y + h, x:x + w] = c; g[y, x] = g[y - 1, x]; g[y, x + w - 1] = g[y - 1, x + w - 1]; g[y + h - 1, x] = ST_S       # rounded corners
+        if rng.rand() < .22: g[y + h - 2:y + h, x + 1:x + 3] = HX('#6f8a3e')                                           # moss
+        g[y + h, x + 1:x + w] = ST_S; g[y + 1:y + h, x + w] = ST_S; g[y, x + 1:x + w - 1] = tuple(min(255, v + 14) for v in c)
+        if w > 5 and rng.rand() < .4: g[y + h // 2, x + 2:x + w - 2] = tuple(v - 12 for v in c)
+core = lambda x0, ya, yb: None
+for x0, ya, yb in [(round(520 * K), 108, round(238 * K)), (round(522 * K), round(383 * K), Hm - 2)]:
+    band = (np.abs(XX - x0 - 5 * np.sin(YY * .05)) < 13 + (noise(Wm, Hm, 9, 71) - .5) * 10) & (YY >= ya + 4) & (YY <= yb - 8)
+    g[band & (rng.rand(Hm, Wm) < .8)] = ST_G; path_stones(x0, ya, yb)
+m.ground = Image.fromarray(np.clip(g, 0, 255).astype('uint8')).convert('RGBA'); d = m.draw()
+# ---- stone walls: brick face with battlements, wall-top walkway behind them, towers with slanted side faces
+WL = S['t_wall2']; BR_ = WL.crop((2, 16, WL.width - 2, WL.height - 2)); ME = WL.crop((2, 0, WL.width - 2, 16))
+def bricks(x0, y0, x1, y1, k=1.0):
+    t = ImageEnhance.Brightness(BR_).enhance(k) if k != 1.0 else BR_
+    for ty in range(y0, y1, t.height):
+        for tx in range(x0, x1, t.width): m.ground.paste(t.crop((0, 0, min(t.width, x1 - tx), min(t.height, y1 - ty))), (tx, ty))
+def merl(x0, x1, y, k=1.0):
+    t = ImageEnhance.Brightness(ME).enhance(k) if k != 1.0 else ME
+    for tx in range(x0, x1, t.width): c = t.crop((0, 0, min(t.width, x1 - tx), t.height)); m.ground.paste(c, (tx, y), c)
+G1, G2, G3, GO = HX('#918a7f'), HX('#867e74'), HX('#5c584f'), HX('#22180e')
+WY = 106                                                             # foot of the north wall
+bricks(0, 0, 832, 12, 1.22); bricks(0, 24, 832, WY); merl(0, 832, 10)
+d.line([0, WY, 832, WY], fill=GO + (255,))
+def shade_rows(x0, x1, y0, n, k0):                                   # soft shadow below a wall (blended, never a black band)
+    a = np.array(m.ground).astype(float)
+    for i in range(n): a[y0 + i, x0:x1, :3] *= k0 + (1 - k0) * (i / n) ** .8
+    m.ground = Image.fromarray(a.astype('uint8'))
+def shade_cols(x0, y0, y1, n, k0, dirn=1):
+    a = np.array(m.ground).astype(float)
+    for i in range(n): a[y0:y1, x0 + dirn * i, :3] *= k0 + (1 - k0) * (i / n) ** .8
+    m.ground = Image.fromarray(a.astype('uint8'))
+shade_rows(0, 832, WY + 1, 10, .66); d = m.draw()
+for x in range(0, 832, 3):
+    if rng.rand() < .5: hgt = rng.randint(1, 5); d.line([x, WY - hgt, x, WY + 1], fill=(GR_E if rng.rand() < .5 else HX('#6a8840')) + (255,))
+WB = load('../raw/t_wbanner.png'); px_ = WB.load(); WBG = WB.copy(); pg_ = WBG.load()
+for yy in range(WB.height):
+    for xx in range(WB.width):
+        r_, g_, b_, a_ = px_[xx, yy]
+        if a_ and r_ > g_ * 1.6 and r_ > b_ * 1.6: pg_[xx, yy] = (int(r_ * .45), int(r_ * .62), int(r_ * .28), a_)
+for bx, im in ((192, WBG), (858, WB), (300, WB), (745, WBG)): x, y = P(bx, 96); m.ground.paste(im, (x - im.width // 2, y - im.height), im)
+dr = S['t_door']; x, y = P(520, 131); m.ground.paste(dr, (x - dr.width // 2, WY + 2 - dr.height), dr)
+ds = dr.resize((36, 39), Image.NEAREST); x, y = P(243, 135); m.ground.paste(ds, (x - 18, WY + 2 - 39), ds)
+# side walls with relief: outer merlons, paved walkway, inner merlons and the inner FACE of the wall dropping to the yard
+SWY = 120; FACE_W = 14
+def sidewall(x0, x1, inner):                      # inner: +1 the yard is to the right (west wall), -1 to the left (east wall)
+    d2 = m.draw()
+    top0, top1 = (x0, x1 - FACE_W) if inner > 0 else (x0 + FACE_W, x1)                 # the top surface; the rest is the face
+    bricks(top0, SWY, top1, 464, 1.24)
+    d2 = m.draw()
+    for xx in (top0, top1 - 9):                                                      # two rows of merlons along the walkway
+        d2.rectangle([xx, SWY, xx + 8, 464], fill=HX('#6c675e') + (255,))
+        for yy in range(SWY + 6, 464, 18):
+            d2.rectangle([xx, yy, xx + 8, yy + 11], fill=G1 + (255,)); d2.rectangle([xx, yy, xx + 8, yy + 11], outline=GO + (255,))
+            d2.line([xx + 1, yy + 1, xx + 7, yy + 1], fill=HX('#b4aa94') + (255,)); d2.line([xx + 1, yy + 10, xx + 7, yy + 10], fill=G3 + (255,))
+            d2.rectangle([xx, yy + 12, xx + 8, yy + 14], fill=HX('#4e4b43') + (255,))                      # the merlon's own shadow: it stands up from the walkway
+    sx_ = top0 + 10 if inner > 0 else top1 - 13
+    d2.rectangle([sx_, SWY, sx_ + 2, 464], fill=HX('#7a766c') + (255,))                                 # shadow of the lit-side parapet across the paving
+    # inner face: bricks in perspective (courses slant down towards the yard), darker on the shaded side
+    fx0, fx1 = (top1, x1) if inner > 0 else (x0, top0)
+    kf = .60 if inner > 0 else .86
+    face = ImageEnhance.Brightness(BR_).enhance(kf); strip = Image.new('RGBA', (FACE_W, 464 - SWY + FACE_W))
+    for ty in range(0, strip.height, face.height): strip.paste(face.crop((0, 0, FACE_W, face.height)), (0, ty))
+    sl = .7 * inner
+    strip = strip.transform(strip.size, Image.AFFINE, (1, 0, 0, sl, 1, -FACE_W if inner > 0 else 0), Image.NEAREST)
+    m.ground.paste(strip.crop((0, 0, FACE_W, 464 - SWY)), (fx0, SWY))
+    d2 = m.draw()
+    d2.line([top1 if inner > 0 else top0, SWY, top1 if inner > 0 else top0, 464], fill=GO + (255,))      # edge between top and face
+    d2.line([x1 if inner > 0 else x0, SWY, x1 if inner > 0 else x0, 464], fill=GO + (255,))                # foot of the wall
+    d2.line([x0 if inner > 0 else x1, SWY, x0 if inner > 0 else x1, 464], fill=GO + (255,))
+LW, RW = 52, 46
+sidewall(0, LW, 1); sidewall(831 - RW, 831, -1)
+shade_cols(LW + 1, SWY, 464, 12, .60, 1); shade_cols(831 - RW - 1, SWY, 464, 5, .86, -1); d = m.draw()
+# towers (painted: the hero never walks behind them); their shadow falls on the yard
+TW_ = S['t_tower']; CT_ = S['t_ctower']; TBASE = WY + 18; CBASE = WY + 30
+m.flat = []
+for cx in (round(407 * K), round(632 * K)): m.ground.paste(TW_, (cx - TW_.width // 2, TBASE - TW_.height), TW_); m.flat.append((TW_, cx, TBASE)); m.cols.append([cx - 46, 0, 92, TBASE - 4])
+for cx, fl in ((59, False), (773, True)):
+    t = CT_.transpose(Image.FLIP_LEFT_RIGHT) if fl else CT_; m.ground.paste(t, (cx - t.width // 2, CBASE - t.height), t); m.flat.append((t, cx, CBASE)); m.cols.append([cx - 56, 0, 112, CBASE - 4])
+# low wall on both sides of the south gate, as blocks with volume: paved top, merlons, front face and a slanted end towards the gate
+STUBS = [(376, 462, 1), (627, 760, -1)]
+for a, b, side in STUBS:
+    x0, x1 = round(a * K), round(b * K); yt = 426                                    # yt: top of the block
+    d = m.draw(); d.rectangle([x0 - 1, yt - 1, x1, 464], fill=GO + (255,))
+    bricks(x0, yt, x1, yt + 8, 1.24)                                                 # paved top of the block
+    d = m.draw(); d.rectangle([x0, yt + 8, x1 - 1, yt + 24], fill=HX('#4e4b43') + (255,))   # the walkway in shadow seen through the crenels
+    bricks(x0, yt + 22, x1, 464, .96); merl(x0, x1, yt + 7, 1.08)                    # front face under a row of merlons
+    sw = 8; ex = x1 - sw if side > 0 else x0                                         # end face towards the gate, darker on the shaded side
+    end = ImageEnhance.Brightness(BR_).enhance(.58 if side > 0 else .82)
+    for ty in range(yt + 6, 464, end.height): m.ground.paste(end.crop((0, 0, sw, min(end.height, 464 - ty))), (ex, ty))
+    d = m.draw(); d.line([ex if side > 0 else ex + sw, yt + 6, ex if side > 0 else ex + sw, 464], fill=GO + (255,)); d.rectangle([x0 - 1, yt - 1, x1, 464], outline=GO + (255,))
+    m.cols.append([x0, yt + 10, x1 - x0, 464 - yt - 10])
+x1s = round(STUBS[0][1] * K); shade_cols(x1s + 1, 430, 464, 10, .62, 1); d = m.draw()
+# shooting line and spent arrows on the range
+x, _ = P(782, 0)
+for yy in range(round(296 * K), round(505 * K), 10): d.line([x, yy, x, yy + 5], fill=HX('#8c6d50') + (255,))
+for ax, ay in [(818, 300), (870, 300), (818, 345), (832, 390), (860, 432), (905, 345), (880, 480), (812, 478)]:
+    x, y = P(ax, ay); d.line([x, y, x + 12, y], fill=(92, 60, 34, 255)); d.point([(x + 12, y - 1), (x + 12, y + 1), (x + 13, y)], fill=(180, 180, 176, 255)); d.line([x, y - 1, x + 1, y - 1], fill=(200, 60, 50, 255))
+# ---- wooden pieces drawn here: fences, logs, benches, racks
+W1, W2, W3 = HX('#a88458'), HX('#8c6d50'), HX('#544033')
+def canvas(w, h): im = Image.new('RGBA', (w, h)); return im, ImageDraw.Draw(im)
+def piece(name, im): S[name] = im; return im
+WOODPAL = np.array([HX('#a88458'), HX('#8c6d50'), HX('#6e4a30'), HX('#544033'), HX('#c4a070'), HX('#3b382d'), HX('#22180e'), HX('#b8935f'), HX('#7b5c3e')], float)
+def woodify(im, k=.75):
+    a = np.array(im).astype(float); rgb = a[..., :3]; dist = ((rgb[:, :, None, :] - WOODPAL[None, None]) ** 2).sum(-1); a[..., :3] = rgb * (1 - k) + WOODPAL[dist.argmin(-1)] * k
+    return Image.fromarray(a.astype('uint8'))
+def stretch(im, xa, xb, new_w):
+    """keep both ends, repeat the columns xa..xb in the middle until the piece is new_w wide"""
+    out = Image.new('RGBA', (new_w, im.height)); out.paste(im.crop((0, 0, xa, im.height)), (0, 0)); right = im.crop((xb, 0, im.width, im.height))
+    x = xa; mid = im.crop((xa, 0, xb, im.height))
+    while x < new_w - right.width: out.paste(mid.crop((0, 0, min(mid.width, new_w - right.width - x), im.height)), (x, 0)); x += mid.width
+    out.paste(right, (new_w - right.width, 0)); return out
+FN = woodify(load('../raw/t_fence.png')); col = (np.array(FN)[..., 3] > 0).sum(0); posts = col > col.max() * .8
+runs = []; x0_ = None
+for i, v in enumerate(list(posts) + [False]):
+    if v and x0_ is None: x0_ = i
+    if not v and x0_ is not None: runs.append((x0_, i)); x0_ = None
+fa = FN.crop((0, 0, runs[0][1], FN.height)); rail = FN.crop((runs[0][1], 0, runs[1][0], FN.height)); fb = FN.crop((runs[-1][0], 0, FN.width, FN.height))
+fh = Image.new('RGBA', (36, FN.height)); x = fa.width
+while x < 36 - fb.width: fh.paste(rail, (x, 0)); x += rail.width
+fh.paste(fa, (0, 0)); fh.paste(fb, (36 - fb.width, 0)); piece('t_fence_h', fh)
+im, q = canvas(9, 38)
+q.rectangle([3, 2, 5, 35], fill=W2 + (255,)); q.line([3, 2, 3, 35], fill=W1 + (255,)); q.line([2, 2, 2, 35], fill=GO + (255,)); q.line([6, 2, 6, 35], fill=GO + (255,))
+for yy in (0, 30):
+    q.rectangle([1, yy, 7, yy + 7], fill=W2 + (255,)); q.rectangle([1, yy, 7, yy + 7], outline=GO + (255,)); q.rectangle([2, yy + 1, 6, yy + 2], fill=HX('#c4a070') + (255,)); q.line([2, yy + 3, 2, yy + 6], fill=W1 + (255,)); q.line([6, yy + 3, 6, yy + 6], fill=W3 + (255,))
+piece('t_fence_v', im)
+LG = stretch(woodify(load('../raw/t_log.png')), 10, 18, 40); LGB = stretch(woodify(load('../raw/t_log_big.png')), 15, 28, 60)
+def turned(deg):
+    r = LGB.rotate(deg, Image.BICUBIC, expand=True); r = r.resize((round(r.width * .66), round(r.height * .66)), Image.BOX)
+    r.putalpha(r.split()[3].point(lambda v: 255 if v > 120 else 0)); return r.crop(r.getbbox())
+piece('t_log_h', LG); piece('t_log_v', turned(90)); piece('t_log_d1', turned(45)); piece('t_log_d2', turned(-45))
+piece('t_bench_h', woodify(load('../raw/t_bench_h.png'), .5)); piece('t_bench_v', woodify(load('../raw/t_bench_v.png'), .7))
+piece('t_tripod', woodify(load('../raw/t_tripod.png'), .45))
+im, q = canvas(12, 40); q.rectangle([8, 0, 11, 39], fill=W2 + (255,)); q.rectangle([8, 0, 11, 39], outline=GO + (255,))
+for yy in (2, 14, 26): q.arc([-6, yy, 8, yy + 11], 270, 90, fill=W1 + (255,), width=2); q.line([1, yy, 1, yy + 11], fill=(216, 200, 160, 255))
+piece('t_bowrack', im)
+def tput(n, rx, ry, flip=False, foot=None, **kw):
+    x, y = P(rx, ry); OUT[n] = S[n]; m.put('cs_' + n, S[n], x, y, flip, foot, kw or None)
+# ---- props, at the places of the reference
+tput('t_hay3', 118, 168, foot=(.9, 16)); tput('t_hay', 92, 196, foot=(.9, 10)); tput('t_hay', 90, 392, foot=(.9, 10)); tput('t_hay', 116, 548, foot=(.9, 10))
+tput('t_crates', 182, 166, foot=(.9, 10)); tput('t_barrel', 205, 166, foot=(.8, 8))
+tput('t_tent', 305, 196, foot=(.86, 34)); tput('t_tent', 400, 196, True, foot=(.86, 34))
+tput('t_quintain', 465, 186, foot=(.6, 8))
+tput('t_armor', 582, 186, foot=(.8, 8)); tput('t_swords', 645, 190, foot=(.92, 12)); tput('t_armor', 710, 186, foot=(.8, 8)); tput('t_spears', 770, 190, foot=(.92, 12)); tput('t_armor', 832, 186, foot=(.8, 8))
+tput('t_crates', 862, 176, foot=(.9, 10)); tput('t_crates', 892, 168, foot=(.9, 10))
+for bx, by in [(920, 168), (946, 168), (913, 198), (948, 200), (953, 268), (955, 540), (958, 566), (932, 572)]: tput('t_barrel', bx, by, foot=(.8, 8))
+tput('t_crates', 952, 238, foot=(.9, 10))
+for dx, dy in [(110, 292), (165, 268), (217, 268), (135, 356), (198, 352), (130, 498), (226, 492)]: tput('t_dummy', dx, dy, foot=(.4, 6))
+for bx, by in [(355, 238), (443, 238), (645, 236), (740, 236), (905, 556)]: tput('t_bench_h', bx, by, foot=(.96, 10))
+for bx, by in [(603, 372), (603, 462)]: tput('t_bench_v', bx, by, foot=(.8, 56))
+for cx, cy in [(360, 318), (360, 458)]:                                                    # two octagonal sparring rings of logs
+    r = 60
+    for i, key in enumerate(['t_log_h', 't_log_d2', 't_log_v', 't_log_d1', 't_log_h', 't_log_d2', 't_log_v', 't_log_d1']):
+        an = -math.pi / 2 + i * math.pi / 4; lx, ly = cx + r * math.cos(an), cy + r * .92 * math.sin(an)
+        x, y = P(lx, ly); OUT[key] = S[key]; im = S[key]; m.put('cs_' + key, im, x, y + im.height // 2, False, None)
+tput('t_tripod', 463, 412, foot=(.5, 6)); tput('t_tripod', 463, 452, foot=(.5, 6))
+for ax, ay in [(713, 352), (713, 412), (713, 482)]: tput('t_arrowpost', ax, ay, foot=(.5, 6))
+tput('t_bows', 850, 282, foot=(.9, 10)); tput('t_bows', 820, 556, foot=(.9, 10))
+TGT = S['t_target'].copy(); qd = ImageDraw.Draw(TGT)
+for ax, ay in ((6, 12), (9, 17)): qd.line([ax - 6, ay, ax, ay], fill=(92, 60, 34, 255)); qd.point((ax - 6, ay - 1), fill=(200, 60, 50, 255))
+S['t_target2'] = TGT
+for i, ty in enumerate((316, 364, 410, 456, 502)): tput('t_target2' if i % 2 else 't_target', 932, ty, foot=(.7, 8))
+for ry in (330, 390, 450): tput('t_bowrack', 962, ry, foot=(12, 30))
+# the pen of the dummies (rails with posts, as in the picture)
+def fence_h(rx0, rx1, ry):
+    x0, _ = P(rx0, 0); x1, y = P(rx1, ry); x = x0
+    while x < x1 - 8: OUT['t_fence_h'] = S['t_fence_h']; m.put('cs_t_fence_h', S['t_fence_h'], x + 18, y, False, (36, 6)); x += 36 - fb.width
+def fence_v(rx, ry0, ry1):
+    x, y0 = P(rx, ry0); _, y1 = P(rx, ry1); y = y0 + 38
+    while y <= y1 + 6: OUT['t_fence_v'] = S['t_fence_v']; m.put('cs_t_fence_v', S['t_fence_v'], x, y, False, (7, 34)); y += 30
+fence_h(76, 265, 240); fence_v(76, 222, 330); fence_v(262, 215, 290); fence_v(262, 310, 400)
+fence_h(76, 150, 408); fence_h(190, 268, 408); fence_v(76, 400, 545); fence_h(90, 200, 566); fence_h(210, 290, 566); fence_h(300, 372, 566)
+# bounds
+m.cols += [[0, 0, 832, WY + 2], [0, 0, LW + 2, 464], [831 - RW - 2, 0, RW + 3, 464], [0, 458, round(462 * K), 6], [round(627 * K), 458, 400, 6]]
+m.shadows(k=.26, sx=.55, alpha=.34, extra=m.flat, blur=.5)
+m.preview('pv_training.png', 'dbg_training.png')
+m.reach((440, 440), {'north door': (422, 116), 'dummies pen': (120, 300), 'lower pen': (140, 430), 'ring': (292, 258), 'range': (700, 300), 'targets': (730, 380), 'tents': (290, 170), 'racks': (560, 170)})
+DATA['training'] = export(m, 'training')
+TILESETS = {'tgrass': TG, 'tcobble': TC}
+# red and blue versions of the waving banner (the gold lion keeps its colour)
+import colorsys
+def rehue(im, hue):
+    px = im.load(); o = im.copy(); po = o.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if a and b > r * 1.05 and b > g * 1.2:
+                h, l, s_ = colorsys.rgb_to_hls(r / 255, g / 255, b / 255); r2, g2, b2 = colorsys.hls_to_rgb(hue, l * .95, min(1, s_ * 1.1)); po[x, y] = (int(r2 * 255), int(g2 * 255), int(b2 * 255), a)
+    return o
+
 # courtyard: open a garden gate in the east wall
 cy_ = Image.open(CS + 'ground_courtyard.png').convert('RGBA'); dc = ImageDraw.Draw(cy_)
 dc.rectangle([612, 200, 640, 246], fill=(190, 182, 160, 255))
 for x in range(612, 640, 14): dc.line([x, 200, x, 246], fill=(160, 152, 132, 255))
 dc.rectangle([612, 192, 640, 200], fill=(120, 112, 100, 255)); dc.rectangle([612, 246, 640, 252], fill=(120, 112, 100, 255))
 dc.rectangle([612, 192, 640, 200], outline=OL + (255,)); dc.rectangle([612, 246, 640, 252], outline=OL + (255,))
+dc.rectangle([0, 270, 28, 316], fill=(190, 182, 160, 255))                    # west gate: the way to the training yard
+for x in range(0, 28, 14): dc.line([x, 270, x, 316], fill=(160, 152, 132, 255))
+dc.rectangle([0, 262, 28, 270], fill=(120, 112, 100, 255)); dc.rectangle([0, 316, 28, 322], fill=(120, 112, 100, 255))
+dc.rectangle([0, 262, 28, 270], outline=OL + (255,)); dc.rectangle([0, 316, 28, 322], outline=OL + (255,))
 cy_.convert('RGB').save('ground_courtyard.png')
 for n in ('tower', 'banner_anim'): pass
 OUT['tower'] = S['tower']
 bn = Image.open('../anim/banner_frames.png').convert('RGBA'); OUT['banner_anim'] = bn.resize((bn.width // 2, bn.height // 2), Image.BOX)
 al = OUT['banner_anim'].split()[3].point(lambda v: 255 if v > 110 else 0); OUT['banner_anim'].putalpha(al)
+OUT['banner_red_anim'] = rehue(OUT['banner_anim'], 0.01); OUT['banner_blue_anim'] = rehue(OUT['banner_anim'], 0.6)
 for n, im in OUT.items(): im.save('o_%s.png' % n)
 json.dump({'maps': DATA, 'sizes': {n: [im.width, im.height] for n, im in OUT.items()}}, open('castle_maps.json', 'w'), separators=(',', ':'))
-for n in ('grass', 'moat', 'flag'): {'grass': GRASS, 'moat': MOAT, 'flag': FLAG}[n].atlas().save('tileset_%s.png' % n)
+for n, ts in {'grass': GRASS, 'moat': MOAT, 'flag': FLAG, 'tgrass': TG, 'tcobble': TC}.items(): ts.atlas().save('tileset_%s.png' % n)
 print(sorted(OUT))
 
 # ---------------------------------------------------------------- pack
@@ -283,8 +548,8 @@ import glob
 D = json.load(open('castle_maps.json'))
 R = ROOT; OUT = R + 'assets/castle/'
 for n in D['sizes']: shutil.copy('o_%s.png' % n, OUT + n + '.png')
-for n in ('road', 'garden', 'walls', 'courtyard'): shutil.copy('ground_%s.png' % n, OUT + 'ground_%s.png' % n)
-for n in ('grass', 'moat', 'flag'): shutil.copy('tileset_%s.png' % n, OUT + 'tileset_%s.png' % n)
+for n in ('road', 'garden', 'walls', 'courtyard', 'training'): shutil.copy('ground_%s.png' % n, OUT + 'ground_%s.png' % n)
+for n in ('grass', 'moat', 'flag', 'tgrass', 'tcobble'): shutil.copy('tileset_%s.png' % n, OUT + 'tileset_%s.png' % n)
 out = ["// Castle map art (generated), embedded so the game also runs from file://", "window.GAME_ASSETS_BASE64 = window.GAME_ASSETS_BASE64 || {};", "window.CASTLE_ASSET_SIZES = {};"]
 for f in sorted(glob.glob(OUT + '*.png')):
     n = os.path.basename(f)[:-4]; im = Image.open(f)

@@ -269,7 +269,9 @@ Object.assign(MainGameScene.prototype, {
     if (area.outdoor) {
       // open-air area: the camera follows the hero inside the map, like in the village
       cam.setBounds(area.x, area.y, area.w, area.h);
-      cam.setZoom((this._interiorReturn && this._interiorReturn.zoom) || 1.5);
+      // never show the void around a map: zoom in a little if the map is smaller than the view
+      const baseZoom = (this._interiorReturn && this._interiorReturn.zoom) || 1.5;
+      cam.setZoom(Math.max(baseZoom, cam.width / area.w, cam.height / area.h));
       this.setPlayerIndoorScale(false);
       this.placePlayerFeetAt(at.x, at.y);
       cam.startFollow(this.player, true, 0.09, 0.09);

@@ -109,13 +109,13 @@ class Map:
                 w_ = cx < s.W // T and m[cy:cy + 2, cx:cx + 2].all() and not any(a <= cx * T + 8 < b and c <= cy * T + 8 < d for a, c, b, d in skip)
                 if w_ and run is None: run = cx
                 if not w_ and run is not None: s.cols.append([run * T + 3, cy * T + 4, (cx - run) * T - 6, T]); run = None
-    def shadows(s, k=.42, sx=.8, alpha=.30, extra=()):
+    def shadows(s, k=.42, sx=.8, alpha=.30, extra=(), blur=1.2):
         sh = Image.new('L', (s.W, s.H), 0)
         for im, x, y in [(s.sprites[i['k']].transpose(Image.FLIP_LEFT_RIGHT) if i['f'] else s.sprites[i['k']], i['x'], i['y']) for i in s.items if not i.get('noshadow')] + list(extra):
             a = im.split()[3]; w, h = a.size; hs = max(2, int(h * k))
             out = a.transform((w + int(hs * sx) + 2, hs), Image.AFFINE, (1, sx, -hs * sx, 0, 1 / k, 0), Image.BILINEAR)
             tmp = Image.new('L', (s.W, s.H), 0); tmp.paste(out, (int(x - w / 2), y - hs)); sh = ImageChops.lighter(sh, tmp)
-        sh = sh.filter(ImageFilter.GaussianBlur(1.2)).point(lambda v: int(v * alpha))
+        sh = sh.filter(ImageFilter.GaussianBlur(blur)).point(lambda v: int(v * alpha))
         s.ground = Image.composite(Image.new('RGBA', (s.W, s.H), (18, 12, 26, 255)), s.ground, sh)
     def preview(s, path, debug=None):
         pv = s.ground.copy()

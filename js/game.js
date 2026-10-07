@@ -213,11 +213,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (overlay.classList.contains('sm-open')) return;
     overlay.classList.remove('sm-wait');
     overlay.classList.add('sm-open');
-    setTimeout(() => { select(0); overlay.classList.add('sm-ready'); }, 620);     // once the cascade has landed
+    setTimeout(() => { select(0); overlay.classList.add('sm-ready'); }, 2100);    // once the cascade has landed
   };
 
   // logo forges in first, then the prompt
-  setTimeout(() => { if (!overlay.classList.contains('sm-open')) overlay.classList.add('sm-wait'); }, 1700);
+  setTimeout(() => { if (!overlay.classList.contains('sm-open')) overlay.classList.add('sm-wait'); }, 4000);
 
   window.addEventListener('keydown', (ev) => {
     if (!menuActive()) return;
