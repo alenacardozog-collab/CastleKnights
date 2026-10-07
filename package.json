@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "generate:map": "node scripts/generate_campaign_map.js",
-    "patch:map": "node scripts/patch_map2.js"
+    "patch:map": "node scripts/patch_map2.js",
+    "check": "node scripts/check.js",
+    "build:ruins": "python3 tools/mapgen/ruins/build.py",
+    "build:castle": "python3 tools/mapgen/castle/build.py"
   },
   "keywords": [
     "phaser",

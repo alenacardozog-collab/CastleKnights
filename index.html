@@ -861,18 +861,59 @@
     </div>
   </footer>
 
-  <!-- Assets Data (Base64 fallback for local file opening without server) -->
+  <!-- ============ SCRIPTS (classic scripts on purpose: the game must also run by double-clicking index.html) ============
+       Load order matters: 1) embedded art  2) map data  3) core + config  4) map layouts  5) the scene and its feature files  6) bootstrap.
+       When you add a file, add its <script> here in the right group and run: npm run check -->
+
+  <!-- 1) Embedded art (base64 copies of the PNGs, so file:// works) -->
   <script src="js/assets_data.js"></script>
-  <!-- Embedded Map Data (instant offline & file:// support) -->
   <script src="js/mapa1_data.js"></script>
-  <!-- Embedded Campaign Map Data (assets/map2/map1.json) -->
   <script src="js/map2_data.js"></script>
-  <!-- Embedded Map Tilesets & Art Data (100% offline & file:// support without CORS) -->
   <script src="js/map_assets_base64.js"></script>
-  <!-- Game Logic Script -->
-  <!-- Interior furniture + cow (embedded PNGs) -->
   <script src="js/interior_assets.js?v=1.1"></script>
+  <script src="js/castle_assets.js?v=4.1"></script>
+  <script src="js/ruins_assets.js?v=1.2"></script>
   <script src="js/hero_fx_assets.js?v=1.3"></script>
-  <script src="js/game.js?v=9.8"></script>
+  <script src="js/hero_dir_assets.js?v=1.0"></script>
+  <script src="js/king_assets.js?v=1.0"></script>
+
+  <!-- 2) Map data (positions of props and solid rectangles; editable by hand) -->
+  <script src="js/maps/data/castle_maps.js?v=11.0"></script>
+  <script src="js/maps/data/ruins_map.js?v=11.0"></script>
+
+  <!-- 3) Core systems and constants -->
+  <script src="js/core/audio.js?v=11.0"></script>
+  <script src="js/core/keybinds.js?v=11.0"></script>
+  <script src="js/config/map_catalog.js?v=11.0"></script>
+  <script src="js/config/world_constants.js?v=11.0"></script>
+
+  <!-- 4) Map layouts (one file per building / map) -->
+  <script src="js/maps/layout_kit.js?v=11.0"></script>
+  <script src="js/maps/interiors/bar.js?v=11.0"></script>
+  <script src="js/maps/interiors/tienda.js?v=11.0"></script>
+  <script src="js/maps/interiors/granero.js?v=11.0"></script>
+  <script src="js/maps/interiors/casa.js?v=11.0"></script>
+  <script src="js/maps/castle.js?v=11.0"></script>
+  <script src="js/maps/ruins.js?v=11.0"></script>
+
+  <!-- 5) The scene: life cycle first, then one file per feature -->
+  <script src="js/scene/main_scene.js?v=11.0"></script>
+  <script src="js/scene/assets_preload.js?v=11.0"></script>
+  <script src="js/scene/world/village_map.js?v=11.0"></script>
+  <script src="js/scene/world/collisions.js?v=11.0"></script>
+  <script src="js/scene/world/areas.js?v=11.0"></script>
+  <script src="js/scene/world/area_effects.js?v=11.0"></script>
+  <script src="js/scene/characters/npcs.js?v=11.0"></script>
+  <script src="js/scene/characters/player.js?v=11.0"></script>
+  <script src="js/scene/characters/combat.js?v=11.0"></script>
+  <script src="js/scene/characters/enemies.js?v=11.0"></script>
+  <script src="js/scene/ui/hud.js?v=11.0"></script>
+  <script src="js/scene/ui/hero_select.js?v=11.0"></script>
+  <script src="js/scene/editor/map_editor.js?v=11.0"></script>
+  <script src="js/scene/editor/dev_mode.js?v=11.0"></script>
+  <script src="js/scene/editor/dev_tools.js?v=11.0"></script>
+
+  <!-- 6) Bootstrap -->
+  <script src="js/game.js?v=11.0"></script>
 </body>
 </html>

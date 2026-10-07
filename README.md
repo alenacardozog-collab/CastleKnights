@@ -21,6 +21,12 @@ Un videojuego RPG de acción en 2D con perspectiva cenital (Top-Down) desarrolla
 
 ---
 
+## 🗂️ Estructura del código
+
+El código está separado por funcionalidad en `js/core`, `js/config`, `js/maps` y `js/scene`. La guía con el mapa de carpetas y las recetas para agregar, mover o quitar cosas está en [docs/ESTRUCTURA.md](docs/ESTRUCTURA.md). Después de tocar la estructura: `npm run check`.
+
+---
+
 ## 🎮 Modos de Juego
 
 1. **Modo Práctica (Tutorial):**
@@ -65,7 +71,7 @@ prueba/
 ├── docs/                    # Documentación adicional y capturas
 │   └── screenshots/         # Capturas de pantalla de la vitrina y auditorías
 ├── js/                      # Lógica principal del juego en JavaScript
-│   ├── game.js              # Motor de juego Phaser 3, combate, música y UI
+│   ├── game.js              # Arranque (el resto: js/core, js/config, js/maps, js/scene — ver docs/ESTRUCTURA.md)
 │   ├── assets_data.js       # Sprites y configuraciones embebidas en Base64
 │   ├── map2_data.js         # Datos del mapa de campaña
 │   ├── mapa1_data.js        # Estructura del mapa para modo práctica

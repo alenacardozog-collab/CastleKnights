@@ -39,3 +39,6 @@ desktop.ini
 *.bak
 *.tmp
 *~
+tools/mapgen/*/work/
+node_modules/
+__pycache__/
