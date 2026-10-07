@@ -1,0 +1,474 @@
+/* =====================================================================
+   CASTLEKNIGHT — UI THEME
+   Skin built from assets/UI/fantasyUI.png (pieces cut into assets/UI/theme/).
+   Loaded AFTER styles.css: it only restyles, it does not change the markup
+   ids/classes that js/game.js relies on.
+
+   Pieces and how they are used
+     frame.png        ornate dark frame   -> modals / big panels      (9-slice 22)
+     plate.png        dark gold-rim plate -> header, footer, badges   (9-slice 6)
+     plank*.png       wooden planks       -> every button             (9-slice 10/18)
+     panel_dark.png   dark wood panel     -> HUD cards, option cards  (9-slice 8)
+     parchment.png    torn parchment      -> read-outs / stats        (9-slice 14)
+     bar_track.png    empty bar           -> HP / energy tracks
+   ===================================================================== */
+
+:root {
+  --ui-ink: #2b1206;            /* text carved on wood */
+  --ui-cream: #f6e6c2;          /* text on dark panels */
+  --ui-cream-dim: #c9b28a;
+  --ui-gold: #ffd77a;
+  --ui-gold-deep: #e0a02e;
+  --ui-red: #e2463c;
+  --ui-panel: #2a1711;
+  --ui-shadow: #0b0503;
+  --ui-font: 'Pixuf', 'Press Start 2P', monospace;
+  --ui-title: 'Antiquity', 'AntiquityPrint', 'Pixuf', monospace;
+}
+
+/* ---------- shared building blocks ---------- */
+.header-bar, .controls-bar, .modal-card, .modal-box, .hud-player-card, .stats-badge,
+.hero-selector, .btn, .btn-hud-menu, .hero-btn, .start-menu-btn, .wooden-sign-btn,
+.dev-btn, .opt-card-btn, .hero-select-card, .start-menu-badge, .btn-ready-combat,
+.modal-stats, .keybind-row, .keybind-item, .title-badge {
+  image-rendering: pixelated;
+  border-radius: 0 !important;
+  outline: none !important;
+}
+
+/* Wooden plank button (base) */
+.btn, .btn-hud-menu, .hero-btn, .start-menu-btn, .wooden-sign-btn, .dev-btn,
+.btn-ready-combat, .modal-card .btn, .palette-filter-btn {
+  background: none !important;
+  border-style: solid !important;
+  border-color: transparent !important;
+  border-width: 10px 18px !important;
+  border-image: url('assets/UI/theme/plank.png') 10 18 fill / 10px 18px stretch !important;
+  box-shadow: none !important;
+  color: #fff3d6 !important;
+  -webkit-text-fill-color: #fff3d6;
+  text-shadow: 1px 1px 0 #4a2208, 0 2px 0 rgba(43, 18, 6, 0.55) !important;
+  font-family: var(--ui-font) !important;
+  letter-spacing: 0.5px;
+  filter: drop-shadow(0 3px 0 var(--ui-shadow));
+  transition: transform 0.08s ease, filter 0.08s ease !important;
+  cursor: pointer;
+}
+.btn:hover, .btn-hud-menu:hover, .hero-btn:hover, .start-menu-btn:hover,
+.wooden-sign-btn:hover, .dev-btn:hover, .btn-ready-combat:hover {
+  transform: translateY(-1px) !important;
+  filter: drop-shadow(0 4px 0 var(--ui-shadow)) brightness(1.12) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+}
+.btn:active, .btn-hud-menu:active, .hero-btn:active, .start-menu-btn:active,
+.wooden-sign-btn:active, .dev-btn:active, .btn-ready-combat:active {
+  transform: translateY(2px) !important;
+  filter: drop-shadow(0 1px 0 var(--ui-shadow)) brightness(0.95) !important;
+}
+.btn:focus-visible, .btn-hud-menu:focus-visible, .hero-btn:focus-visible, .start-menu-btn:focus-visible,
+.wooden-sign-btn:focus-visible, .dev-btn:focus-visible {
+  outline: 2px solid var(--ui-gold) !important;
+  outline-offset: 2px;
+}
+
+/* Plank variants */
+.btn-primary, .dev-btn-primary, .hero-btn.active, .hero-btn-confirm, .btn-ready-combat, .dev-btn-save {
+  border-image-source: url('assets/UI/theme/plank_gold.png') !important;
+}
+.btn-exit-action, .dev-btn-danger, .btn-hud-exit, .dev-btn-close, #btn-menu-exit {
+  border-image-source: url('assets/UI/theme/plank_red.png') !important;
+}
+.dev-btn, .btn-dev, .hero-btn, .hero-btn-cancel, .palette-filter-btn {
+  border-image-source: url('assets/UI/theme/plank_dark.png') !important;
+}
+.dev-btn.dev-btn-primary, .dev-btn.dev-btn-save { border-image-source: url('assets/UI/theme/plank_gold.png') !important; }
+.dev-btn.dev-btn-danger, .dev-btn.dev-btn-close { border-image-source: url('assets/UI/theme/plank_red.png') !important; }
+.hero-btn.active { border-image-source: url('assets/UI/theme/plank_gold.png') !important; }
+
+/* ---------- page chrome: header + controls footer ---------- */
+body {
+  background-color: #120a07 !important;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(120, 62, 22, 0.35) 0%, rgba(18, 10, 7, 0) 60%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.22) 0 2px, transparent 2px 46px),
+    linear-gradient(180deg, #24130b, #120a07) !important;
+}
+
+.header-bar, .controls-bar {
+  background: none !important;
+  border-style: solid !important;
+  border-color: transparent !important;
+  border-width: 12px !important;
+  border-image: url('assets/UI/theme/plate.png') 6 fill / 12px stretch !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 4px 0 var(--ui-shadow));
+}
+.header-bar { padding: 4px 8px !important; margin-bottom: 10px; }
+
+.title-container { display: flex; align-items: center; gap: 12px; }
+.title-container::before {
+  content: '';
+  width: 33px; height: 24px; flex: none;
+  background: url('assets/UI/theme/crown_gold.png') center / contain no-repeat;
+  image-rendering: pixelated;
+}
+.title-badge {
+  background: none !important;
+  border: 6px solid transparent !important;
+  border-image: url('assets/UI/theme/pill_dark.png') 6 fill / 6px stretch !important;
+  color: var(--ui-cream) !important;
+  box-shadow: none !important;
+  font-family: var(--ui-font) !important;
+  font-size: 11px !important;
+  padding: 0 6px !important;
+}
+.game-title {
+  font-family: var(--ui-title) !important;
+  color: var(--ui-gold) !important;
+  -webkit-text-fill-color: var(--ui-gold);
+  background: none !important;
+  text-shadow: 2px 2px 0 #3a1c05 !important;
+  font-size: 22px !important;
+  letter-spacing: 2px;
+}
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.header-actions .btn { font-size: 12px !important; padding: 2px 4px !important; min-height: 38px; }
+
+.controls-bar {
+  padding: 6px 12px !important;
+  gap: 8px 22px !important;
+  justify-content: center !important;
+  color: var(--ui-cream-dim) !important;
+  font-family: var(--ui-font) !important;
+  font-size: 12px !important;
+}
+.control-pill { color: var(--ui-cream-dim) !important; gap: 6px !important; }
+.control-pill > span:last-child { color: var(--ui-gold) !important; }
+.key-cap {
+  background: #e9d8b4 !important;
+  color: var(--ui-ink) !important;
+  border: 2px solid #4a2a12 !important;
+  box-shadow: 0 2px 0 #1a0c05 !important;
+  font-family: var(--ui-font) !important;
+  font-size: 11px !important;
+  padding: 2px 6px !important;
+  text-shadow: none !important;
+}
+
+/* ---------- game viewport ---------- */
+.game-viewport-wrapper {
+  border: 6px solid #1a0c06 !important;
+  box-shadow: 0 0 0 2px #7a4a1e, 0 0 0 4px #1a0c06, 0 10px 0 4px var(--ui-shadow) !important;
+}
+
+/* ---------- start menu ---------- */
+.start-menu-badge {
+  background: none !important;
+  border: 12px solid transparent !important;
+  border-image: url('assets/UI/theme/plate.png') 6 fill / 12px stretch !important;
+  box-shadow: none !important;
+  color: var(--ui-gold) !important;
+  font-family: var(--ui-font) !important;
+  padding: 0 14px !important;
+  margin-bottom: 10px !important;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.6));
+}
+.start-menu-title { margin-bottom: 18px !important; }
+.start-menu-content { gap: 0; }
+.start-menu-btn {
+  width: 340px !important;
+  max-width: 82vw;
+  border-width: 20px 36px !important;
+  border-image-width: 20px 36px !important;
+  border-image: url('assets/UI/theme/plank.png') 10 18 fill / 20px 36px stretch !important;
+  padding: 0 !important;
+  margin: 5px 0 !important;
+  min-height: 58px;
+  font-size: 21px !important;
+  justify-content: center !important;
+  text-transform: uppercase;
+}
+#btn-menu-play { border-image-source: url('assets/UI/theme/plank_gold.png') !important; }
+#btn-menu-exit { border-image-source: url('assets/UI/theme/plank_red.png') !important; }
+#btn-menu-editor, #btn-menu-options { border-image-source: url('assets/UI/theme/plank_dark.png') !important; }
+.start-menu-btn::before, .start-menu-btn::after { display: none !important; content: none !important; }
+.start-menu-footer {
+  margin-top: 14px !important;
+  color: var(--ui-cream) !important;
+  font-family: var(--ui-font) !important;
+  text-shadow: 0 2px 0 #000 !important;
+  opacity: 0.9;
+}
+
+/* ---------- modals ---------- */
+.modal-overlay { background: rgba(9, 5, 3, 0.82) !important; }
+
+.modal-card, .modal-box {
+  background: none !important;
+  border-style: solid !important;
+  border-color: transparent !important;
+  border-width: 44px !important;
+  border-image: url('assets/UI/theme/frame.png') 22 fill / 44px stretch !important;
+  box-shadow: none !important;
+  padding: 6px 14px 10px !important;
+  color: var(--ui-cream) !important;
+  filter: drop-shadow(0 10px 0 rgba(0, 0, 0, 0.55));
+  font-family: var(--ui-font) !important;
+}
+.modal-card p, .modal-box p, .modal-card .modal-desc, .modal-card .opt-card-desc,
+.hero-modal-subtitle, .ready-prompt-subtext {
+  color: var(--ui-cream-dim) !important;
+  font-family: var(--ui-font) !important;
+  text-shadow: none !important;
+}
+.modal-card h2, .modal-card h3, .modal-box h2, .hero-modal-title, .practica-modal-title {
+  font-family: var(--ui-title) !important;
+  color: var(--ui-gold) !important;
+  -webkit-text-fill-color: var(--ui-gold);
+  background: none !important;
+  text-shadow: 2px 2px 0 #3a1c05, 0 0 14px rgba(255, 170, 60, 0.25) !important;
+  letter-spacing: 1px;
+}
+#game-over-modal h2 { color: var(--ui-red) !important; -webkit-text-fill-color: var(--ui-red); }
+
+.epitaph-header, .hero-modal-badge {
+  display: inline-block;
+  background: none !important;
+  border: 6px solid transparent !important;
+  border-image: url('assets/UI/theme/pill_dark.png') 6 fill / 6px stretch !important;
+  color: var(--ui-cream-dim) !important;
+  font-family: var(--ui-font) !important;
+  font-size: 11px !important;
+  padding: 0 10px !important;
+  margin-bottom: 12px !important;
+  box-shadow: none !important;
+}
+
+/* buttons inside modals: one consistent size */
+.modal-card .wooden-sign-btn, .modal-card .dev-btn, .modal-box .start-menu-btn {
+  width: 100% !important;
+  min-height: 46px;
+  padding: 2px 6px !important;
+  margin: 0 !important;
+  font-size: 15px !important;
+  gap: 8px !important;
+  justify-content: center !important;
+  display: flex !important;
+  align-items: center !important;
+  text-transform: uppercase;
+  border-width: 10px 18px !important;
+  border-image-width: 10px 18px !important;
+}
+.pause-actions, .exit-actions, .options-actions, .hero-modal-actions {
+  display: flex !important;
+  gap: 10px !important;
+  margin-top: 16px !important;
+}
+.pause-actions { flex-direction: column !important; }
+.exit-actions, .options-actions, .hero-modal-actions { flex-direction: row !important; }
+.exit-actions > *, .options-actions > *, .hero-modal-actions > * { flex: 1 1 0 !important; }
+#game-over-modal .wooden-sign-btn { margin-top: 10px !important; }
+.wooden-sign-btn .btn-decor, .wooden-sign-btn::before, .wooden-sign-btn::after { display: none !important; content: none !important; }
+
+/* stat read-outs on parchment */
+.modal-stats {
+  background: none !important;
+  border: 14px solid transparent !important;
+  border-image: url('assets/UI/theme/parchment.png') 14 fill / 14px stretch !important;
+  box-shadow: none !important;
+  padding: 4px 8px !important;
+  margin: 14px 0 6px !important;
+}
+.modal-stats-item { border: none !important; background: none !important; }
+.modal-stats .val { color: #8a1c14 !important; font-family: var(--ui-font) !important; text-shadow: none !important; }
+.modal-stats .lbl, .modal-stats-item span:not(.val), .modal-stats-item { color: #4a2c14 !important; font-family: var(--ui-font) !important; }
+
+/* options modal */
+.opt-card-btn {
+  background: none !important;
+  border: 16px solid transparent !important;
+  border-image: url('assets/UI/theme/panel_dark.png') 8 fill / 16px stretch !important;
+  box-shadow: none !important;
+  color: var(--ui-cream) !important;
+  padding: 2px 6px !important;
+}
+.opt-card-btn:hover { filter: brightness(1.2); }
+.opt-card-btn .opt-card-title, .opt-card-body > *:first-child { color: var(--ui-gold) !important; font-family: var(--ui-font) !important; }
+.opt-card-icon { color: var(--ui-cream) !important; }
+.opt-card-badge {
+  background: #e9d8b4 !important;
+  color: var(--ui-ink) !important;
+  border: 2px solid #4a2a12 !important;
+  box-shadow: 0 2px 0 #1a0c05 !important;
+  font-family: var(--ui-font) !important;
+}
+.options-section-divider {
+  color: var(--ui-gold) !important;
+  border-color: #6b3f1c !important;
+  font-family: var(--ui-font) !important;
+  background: none !important;
+}
+.options-container { color: var(--ui-cream-dim) !important; }
+.keybinds-grid { gap: 6px !important; }
+.keybinds-grid > * {
+  background: rgba(0, 0, 0, 0.28) !important;
+  border: 2px solid #5a3418 !important;
+  color: var(--ui-cream) !important;
+  box-shadow: none !important;
+}
+.keybinds-grid button, .keybinds-grid .key-btn, .keybinds-grid kbd {
+  background: #e9d8b4 !important;
+  color: var(--ui-ink) !important;
+  border: 2px solid #4a2a12 !important;
+  box-shadow: 0 2px 0 #1a0c05 !important;
+  font-family: var(--ui-font) !important;
+  text-shadow: none !important;
+}
+
+/* ---------- hero selection ---------- */
+.hero-selection-modal-box { max-width: 760px !important; width: 94% !important; }
+.hero-selection-grid { gap: 14px !important; }
+.hero-select-card {
+  background: none !important;
+  border: 16px solid transparent !important;
+  border-image: url('assets/UI/theme/panel_brown.png') 8 fill / 16px stretch !important;
+  box-shadow: none !important;
+  padding: 4px 8px 8px !important;
+  filter: brightness(0.78) saturate(0.85);
+  transition: filter 0.12s ease, transform 0.12s ease !important;
+}
+.hero-select-card:hover { filter: brightness(0.95); transform: translateY(-2px); }
+.hero-select-card.active {
+  filter: none;
+  box-shadow: 0 0 0 3px var(--ui-gold), 0 0 0 6px #3a1c05, 0 0 22px rgba(255, 190, 80, 0.35) !important;
+}
+.hero-card-class, .hero-card-info > *:first-child { color: var(--ui-gold) !important; font-family: var(--ui-font) !important; }
+.hero-card-stats {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 2px solid #5a3418 !important;
+  box-shadow: none !important;
+}
+.hero-stat-row, .hero-stat-row * { color: var(--ui-cream) !important; font-family: var(--ui-font) !important; }
+.hero-stat-row > *:first-child, .hero-stat-row .stat-label { color: var(--ui-cream-dim) !important; }
+
+/* ---------- in-game HUD ---------- */
+.in-game-hud { top: 10px !important; left: 10px !important; right: 10px !important; }
+.hud-left { gap: 6px !important; }
+
+.hud-player-card {
+  background: none !important;
+  border: 16px solid transparent !important;
+  border-image: url('assets/UI/theme/panel_dark.png') 8 fill / 16px stretch !important;
+  box-shadow: none !important;
+  padding: 0 6px 0 0 !important;
+  gap: 10px !important;
+  min-width: 250px;
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.6));
+}
+.hud-portrait-wrap {
+  border: 3px solid var(--ui-gold-deep) !important;
+  box-shadow: 0 0 0 2px #1a0c05 !important;
+  width: 54px !important;
+  height: 60px !important;
+  background: #1a0e08 !important;
+}
+.hud-hero-name {
+  color: var(--ui-gold) !important;
+  font-family: var(--ui-font) !important;
+  text-shadow: 1px 1px 0 #000 !important;
+}
+.hud-hero-meta, .hud-hero-meta * { color: var(--ui-cream-dim) !important; font-family: var(--ui-font) !important; }
+
+.hud-hp-container, .hud-mana-container {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  position: relative;
+}
+.hud-hp-bar-track, .hud-mana-bar-track {
+  background: url('assets/UI/theme/bar_track.png') center / 100% 100% no-repeat !important;
+  image-rendering: pixelated;
+  border: none !important;
+  box-shadow: none !important;
+}
+.hud-hp-fill, .hud-mana-fill {
+  position: relative;
+  box-shadow: none !important;
+  border: none !important;
+  clip-path: inset(22% 4% 26% 4%);
+}
+.hud-hp-fill { background: linear-gradient(180deg, #ff7a6b 0 35%, #e2463c 35% 70%, #a52420 70%) !important; }
+.hud-mana-fill { background: linear-gradient(180deg, #ffe58a 0 35%, #f2b632 35% 70%, #b9781a 70%) !important; }
+
+.stats-badge {
+  background: none !important;
+  border: 14px solid transparent !important;
+  border-image: url('assets/UI/theme/parchment.png') 14 fill / 14px stretch !important;
+  box-shadow: none !important;
+  padding: 0 6px !important;
+  gap: 14px !important;
+  color: #4a2c14 !important;
+  font-family: var(--ui-font) !important;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.5));
+  align-self: flex-start;
+}
+.stats-badge .stat-item, .stats-badge .stat-item * { color: #4a2c14 !important; font-family: var(--ui-font) !important; text-shadow: none !important; }
+.stats-badge .stat-item span[id] { color: #8a1c14 !important; }
+
+.hud-right { gap: 8px !important; align-items: flex-start !important; }
+.btn-hud-menu { font-size: 12px !important; padding: 0 2px !important; min-height: 36px; }
+.hero-selector {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  gap: 6px !important;
+}
+.hero-btn { font-size: 12px !important; padding: 0 2px !important; min-height: 36px; opacity: 0.85; }
+.hero-btn.active { opacity: 1; }
+
+/* "ready for combat" prompt */
+.ready-prompt-content {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.btn-ready-combat {
+  border-width: 20px 36px !important;
+  border-image: url('assets/UI/theme/plank_gold.png') 10 18 fill / 20px 36px stretch !important;
+  font-size: 20px !important;
+  padding: 0 10px !important;
+}
+.ready-prompt-subtext { color: var(--ui-cream) !important; text-shadow: 0 2px 0 #000 !important; }
+
+/* small screens: keep the HUD from colliding */
+@media (max-width: 760px) {
+  .header-actions .btn span + * , .controls-bar { font-size: 10px !important; }
+  .hud-player-card { min-width: 200px; }
+  .start-menu-btn { min-height: 48px; font-size: 17px !important; }
+}
+
+/* ---------- fit & polish ---------- */
+.epitaph-header, .hero-modal-badge { width: fit-content; margin-left: auto !important; margin-right: auto !important; display: block; }
+
+/* start menu must fit a 600px-tall viewport */
+.start-menu-content { padding: 6px 0 !important; }
+.start-menu-title { font-size: clamp(48px, 7vw, 78px) !important; margin: 0 0 12px !important; }
+.start-menu-badge { margin-bottom: 4px !important; font-size: 11px !important; }
+.start-menu-btn { min-height: 50px; margin: 4px 0 !important; font-size: 19px !important; border-width: 18px 34px !important; border-image-width: 18px 34px !important; }
+.start-menu-footer { margin-top: 8px !important; font-size: 11px !important; }
+
+/* hero selection: scale the whole dialog so the frame is never cut */
+.hero-selection-modal-box { zoom: 0.84; padding: 0 10px 4px !important; }
+.hero-modal-header { margin-bottom: 8px !important; }
+.hero-modal-title { font-size: 30px !important; margin: 2px 0 !important; }
+.hero-modal-actions { margin-top: 12px !important; }
+
+/* any dialog taller than the viewport scrolls inside its frame instead of overflowing */
+.modal-card, .modal-box { max-height: 96%; }
+.options-container { max-height: 190px; overflow-y: auto; }
+.hero-modal-title { line-height: 1.25 !important; }
+.hero-modal-subtitle { margin-top: 6px !important; }
+.modal-box .start-menu-btn.hero-btn-confirm { border-image-source: url('assets/UI/theme/plank_gold.png') !important; }
+.modal-box .start-menu-btn.hero-btn-cancel { border-image-source: url('assets/UI/theme/plank_dark.png') !important; }

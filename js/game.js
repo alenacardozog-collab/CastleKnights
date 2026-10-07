@@ -10,6 +10,15 @@
  * - Fullscreen toggle, Web Audio API sound FX, particle effects
  */
 
+// KingPrueba sprite sheets embedded as data URIs so the NPC also loads when the game
+// is opened by double-clicking index.html (file://), where normal image files are blocked.
+// Source files: assets/characters/king/King_Idle.png and King_Walk.png
+if (typeof window !== 'undefined') {
+  window.GAME_ASSETS_BASE64 = window.GAME_ASSETS_BASE64 || {};
+  window.GAME_ASSETS_BASE64.king_idle = 'data:image/png;base64,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';
+  window.GAME_ASSETS_BASE64.king_walk = 'data:image/png;base64,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';
+}
+
 // ==========================================
 // 1. PROCEDURAL SOUND SYNTHESIZER (Web Audio API)
 // ==========================================
@@ -453,10 +462,12 @@ const MAP_ASSETS_CATALOG = [
 const MAP_ASSET_METADATA = {
   'House_Hay_1': {
     w: 88, h: 103, cat: 'buildings', name: 'Casa de Paja 1',
-    // Dual foundations: leaves doorway/steps at offX: 30..48 completely open
+    // Single solid wall base. The doorway is NOT left open any more: with it open the
+    // player could walk straight through the house. Doors are entered via enterInterior().
+    // Footprint starts 30px below the roof ridge: you can walk behind the top of the roof
+    // but not "inside" the house.
     boxes: [
-      { offX: 5, offY: 58, hitW: 25, hitH: 45 },
-      { offX: 48, offY: 58, hitW: 35, hitH: 45 }
+      { offX: 5, offY: 30, hitW: 78, hitH: 73 }
     ],
     hitW: 78, hitH: 45, hitOffsetY: 58, hitOffsetX: 5
   },
@@ -464,8 +475,8 @@ const MAP_ASSET_METADATA = {
     w: 157, h: 112, cat: 'buildings', name: 'Casa de Paja 2',
     // L-shaped house: dual foundations (left wing wall + right wing ground floor)
     boxes: [
-      { offX: 4, offY: 50, hitW: 66, hitH: 28 },
-      { offX: 72, offY: 82, hitW: 80, hitH: 30 }
+      { offX: 4, offY: 26, hitW: 150, hitH: 52 },
+      { offX: 56, offY: 78, hitW: 98, hitH: 34 }
     ],
     hitW: 148, hitH: 30, hitOffsetY: 82, hitOffsetX: 5
   },
@@ -473,16 +484,18 @@ const MAP_ASSET_METADATA = {
     w: 180, h: 128, cat: 'buildings', name: 'Gran Casa Hay 3',
     // Left stone stairs (offX: 0..46) are completely open for climbing up to the terrace
     boxes: [
+      { offX: 24, offY: 28, hitW: 152, hitH: 52 },
       { offX: 46, offY: 76, hitW: 30, hitH: 52 },
-      { offX: 88, offY: 80, hitW: 86, hitH: 48 }
+      { offX: 76, offY: 80, hitW: 98, hitH: 48 }
     ],
     hitW: 128, hitH: 50, hitOffsetY: 78, hitOffsetX: 46
   },
   'House_Hay_4_Purple': {
     w: 128, h: 128, cat: 'buildings', name: 'Mansión Real Púrpura',
-    // Porch steps leading into front door (offX: 42..70) are completely open
+    // Market stall (left) + ground floor wall (right) form one continuous solid base
     boxes: [
-      { offX: 8, offY: 86, hitW: 34, hitH: 42 },
+      { offX: 8, offY: 30, hitW: 116, hitH: 60 },
+      { offX: 8, offY: 86, hitW: 62, hitH: 42 },
       { offX: 70, offY: 92, hitW: 54, hitH: 36 }
     ],
     hitW: 116, hitH: 40, hitOffsetY: 88, hitOffsetX: 8
@@ -1208,6 +1221,286 @@ class KeybindsManager {
 }
 
 // ==========================================
+// INTERIOR LAYOUTS (tavern / two-floor house / grocery store / barn)
+// ==========================================
+/**
+ * Which interior belongs to each house of the campaign village.
+ */
+const HOUSE_INTERIORS = {
+  House_Hay_2: 'bar',          // L-shaped house (south)      -> tavern
+  House_Hay_3: 'casa',         // big house with terrace       -> family home, two floors
+  House_Hay_4_Purple: 'tienda',// house with the market awning -> grocery store
+  House_Hay_1: 'granero'       // small thatched house         -> barn with a cow
+};
+
+/** Textures generated with PixelLab (keys are loaded as 'int_<name>'). */
+const INTERIOR_ASSET_KEYS = [
+  'apple_barrel', 'bar_counter', 'bar_shelf', 'bed_man', 'bed_woman', 'bookshelf', 'farm_tools', 'fence',
+  'fireplace', 'keg', 'kitchen', 'milk', 'round_table', 'shelf_food', 'shelf_jars', 'shop_counter', 'stairs',
+  'stool', 'trough', 'vanity', 'veg_crates', 'wardrobe', 'weapon_rack', 'wheelbarrow', 'window',
+  'floor_wood', 'floor_dark', 'floor_stone', 'floor_dirt',
+  'wall_plaster', 'wall_wood', 'wall_stone', 'wall_barn',
+  'rug_red', 'rug_blue', 'rug_pink', 'rug_green'
+];
+
+/**
+ * Scale of each piece relative to its PNG. The hero is about 20x26 px on screen, so furniture
+ * is sized against that: a bed is longer than a person, a stool reaches the knee, a bucket the shin.
+ */
+const INTERIOR_SCALE = {
+  bar_counter: 1.4, bar_shelf: 1.5, keg: 1.3, round_table: 1.2, stool: 0.85,
+  fireplace: 1.4, kitchen: 1.4, bookshelf: 1.3, stairs: 1.5,
+  bed_man: 1.1, bed_woman: 1.15, wardrobe: 1.3, vanity: 1.3, weapon_rack: 1.3,
+  shop_counter: 1.4, shelf_food: 1.4, shelf_jars: 1.4, veg_crates: 1.1, apple_barrel: 1.1,
+  trough: 1.4, fence: 1.3, farm_tools: 1.0, milk: 0.8, wheelbarrow: 1.3, window: 1.1,
+  rug_red: 1.5, rug_blue: 1.5, rug_pink: 1.5, rug_green: 1.4
+};
+const INTERIOR_DOOR_SCALE = 1.75;   // 16x26 door sheet -> 28x45, a bit taller than the hero
+const INTERIOR_COW_SCALE = 2.0;
+
+/**
+ * Pure data description of a building interior, in area-local pixels.
+ * MainGameScene.buildInterior() turns it into game objects.
+ *
+ * Returns { kind, title, start, areas: { name: area } } where each area has:
+ *   w, h, wallH       size of the room and height of its back wall
+ *   floorTex, wallTex tiled materials ('int_floor_*', 'int_wall_*')
+ *   rects             flat rectangles drawn over the materials (frames, stairwell...)
+ *   items             things placed in the room, depth-sorted by baseY:
+ *                       { key, x, baseY, scale, flipX }     texture, origin bottom-center
+ *                       { ..., floor: true }                lies flat on the floor (rugs), drawn under everything
+ *                       { rects: [...], baseY }             piece drawn from rectangles
+ *   colliders         solid footprints (walls + furniture)
+ *   doors             pushable doors { x, y, w, top }  (x center, y bottom, top of its solid part)
+ *   exits             trigger zones { x, y, w, h, key: 'up'|'down', to: 'outside'|areaName, arrive: {x, y}, hint }
+ *   actors            moving things { type: 'cow', x0, x1, y }
+ *   spawn             where the player's feet appear when coming in from the village
+ */
+function buildInteriorLayout(kind) {
+  const WALL = 56;   // height of a back wall
+  const SIDE = 10;   // side / front wall thickness
+  const DOORWAY = 28;
+  const R = (x, y, w, h, color, alpha) => (alpha === undefined ? { x, y, w, h, color } : { x, y, w, h, color, alpha });
+  const SIZES = (typeof window !== 'undefined' && window.INTERIOR_ASSET_SIZES) || {};
+
+  const THEMES = {
+    bar: { floorTex: 'int_floor_dark', wallTex: 'int_wall_wood', trim: 0x2f1d10, wall: 0x8a6a4a, wallDark: 0x4a3018 },
+    casa: { floorTex: 'int_floor_wood', wallTex: 'int_wall_plaster', trim: 0x4a3018, wall: 0xe9dfc4, wallDark: 0x6b4a26 },
+    tienda: { floorTex: 'int_floor_stone', wallTex: 'int_wall_stone', trim: 0x5a4a30, wall: 0xf1ead2, wallDark: 0x9a8a62 },
+    granero: { floorTex: 'int_floor_dirt', wallTex: 'int_wall_barn', trim: 0x2a1410, wall: 0xa83c30, wallDark: 0x5a1c16 }
+  };
+
+  // ---- room shell: materials, frame, walls, optional front door at the bottom ----
+  const makeArea = (w, h, t, opts = {}) => {
+    const a = {
+      w, h, wallH: WALL, side: SIDE, floorTex: t.floorTex, wallTex: t.wallTex, trim: t.trim,
+      rects: [], items: [], colliders: [], doors: [], exits: [], actors: [],
+      spawn: { x: w / 2, y: h - SIDE - 18 }
+    };
+    // contact shadow where the wall meets the floor
+    a.rects.push(R(SIDE, WALL, w - SIDE * 2, 4, 0x000000, 0.28));
+    a.rects.push(R(SIDE, WALL + 4, w - SIDE * 2, 3, 0x000000, 0.12));
+
+    a.colliders.push({ x: 0, y: 0, w, h: WALL + 2 });
+    a.colliders.push({ x: 0, y: 0, w: SIDE, h });
+    a.colliders.push({ x: w - SIDE, y: 0, w: SIDE, h });
+
+    if (opts.frontDoorX !== undefined) {
+      const dx = opts.frontDoorX, dw = DOORWAY;
+      a.frontDoor = { x: dx, w: dw };
+      a.colliders.push({ x: 0, y: h - SIDE, w: dx, h: SIDE });
+      a.colliders.push({ x: dx + dw, y: h - SIDE, w: w - dx - dw, h: SIDE });
+      a.spawn = { x: dx + dw / 2, y: h - SIDE - 18 };
+      a.exits.push({ x: dx, y: h - SIDE - 10, w: dw, h: 20, key: 'down', to: 'outside', hint: '▼ Salir' });
+    } else {
+      a.colliders.push({ x: 0, y: h - SIDE, w, h: SIDE });
+    }
+    return a;
+  };
+
+  // Generated piece ('int_<name>'). Footprint collider = lower part of the (scaled) sprite.
+  // foot: fraction of the height that is solid (default 0.45). solid:false = decoration only.
+  const put = (a, name, x, baseY, o = {}) => {
+    const sc = o.scale || INTERIOR_SCALE[name] || 1;
+    const raw = SIZES[name] || { w: 32, h: 32 };
+    const w = Math.round(raw.w * sc), h = Math.round(raw.h * sc);
+    a.items.push({ key: 'int_' + name, x, baseY, scale: sc, flipX: !!o.flipX, floor: !!o.floor, fallback: { w, h, color: 0x7a5a3a } });
+    if (o.solid !== false && !o.floor) {
+      const fh = Math.max(6, Math.round(h * (o.foot === undefined ? 0.45 : o.foot)));
+      a.colliders.push({ x: Math.round(x - w / 2) + 2, y: baseY - fh, w: w - 4, h: fh });
+    }
+    return { w, h };
+  };
+  // Rug centred on (cx, cy), flat on the floor
+  const rug = (a, name, cx, cy, o = {}) => {
+    const sc = o.scale || INTERIOR_SCALE[name] || 1;
+    const raw = SIZES[name] || { w: 64, h: 44 };
+    put(a, name, cx, Math.round(cy + (raw.h * sc) / 2), { floor: true, scale: sc });
+  };
+  // Props that already ship with the game (texture key = file name), drawn 1.25x
+  const prop = (a, key, x, baseY, w, h, solid = true) => {
+    const sc = 1.25;
+    const sw = Math.round(w * sc), sh = Math.round(h * sc);
+    a.items.push({ key, x, baseY, scale: sc, fallback: { w: sw, h: sh, color: 0x7a5a3a } });
+    if (solid) {
+      const fh = Math.max(6, Math.round(sh * 0.45));
+      a.colliders.push({ x: Math.round(x - sw / 2) + 2, y: baseY - fh, w: sw - 4, h: fh });
+    }
+  };
+  const windowAt = (a, x) => put(a, 'window', x, WALL - 12, { solid: false });
+
+  const areas = {};
+  let title = 'Casa';
+
+  if (kind === 'bar') {
+    // ------------------------------------------------ TAVERN
+    title = 'Taberna';
+    const a = makeArea(400, 288, THEMES.bar, { frontDoorX: 186 });
+    put(a, 'bar_shelf', 200, WALL + 6, { solid: false });
+    put(a, 'keg', 46, 108);
+    put(a, 'keg', 354, 108, { flipX: true });
+    // Bartender stands between the shelf and the counter
+    a.items.push({ key: 'npc2_villager', anim: 'npc2_idle', x: 200, baseY: 104, scale: 1.8 });
+    put(a, 'bar_counter', 140, 140, { foot: 0.62 });
+    put(a, 'bar_counter', 260, 140, { foot: 0.62, flipX: true });
+    a.colliders.push({ x: 80, y: 84, w: 240, h: 26 }); // nobody walks behind the bar
+    put(a, 'stool', 150, 162);
+    put(a, 'stool', 250, 162);
+    [[92, 232], [308, 232]].forEach(([tx, ty]) => {
+      put(a, 'round_table', tx, ty);
+      put(a, 'stool', tx - 38, ty - 6);
+      put(a, 'stool', tx + 38, ty - 6);
+    });
+    rug(a, 'rug_red', 200, 226, { scale: 1.2 });
+    prop(a, 'Banner_Stick_1_Purple', 26, 190, 24, 59, false);
+    prop(a, 'Banner_Stick_1_Purple', 374, 190, 24, 59, false);
+    areas.main = a;
+  } else if (kind === 'tienda') {
+    // ------------------------------------------------ GROCERY STORE
+    title = 'Tienda de Víveres';
+    const a = makeArea(400, 288, THEMES.tienda, { frontDoorX: 186 });
+    put(a, 'shelf_food', 58, 92, { foot: 0.25 });
+    put(a, 'shelf_jars', 142, 92, { foot: 0.25 });
+    put(a, 'shelf_food', 342, 92, { foot: 0.25, flipX: true });
+    // Shopkeeper behind the counter
+    a.items.push({ key: 'npc3_villager', anim: 'npc3_idle', x: 246, baseY: 126, scale: 1.8 });
+    put(a, 'shop_counter', 246, 166, { foot: 0.6 });
+    a.colliders.push({ x: 188, y: 92, w: 116, h: 40 });
+    put(a, 'veg_crates', 52, 150);
+    put(a, 'veg_crates', 52, 186, { flipX: true });
+    put(a, 'apple_barrel', 112, 196);
+    put(a, 'apple_barrel', 36, 244);
+    prop(a, 'Sack_3', 344, 250, 16, 14);
+    prop(a, 'Sack_3', 366, 256, 16, 14);
+    prop(a, 'Sack_3', 356, 240, 16, 14);
+    prop(a, 'Crate_Medium_Closed', 366, 196, 16, 21);
+    prop(a, 'Basket_Empty', 300, 262, 22, 17);
+    rug(a, 'rug_green', 200, 236);
+    areas.main = a;
+  } else if (kind === 'granero') {
+    // ------------------------------------------------ BARN
+    title = 'Granero';
+    const a = makeArea(448, 300, THEMES.granero, { frontDoorX: 118 });
+    put(a, 'farm_tools', 44, 96, { foot: 0.2 });
+    put(a, 'milk', 96, 88);
+    put(a, 'milk', 118, 92, { flipX: true });
+    put(a, 'wheelbarrow', 72, 186);
+    prop(a, 'HayStack_2', 36, 274, 29, 32);
+    prop(a, 'HayStack_2', 76, 280, 29, 32);
+    prop(a, 'Sack_3', 178, 86, 16, 14);
+    prop(a, 'Barrel_Small_Empty', 28, 136, 16, 20);
+
+    // Cow pen on the right: back wall + hay-bale side + a fence row; the cow never leaves it
+    const PEN_L = 238, PEN_B = 184;
+    a.rects.push(R(PEN_L + 14, WALL + 6, 448 - SIDE - PEN_L - 18, PEN_B - WALL - 30, 0xd9b44a, 0.28));
+    prop(a, 'HayStack_2', PEN_L, 104, 29, 32);
+    prop(a, 'HayStack_2', PEN_L, 146, 29, 32);
+    prop(a, 'HayStack_2', PEN_L, 186, 29, 32);
+    put(a, 'fence', 403, PEN_B, { solid: false });
+    put(a, 'fence', 292, PEN_B, { solid: false });
+    put(a, 'fence', 360, PEN_B, { solid: false });
+    a.colliders.push({ x: PEN_L - 20, y: WALL, w: 40, h: PEN_B - WALL });
+    a.colliders.push({ x: PEN_L, y: PEN_B - 14, w: 448 - SIDE - PEN_L, h: 14 });
+    put(a, 'trough', 398, 106, { solid: false });
+    a.actors.push({ type: 'cow', x0: 284, x1: 352, y: 146 });
+    areas.main = a;
+  } else {
+    // ------------------------------------------------ FAMILY HOME (two floors)
+    kind = 'casa';
+    title = 'Casa';
+    const t = THEMES.casa;
+
+    // Ground floor: kitchen, fireplace, dining table and the staircase
+    const g = makeArea(400, 288, t, { frontDoorX: 186 });
+    windowAt(g, 128);
+    put(g, 'kitchen', 60, 96, { foot: 0.5 });
+    put(g, 'fireplace', 200, 92, { foot: 0.3 });
+    put(g, 'bookshelf', 280, 94, { foot: 0.25 });
+    rug(g, 'rug_red', 196, 176);
+    prop(g, 'Table_Medium_1', 82, 226, 42, 39);
+    put(g, 'stool', 40, 216);
+    put(g, 'stool', 124, 216);
+    prop(g, 'Plant_2', 24, 272, 15, 11);
+    prop(g, 'Basket_Empty', 290, 266, 22, 17);
+    // Staircase against the right wall; walk UP into its first step to climb
+    put(g, 'stairs', 350, 152, { solid: false });
+    g.colliders.push({ x: 316, y: WALL, w: 8, h: 86 });
+    g.colliders.push({ x: 376, y: WALL, w: 14, h: 86 });
+    g.exits.push({ x: 324, y: 132, w: 52, h: 28, key: 'up', to: 'upper', arrive: { x: 390, y: 244 }, hint: '▲ Subir' });
+    areas.main = g;
+
+    // Upper floor: two bedrooms (his / hers) opening onto a landing
+    const UW = 448, UH = 336, PART_Y = 180, PART_H = 46, MID = 224, D1 = 122, D2 = 326;
+    const u = makeArea(UW, UH, t, {});
+    windowAt(u, 150);
+    windowAt(u, 288);
+    // wall between the two bedrooms
+    u.items.push({ baseY: PART_Y + PART_H - 1, rects: [R(MID - 5, WALL - 6, 10, PART_Y + PART_H - WALL + 6, t.wallDark), R(MID - 3, WALL - 6, 2, PART_Y + PART_H - WALL + 6, t.trim)] });
+    u.colliders.push({ x: MID - 5, y: 0, w: 10, h: PART_Y + PART_H });
+    // wall between bedrooms and landing, with one doorway per room
+    [[SIDE, D1 - DOORWAY / 2], [D1 + DOORWAY / 2, D2 - DOORWAY / 2], [D2 + DOORWAY / 2, UW - SIDE]].forEach(([x0, x1]) => {
+      u.items.push({ baseY: PART_Y + PART_H, wallTex: t.wallTex, x0, x1, y: PART_Y, h: PART_H });
+      u.colliders.push({ x: x0, y: PART_Y + 12, w: x1 - x0, h: PART_H - 12 });
+    });
+    [D1, D2].forEach(dx => {
+      // door frame + the pushable door itself
+      u.rects.push(R(dx - DOORWAY / 2, PART_Y, DOORWAY, PART_H, 0x241408));
+      u.doors.push({ x: dx, y: PART_Y + PART_H, w: DOORWAY, top: PART_Y + 12 });
+    });
+
+    // His room (left): straight bed with a blue blanket, weapon rack, wardrobe, blue rug
+    rug(u, 'rug_blue', 104, 134);
+    put(u, 'wardrobe', 42, 96, { foot: 0.25 });
+    put(u, 'weapon_rack', 104, 78, { foot: 0.25 });
+    put(u, 'bed_man', 188, 152, { foot: 0.8 });
+    prop(u, 'Crate_Medium_Closed', 28, 172, 16, 21);
+
+    // Her room (right): bed with a pink blanket, vanity with mirror, wardrobe, flowers, pink rug
+    rug(u, 'rug_pink', 344, 134);
+    put(u, 'wardrobe', 406, 96, { foot: 0.25 });
+    put(u, 'vanity', 344, 80, { foot: 0.3 });
+    put(u, 'bed_woman', 258, 152, { foot: 0.8 });
+    prop(u, 'Plant_2', 420, 172, 15, 11);
+    prop(u, 'Basket_Empty', 388, 174, 22, 17);
+
+    // Landing: stairwell on the right, a few things along the wall
+    rug(u, 'rug_red', 180, 276, { scale: 1.3 });
+    prop(u, 'Plant_2', 26, 318, 15, 11);
+    prop(u, 'Barrel_Small_Empty', 28, 262, 16, 20);
+    const SX = 352, SY = 262, SW = 76, SH = 54;
+    u.rects.push(R(SX - 4, SY - 4, SW + 8, SH + 8, t.trim));
+    u.rects.push(R(SX, SY, SW, SH, 0x1c120b));
+    for (let i = 0; i < 7; i++) u.rects.push(R(SX + 3, SY + 3 + i * 7, SW - 6 - i * 5, 5, i % 2 ? 0x6b4526 : 0x8c5d33));
+    u.colliders.push({ x: SX - 4, y: SY + 18, w: SW + 8, h: SH - 8 });
+    u.exits.push({ x: SX, y: SY - 16, w: SW, h: 30, key: 'down', to: 'main', arrive: { x: 350, y: 170 }, hint: '▼ Bajar' });
+    u.spawn = { x: 390, y: 244 };
+    areas.upper = u;
+  }
+
+  return { kind, title, start: 'main', areas };
+}
+
+// ==========================================
 // 2. MAIN PHASER GAME SCENE
 // ==========================================
 class MainGameScene extends Phaser.Scene {
@@ -1600,6 +1893,21 @@ class MainGameScene extends Phaser.Scene {
       frameWidth: 32, frameHeight: 32
     });
 
+    // Interior furniture (PixelLab) and the barn cow
+    INTERIOR_ASSET_KEYS.forEach(k => {
+      this.load.image('int_' + k, getAsset('int_' + k, 'assets/interiors/' + k + '.png'));
+    });
+    this.load.spritesheet('int_cow_idle', getAsset('int_cow_idle', 'assets/interiors/cow_idle.png'), { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('int_cow_walk', getAsset('int_cow_walk', 'assets/interiors/cow_walk.png'), { frameWidth: 32, frameHeight: 32 });
+
+    // KingPrueba (NPC): 100x100 frames, same layout as the hero sheets
+    this.load.spritesheet('king_idle', getAsset('king_idle', 'assets/characters/king/King_Idle.png'), {
+      frameWidth: 100, frameHeight: 100
+    });
+    this.load.spritesheet('king_walk', getAsset('king_walk', 'assets/characters/king/King_Walk.png'), {
+      frameWidth: 100, frameHeight: 100
+    });
+
     // 2. ORC SPRITESHEETS (100x100 frames)
     this.load.spritesheet('orc_idle', getAsset('orc_idle', 'assets/characters/orc/idle.png'), {
       frameWidth: 100, frameHeight: 100
@@ -1824,6 +2132,7 @@ class MainGameScene extends Phaser.Scene {
    * Start the generic Practice map (embedded meadow / mapa1_data.js)
    */
   startPractice() {
+    if (this.destroyInteriors) this.destroyInteriors();
     this._gameMode = 'practice';
     this._currentMapKey = 'tiled_map';
 
@@ -1884,6 +2193,7 @@ class MainGameScene extends Phaser.Scene {
    * Start the Campaign map (assets/map2/map1.json using assets/map2/Art/).
    */
   startCampaign() {
+    this.destroyInteriors();
     this._gameMode = 'campaign';
     this._currentMapKey = 'campaign_tiled_map';
 
@@ -2172,6 +2482,7 @@ class MainGameScene extends Phaser.Scene {
    * Return to Start Menu from Pause, Game Over, or Exit
    */
   returnToStartMenu() {
+    if (this.destroyInteriors) this.destroyInteriors();
     this.gameStarted = false;
     this.isGamePaused = false;
     this.readyForCombat = false;
@@ -2670,43 +2981,68 @@ class MainGameScene extends Phaser.Scene {
 
   /**
    * Render animated house doors on the 4 village houses.
-   * Doors start CLOSED (frame 0). Proximity logic in checkDoorProximity()
-   * opens/closes them as the player approaches.
+   * Doors start CLOSED (frame 0). checkDoorProximity() opens/closes them as the
+   * player approaches and sends the player indoors when they walk into an open door.
    *
-   * Positions are pixel-analyzed from each house PNG to align exactly
-   * with the door arch in each building texture:
-   *   House_Hay_1  (small):  door at img x=30..45 -> world center x=547, bottom y=197
-   *   House_Hay_2  (L-type): door at img x=104..119 -> world center x=454, bottom y=424
-   *   House_Hay_3  (large):  door at img x=118..144 -> world center x=372, bottom y=152
-   *   House_Hay_4_Purple:    door at img x=99..114  -> world center x=162, bottom y=330
+   * Positions were measured by matching the closed-door frame against each house PNG
+   * (all four houses use the 16x26 "normal" door; the 16x20 sheet does not fit any of them):
+   *   House_Hay_1        door at img x=35..51, bottom img y=102 -> world center x=553, bottom y=200
+   *   House_Hay_2        door at img x=104..120, bottom img y=111 -> world center x=454, bottom y=425
+   *   House_Hay_3        door at img x=124..140, bottom img y=127 -> world center x=377, bottom y=153
+   *   House_Hay_4_Purple door at img x=88..104, bottom img y=127 -> world center x=152, bottom y=329
+   * World positions are derived from the house objects in the map, so they stay correct
+   * if a house is moved in Tiled.
    */
   renderAnimatedDoors() {
-    // Each entry: x/y = world position with setOrigin(0.5, 1), depth = eaves depth of that house
-    const doorDefs = [
-      // House_Hay_1 (small house, top-right): uses small door spritesheet
-      { x: 547, y: 197, anim: 'door_small_creak', sheet: 'door_small_anim', depth: 169, triggerR: 38 },
-      // House_Hay_2 (L-shape, bottom-center): normal door
-      { x: 454, y: 424, anim: 'door_normal_creak', sheet: 'door_normal_anim', depth: 365, triggerR: 40 },
-      // House_Hay_3 (large house, top-center): normal door
-      { x: 372, y: 152, anim: 'door_normal_creak', sheet: 'door_normal_anim', depth: 76, triggerR: 40 },
-      // House_Hay_4_Purple (purple house, left): normal door
-      { x: 162, y: 330, anim: 'door_normal_creak', sheet: 'door_normal_anim', depth: 289, triggerR: 40 }
-    ];
+    // doorX / doorBottom are in native image pixels of each house texture
+    const HOUSE_DOORS = {
+      House_Hay_1: { doorX: 43, doorBottom: 102, depth: 169, fallback: { x: 553, y: 200 } },
+      House_Hay_2: { doorX: 112, doorBottom: 111, depth: 365, fallback: { x: 454, y: 425 } },
+      House_Hay_3: { doorX: 132, doorBottom: 127, depth: 76, fallback: { x: 377, y: 153 } },
+      House_Hay_4_Purple: { doorX: 96, doorBottom: 127, depth: 289, fallback: { x: 152, y: 329 } }
+    };
+
+    // Locate each house object in the map (origin bottom-left, drawn at native size)
+    const found = {};
+    const mapData = this.getMapData();
+    const objLayer = mapData && mapData.layers ? mapData.layers.find(l => l.name === 'Object Layer 1') : null;
+    if (objLayer && objLayer.objects) {
+      objLayer.objects.forEach(obj => {
+        const key = this.getTextureKeyForGid(obj.gid, mapData);
+        if (!key) return;
+        const name = key.split('/').pop().replace(/\.[^/.]+$/, '');
+        if (HOUSE_DOORS[name] && !found[name]) {
+          const tex = this.textures.exists(key) ? this.textures.get(key).getSourceImage() : null;
+          const h = tex && tex.height ? tex.height : (MAP_ASSET_METADATA[name] ? MAP_ASSET_METADATA[name].h : obj.height);
+          found[name] = { left: obj.x, top: obj.y - h };
+        }
+      });
+    }
+
+    // Each house has its own interior (see HOUSE_INTERIORS)
 
     this.doorSprites = [];
+    const sheet = 'door_normal_anim';
+    if (!this.textures.exists(sheet)) return;
 
-    doorDefs.forEach(d => {
-      if (!this.textures.exists(d.sheet)) return;
-      const doorSprite = this.add.sprite(d.x, d.y, d.sheet)
+    Object.keys(HOUSE_DOORS).forEach((name, idx) => {
+      const def = HOUSE_DOORS[name];
+      const pos = found[name]
+        ? { x: Math.round(found[name].left + def.doorX), y: Math.round(found[name].top + def.doorBottom) }
+        : def.fallback;
+
+      const doorSprite = this.add.sprite(pos.x, pos.y, sheet)
         .setOrigin(0.5, 1)
-        .setDepth(d.depth);
+        .setDepth(def.depth);
 
-      // Start CLOSED on frame 0, animation paused
       doorSprite.setFrame(0);
-      // Store proximity metadata on the sprite object for checkDoorProximity()
-      doorSprite._doorAnim = d.anim;
-      doorSprite._doorOpen = false; // current logical state
-      doorSprite._triggerR = d.triggerR;
+      doorSprite._doorName = 'door_normal';
+      doorSprite._doorOpen = false;
+      doorSprite._triggerR = 36;
+      doorSprite._houseName = name;
+      doorSprite._interiorKind = HOUSE_INTERIORS[name] || 'casa';
+      doorSprite._interiorIndex = idx;
+      doorSprite._hintAt = 0;
 
       this.doorSprites.push(doorSprite);
       if (this.campaignObjectSprites) this.campaignObjectSprites.push(doorSprite);
@@ -2715,96 +3051,434 @@ class MainGameScene extends Phaser.Scene {
 
   /**
    * Called every frame from update().
-   * Opens doors within trigger radius, closes them when player walks away.
-   * Uses play(key, true) so the animation is never re-triggered every frame.
+   * - Opens a door when the player is close, closes it when they walk away
+   *   (one-shot animations: no yoyo, no restart every frame).
+   * - Sends the player indoors when they push UP against an open door.
+   * - While indoors, watches the exit mat instead.
    */
   checkDoorProximity() {
-    if (!this.doorSprites || !this.player) return;
-    const px = this.player.x;
-    const py = this.player.y;
+    if (!this.player || !this.player.body) return;
+    if (this._doorTransition) return;
+
+    const up = (this.keyMoveUp && this.keyMoveUp.isDown) || (this.cursors && this.cursors.up.isDown);
+    const down = (this.keyMoveDown && this.keyMoveDown.isDown) || (this.cursors && this.cursors.down.isDown);
+    const body = this.player.body;
+
+    if (this.currentInterior) {
+      this.updateInterior(up, down);
+      return;
+    }
+
+    if (!this.doorSprites || this._gameMode !== 'campaign') return;
+
+    // Distance is measured from the player's FEET, not from the sprite center
+    const fx = body.center.x;
+    const fy = body.center.y;
 
     this.doorSprites.forEach(door => {
-      const dist = Phaser.Math.Distance.Between(px, py, door.x, door.y);
+      if (!door.active) return;
+      const dist = Phaser.Math.Distance.Between(fx, fy, door.x, door.y);
+      const openKey = `${door._doorName}_open`;
+      const closeKey = `${door._doorName}_close`;
+
       if (dist <= door._triggerR) {
-        // Player is close — open if not already open
         if (!door._doorOpen) {
           door._doorOpen = true;
-          if (this.anims.exists(door._doorAnim)) {
-            // play(key, ignoreIfPlaying) — true prevents restart if already playing
-            door.play({ key: door._doorAnim, repeat: 0, startFrame: 0 });
-            door.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-              // Hold on last frame (fully open) while player is still near
-              door.setFrame(door.anims.currentAnim ? door.anims.currentAnim.frames.length - 1 : 3);
-            });
+          if (this.anims.exists(openKey)) door.play(openKey);
+          else door.setFrame(3);
+        }
+
+        // In the doorway (feet right below the door) and pushing up -> go inside
+        const inDoorway = Math.abs(fx - door.x) <= 10 && body.top >= door.y - 4 && body.top <= door.y + 12;
+        if (inDoorway) {
+          if (up) {
+            this.enterInterior(door);
+          } else if (this.time.now - door._hintAt > 4000) {
+            door._hintAt = this.time.now;
+            this.createFloatingText(door.x, door.y - 34, '▲ Entrar', 0xfde68a);
+          }
+        }
+      } else if (door._doorOpen) {
+        door._doorOpen = false;
+        if (this.anims.exists(closeKey)) door.play(closeKey);
+        else door.setFrame(0);
+      }
+    });
+  }
+
+  /**
+   * Fade out, build (or reuse) the interior that belongs to this door, move the
+   * player inside and fade back in. Interiors live far outside the village map
+   * (x >= 3000) so nothing from the village has to be hidden or rebuilt.
+   */
+  enterInterior(door) {
+    if (this._doorTransition || this.currentInterior || !door) return;
+    this._interiorReturn = { x: door.x, y: door.y + 10, zoom: this.cameras.main.zoom };
+    this.fadeTransition(() => {
+      const building = this.buildInterior(door);
+      const area = building.areas[building.start];
+      this.currentInterior = { building, areaName: building.start, area };
+      this.showInteriorArea(area, area.spawn);
+      this.createFloatingText(area.x + area.w / 2, area.y + 30, building.title, 0xfde68a);
+    });
+  }
+
+  /**
+   * Move between two areas of the same building (stairs).
+   */
+  switchInteriorArea(areaName, arrive) {
+    const cur = this.currentInterior;
+    if (this._doorTransition || !cur || !cur.building.areas[areaName]) return;
+    this.fadeTransition(() => {
+      const area = cur.building.areas[areaName];
+      cur.areaName = areaName;
+      cur.area = area;
+      const at = arrive ? { x: area.x + arrive.x, y: area.y + arrive.y } : area.spawn;
+      this.showInteriorArea(area, at);
+    });
+  }
+
+  /**
+   * Fade out, put the player back in front of the door they used and fade in.
+   */
+  exitInterior() {
+    if (this._doorTransition || !this.currentInterior) return;
+    this.fadeTransition(() => {
+      const cam = this.cameras.main;
+      const ret = this._interiorReturn || { x: 250, y: 340, zoom: 1.5 };
+      this.currentInterior = null;
+      this.physics.world.setBounds(0, 0, this.mapWidth, this.mapHeight);
+      this.placePlayerFeetAt(ret.x, ret.y);
+      cam.setBounds(0, 0, this.mapWidth, this.mapHeight);
+      cam.setZoom(ret.zoom || 1.5);
+      cam.startFollow(this.player, true, 0.09, 0.09);
+      cam.centerOn(this.player.x, this.player.y);
+    });
+  }
+
+  /**
+   * Shared fade-out -> action -> fade-in used by every door and staircase.
+   * The player is frozen (this._doorTransition) until the fade-in ends.
+   */
+  fadeTransition(action) {
+    this._doorTransition = true;
+    this.player.setVelocity(0, 0);
+    const cam = this.cameras.main;
+    cam.fadeOut(240, 0, 0, 0);
+    cam.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      try {
+        action();
+      } catch (err) {
+        console.error('[Interior] Error en la transición:', err);
+      }
+      cam.fadeIn(240, 0, 0, 0);
+      cam.once(Phaser.Cameras.Scene2D.Events.FADE_IN_COMPLETE, () => { this._doorTransition = false; });
+      // Safety net: never leave the player frozen if the fade event is missed
+      this.time.delayedCall(700, () => { this._doorTransition = false; });
+    });
+  }
+
+  /**
+   * Point the camera and the physics world at one interior area and drop the player in it.
+   */
+  showInteriorArea(area, at) {
+    const cam = this.cameras.main;
+    this.physics.world.setBounds(area.x, area.y, area.w, area.h);
+    cam.stopFollow();
+    cam.removeBounds();
+    // Fit the whole room on screen (bigger rooms zoom out a little)
+    const zoom = Math.min(cam.width / (area.w + 56), cam.height / (area.h + 56));
+    cam.setZoom(Phaser.Math.Clamp(Math.floor(zoom * 10) / 10, 1.6, 2.6));
+    cam.centerOn(area.x + area.w / 2, area.y + area.h / 2);
+    this.placePlayerFeetAt(at.x, at.y);
+  }
+
+  /**
+   * Move the player so that the CENTER-TOP of the feet hitbox lands on (x, y).
+   */
+  placePlayerFeetAt(x, y) {
+    const p = this.player;
+    const b = p.body;
+    // Offset between sprite position and the top-center of its physics body
+    const dx = (b.x + b.width / 2) - p.x;
+    const dy = b.y - p.y;
+    p.setPosition(x - dx, y - dy);
+    p.setVelocity(0, 0);
+    if (b.reset) b.reset(x - dx, y - dy);
+  }
+
+  /**
+   * Build every area of the interior behind a door the first time it is used;
+   * later visits reuse it.
+   */
+  buildInterior(door) {
+    this.interiors = this.interiors || {};
+    const id = door._houseName || ('door_' + door._interiorIndex);
+    if (this.interiors[id]) return this.interiors[id];
+
+    const layout = buildInteriorLayout(door._interiorKind);
+    const objects = [];
+    const areas = {};
+
+    if (!this.interiorObstacles) {
+      this.interiorObstacles = this.physics.add.staticGroup();
+      this._interiorCollider = this.physics.add.collider(this.player, this.interiorObstacles);
+    }
+
+    Object.keys(layout.areas).forEach((name, areaIdx) => {
+      const la = layout.areas[name];
+      const ox = 3000 + (door._interiorIndex || 0) * 1400;
+      const oy = 3000 + areaIdx * 900;
+
+      // Black surround so nothing else is ever visible around the room
+      objects.push(this.add.rectangle(ox + la.w / 2, oy + la.h / 2, 1300, 860, 0x0b0a10).setDepth(6.5));
+
+      // Materials: tiled floor, tiled back wall, then a wooden frame around the room
+      const side = la.side || 10, wallH = la.wallH || 56, trim = la.trim === undefined ? 0x3a2414 : la.trim;
+      if (la.floorTex && this.textures.exists(la.floorTex)) {
+        objects.push(this.add.tileSprite(ox, oy + wallH, la.w, la.h - wallH, la.floorTex).setOrigin(0, 0).setDepth(7));
+      } else {
+        objects.push(this.add.rectangle(ox, oy + wallH, la.w, la.h - wallH, 0xb8884f).setOrigin(0, 0).setDepth(7));
+      }
+      if (la.wallTex && this.textures.exists(la.wallTex)) {
+        objects.push(this.add.tileSprite(ox, oy, la.w, wallH, la.wallTex).setOrigin(0, 0).setDepth(7.1));
+      } else {
+        objects.push(this.add.rectangle(ox, oy, la.w, wallH, 0xd8c8a0).setOrigin(0, 0).setDepth(7.1));
+      }
+
+      const gfx = this.add.graphics().setDepth(7.2);
+      la.rects.forEach(r => {
+        gfx.fillStyle(r.color, r.alpha === undefined ? 1 : r.alpha);
+        gfx.fillRect(ox + r.x, oy + r.y, r.w, r.h);
+      });
+      gfx.fillStyle(trim, 1);
+      gfx.fillRect(ox, oy, side, la.h);
+      gfx.fillRect(ox + la.w - side, oy, side, la.h);
+      gfx.fillRect(ox, oy, la.w, 4);
+      if (la.frontDoor) {
+        gfx.fillRect(ox, oy + la.h - side, la.frontDoor.x, side);
+        gfx.fillRect(ox + la.frontDoor.x + la.frontDoor.w, oy + la.h - side, la.w - la.frontDoor.x - la.frontDoor.w, side);
+        gfx.fillStyle(0xc9a15a, 1); // door mat
+        gfx.fillRect(ox + la.frontDoor.x + 2, oy + la.h - side - 8, la.frontDoor.w - 4, 8);
+      } else {
+        gfx.fillRect(ox, oy + la.h - side, la.w, side);
+      }
+      gfx.fillStyle(0x000000, 0.25);
+      gfx.fillRect(ox + side, oy + wallH, 3, la.h - wallH - side);
+      gfx.fillRect(ox + la.w - side - 3, oy + wallH, 3, la.h - wallH - side);
+      objects.push(gfx);
+
+      // Furniture: depth-sorted by the y of its base, like everything else in the game.
+      // Rugs (floor: true) lie flat under everything.
+      la.items.forEach(item => {
+        const depth = item.floor ? 7.3 : oy + item.baseY;
+        if (item.wallTex) {
+          // piece of inner wall (bedroom partition)
+          const w = item.x1 - item.x0;
+          if (this.textures.exists(item.wallTex)) {
+            const ts = this.add.tileSprite(ox + item.x0, oy + item.y, w, item.h, item.wallTex).setOrigin(0, 0).setDepth(depth);
+            ts.tilePositionY = Math.max(0, wallH - item.h);
+            objects.push(ts);
+          } else {
+            objects.push(this.add.rectangle(ox + item.x0, oy + item.y, w, item.h, 0xd8c8a0).setOrigin(0, 0).setDepth(depth));
+          }
+          objects.push(this.add.rectangle(ox + item.x0, oy + item.y, w, 3, trim).setOrigin(0, 0).setDepth(depth));
+        } else if (item.rects) {
+          item.rects.forEach(r => {
+            objects.push(this.add.rectangle(ox + r.x + r.w / 2, oy + r.y + r.h / 2, r.w, r.h, r.color).setDepth(depth));
+          });
+        } else if (item.key && this.textures.exists(item.key)) {
+          const spr = item.anim
+            ? this.add.sprite(ox + item.x, oy + item.baseY, item.key)
+            : this.add.image(ox + item.x, oy + item.baseY, item.key);
+          spr.setOrigin(0.5, 1).setDepth(depth);
+          if (item.scale) spr.setScale(item.scale);
+          if (item.flipX) spr.setFlipX(true);
+          if (item.anim && this.anims.exists(item.anim)) spr.play(item.anim);
+          objects.push(spr);
+        } else if (item.fallback) {
+          const f = item.fallback;
+          objects.push(this.add.rectangle(ox + item.x, oy + item.baseY - f.h / 2, f.w, f.h, f.color).setDepth(depth));
+        }
+      });
+
+      // Walls and furniture footprints
+      const addSolid = (c) => {
+        const zone = this.add.zone(ox + c.x + c.w / 2, oy + c.y + c.h / 2, c.w, c.h);
+        this.physics.add.existing(zone, true);
+        this.interiorObstacles.add(zone);
+        objects.push(zone);
+        return zone;
+      };
+      la.colliders.forEach(addSolid);
+
+      // Interior doors: closed and solid until the player pushes against them
+      const doors = [];
+      la.doors.forEach(d => {
+        const blocker = addSolid({ x: d.x - d.w / 2, y: d.top, w: d.w, h: d.y - d.top });
+        let ds = null;
+        if (this.textures.exists('door_normal_anim')) {
+          ds = this.add.sprite(ox + d.x, oy + d.y, 'door_normal_anim').setOrigin(0.5, 1).setScale(INTERIOR_DOOR_SCALE).setDepth(oy + d.y + 1);
+          ds.setFrame(0);
+          objects.push(ds);
+        }
+        doors.push({
+          sprite: ds, blocker, open: false,
+          x: ox + d.x, left: ox + d.x - d.w / 2, right: ox + d.x + d.w / 2,
+          top: oy + d.top, bottom: oy + d.y,
+          closedDepth: oy + d.y + 1, openDepth: oy + d.top - 1
+        });
+      });
+
+      // Living things (the barn cow)
+      const actors = [];
+      la.actors.forEach(a => {
+        if (a.type === 'cow' && this.textures.exists('int_cow_idle')) {
+          const cow = this.add.sprite(ox + a.x0, oy + a.y, 'int_cow_idle').setOrigin(0.5, 0.8).setScale(INTERIOR_COW_SCALE).setDepth(oy + a.y);
+          if (this.anims.exists('cow_idle')) cow.play('cow_idle');
+          actors.push({ type: 'cow', sprite: cow, x0: ox + a.x0, x1: ox + a.x1, y: oy + a.y, state: 'idle', timer: 1200, dir: 1 });
+          objects.push(cow);
+        }
+      });
+
+      areas[name] = {
+        name,
+        x: ox, y: oy, w: la.w, h: la.h,
+        spawn: { x: ox + la.spawn.x, y: oy + la.spawn.y },
+        exits: la.exits.map(e => ({ x: ox + e.x, y: oy + e.y, w: e.w, h: e.h, key: e.key, to: e.to, arrive: e.arrive, hint: e.hint, hintAt: 0 })),
+        doors,
+        actors
+      };
+    });
+
+    const building = { id, kind: layout.kind, title: layout.title, start: layout.start, areas, objects };
+    this.interiors[id] = building;
+    return building;
+  }
+
+  /**
+   * Per-frame logic while the player is indoors: exits (front door / stairs),
+   * interior doors that open when you get close, and the cow.
+   */
+  updateInterior(up, down) {
+    const cur = this.currentInterior;
+    if (!cur) return;
+    const area = cur.area;
+    const body = this.player.body;
+    const fx = body.center.x;
+    const fy = body.center.y;
+
+    for (let i = 0; i < area.exits.length; i++) {
+      const e = area.exits[i];
+      const inside = fx >= e.x && fx <= e.x + e.w && fy >= e.y && fy <= e.y + e.h;
+      if (!inside) continue;
+      const pressed = e.key === 'up' ? up : down;
+      if (pressed) {
+        if (e.to === 'outside') this.exitInterior();
+        else this.switchInteriorArea(e.to, e.arrive);
+        return;
+      }
+      if (e.hint && this.time.now - e.hintAt > 3500) {
+        e.hintAt = this.time.now;
+        this.createFloatingText(e.x + e.w / 2, e.y - 14, e.hint, 0xfde68a);
+      }
+    }
+
+    // Bedroom doors: they only open when the player actually PUSHES them
+    // (standing against the door and walking into it), and close again once
+    // the player has walked clear of the doorway.
+    area.doors.forEach(door => {
+      const overlapX = Math.min(body.right, door.right) - Math.max(body.left, door.left);
+      const aligned = overlapX >= body.width * 0.5;
+      if (!door.open) {
+        const fromBelow = up && Math.abs(body.top - door.bottom) <= 3;
+        const fromAbove = down && Math.abs(body.bottom - door.top) <= 3;
+        if (aligned && (fromBelow || fromAbove)) {
+          door.open = true;
+          door.blocker.body.enable = false;
+          if (door.sprite) {
+            door.sprite.setDepth(door.openDepth);
+            if (this.anims.exists('door_normal_open')) door.sprite.play('door_normal_open'); else door.sprite.setFrame(3);
           }
         }
       } else {
-        // Player moved away — close (reset to frame 0)
-        if (door._doorOpen) {
-          door._doorOpen = false;
-          door.anims.stop();
-          door.setFrame(0);
+        const clear = body.right < door.left - 6 || body.left > door.right + 6 ||
+          body.bottom < door.top - 14 || body.top > door.bottom + 14;
+        if (clear) {
+          door.open = false;
+          door.blocker.body.enable = true;
+          if (door.sprite) {
+            door.sprite.setDepth(door.closedDepth);
+            if (this.anims.exists('door_normal_close')) door.sprite.play('door_normal_close'); else door.sprite.setFrame(0);
+          }
+        }
+      }
+    });
+
+    const dt = this.game.loop.delta;
+    area.actors.forEach(a => {
+      if (a.type !== 'cow' || !a.sprite.active) return;
+      if (a.state === 'idle') {
+        a.timer -= dt;
+        if (a.timer <= 0) {
+          a.state = 'walk';
+          a.dir = a.sprite.x < (a.x0 + a.x1) / 2 ? 1 : -1;
+          a.target = a.dir > 0 ? Phaser.Math.Between((a.x0 + a.x1) / 2, a.x1) : Phaser.Math.Between(a.x0, (a.x0 + a.x1) / 2);
+          a.sprite.setFlipX(a.dir > 0); // the sheet faces left
+          if (this.anims.exists('cow_walk')) a.sprite.play('cow_walk', true);
+        }
+      } else {
+        a.sprite.x += a.dir * 18 * (dt / 1000);
+        if ((a.dir > 0 && a.sprite.x >= a.target) || (a.dir < 0 && a.sprite.x <= a.target)) {
+          a.state = 'idle';
+          a.timer = 1500 + Math.random() * 2500;
+          if (this.anims.exists('cow_idle')) a.sprite.play('cow_idle', true);
         }
       }
     });
   }
 
   /**
+   * Remove every interior and restore camera/world state.
+   * Called when the campaign map is rebuilt or the player leaves campaign mode.
+   */
+  destroyInteriors() {
+    if (this.interiors) {
+      Object.keys(this.interiors).forEach(k => {
+        (this.interiors[k].objects || []).forEach(o => { try { o.destroy(); } catch (e) { } });
+      });
+    }
+    this.interiors = {};
+    if (this.interiorObstacles) {
+      try { this.interiorObstacles.clear(true, true); } catch (e) { }
+    }
+    if (this.currentInterior && this.cameras && this.cameras.main && this.mapWidth) {
+      this.physics.world.setBounds(0, 0, this.mapWidth, this.mapHeight);
+      this.cameras.main.setBounds(0, 0, this.mapWidth, this.mapHeight);
+      this.cameras.main.setZoom((this._interiorReturn && this._interiorReturn.zoom) || 1.5);
+      if (this.player) this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
+    }
+    this.currentInterior = null;
+    this._interiorReturn = null;
+    this._doorTransition = false;
+  }
+
+  /**
    * Registers animations for all 4 NPC Villagers.
-   * Spritesheets: 32x32 frames, read RIGHT-TO-LEFT per user specification.
-   * npc1, npc3, npc4: 6 cols x 5 rows:
-   *   Row 0: Idle (4 frames) RTL -> [3,2,1,0]
-   *   Row 1: Walk (6 frames) RTL -> [11,10,9,8,7,6]
-   *   Row 2: Jump (3 frames) RTL -> [14,13,12]
-   *   Row 3: Hurt (3 frames) RTL -> [20,19,18]
-   *   Row 4: Damage (4 frames) RTL -> [27,26,25,24]
-   * npc2: 6 cols x 6 rows:
-   *   Row 0: Idle (4 frames) RTL -> [3,2,1,0]
-   *   Row 1: Walk (6 frames) RTL -> [11,10,9,8,7,6]
-   *   Row 2: Jump (3 frames) RTL -> [14,13,12]
-   *   Row 3: Action (6 frames) RTL -> [23,22,21,20,19,18]
-   *   Row 4: Hurt (3 frames) RTL -> [26,25,24]
-   *   Row 5: Damage (4 frames) RTL -> [33,32,31,30]
+   * Spritesheets: 32x32 frames, 6 columns, frames run LEFT-TO-RIGHT (characters face right).
+   * FIX: frames used to be listed right-to-left, which played every cycle backwards
+   * (moonwalking villagers, death animation standing back up).
+   * npc1, npc3, npc4 (5 rows): idle 0-3, walk 6-11, jump 12-14, hurt 18-20, death 24-27
+   * npc2 (6 rows): idle 0-3, walk 6-11, jump 12-14, action 18-23, hurt 24-26, death 30-33
    */
   registerNPCAnimations() {
+    const base = { idle: [0, 1, 2, 3], walk: [6, 7, 8, 9, 10, 11], jump: [12, 13, 14] };
+    const fiveRows = { hurt: [18, 19, 20], damage: [24, 25, 26, 27] };
     const npcDefs = [
-      {
-        id: 'npc1',
-        texture: 'npc1_villager',
-        idle: [3, 2, 1, 0],
-        walk: [11, 10, 9, 8, 7, 6],
-        jump: [14, 13, 12],
-        hurt: [20, 19, 18],
-        damage: [27, 26, 25, 24]
-      },
-      {
-        id: 'npc2',
-        texture: 'npc2_villager',
-        idle: [3, 2, 1, 0],
-        walk: [11, 10, 9, 8, 7, 6],
-        jump: [14, 13, 12],
-        action: [23, 22, 21, 20, 19, 18],
-        hurt: [26, 25, 24],
-        damage: [33, 32, 31, 30]
-      },
-      {
-        id: 'npc3',
-        texture: 'npc3_villager',
-        idle: [3, 2, 1, 0],
-        walk: [11, 10, 9, 8, 7, 6],
-        jump: [14, 13, 12],
-        hurt: [20, 19, 18],
-        damage: [27, 26, 25, 24]
-      },
-      {
-        id: 'npc4',
-        texture: 'npc4_villager',
-        idle: [3, 2, 1, 0],
-        walk: [11, 10, 9, 8, 7, 6],
-        jump: [14, 13, 12],
-        hurt: [20, 19, 18],
-        damage: [27, 26, 25, 24]
-      }
+      { id: 'npc1', texture: 'npc1_villager', ...base, ...fiveRows },
+      { id: 'npc2', texture: 'npc2_villager', ...base, action: [18, 19, 20, 21, 22, 23], hurt: [24, 25, 26], damage: [30, 31, 32, 33] },
+      { id: 'npc3', texture: 'npc3_villager', ...base, ...fiveRows },
+      { id: 'npc4', texture: 'npc4_villager', ...base, ...fiveRows }
     ];
 
     npcDefs.forEach(cfg => {
@@ -2833,6 +3507,19 @@ class MainGameScene extends Phaser.Scene {
         });
       });
     });
+  
+    // KingPrueba uses two separate sheets (idle: 6 frames, walk: 8 frames)
+    [['kingprueba_idle', 'king_idle', 6, 7], ['kingprueba_walk', 'king_walk', 8, 10],
+     ['cow_idle', 'int_cow_idle', 5, 5], ['cow_walk', 'int_cow_walk', 8, 8]].forEach(([key, tex, count, rate]) => {
+      if (!this.textures.exists(tex)) return;
+      if (this.anims.exists(key)) this.anims.remove(key);
+      this.anims.create({
+        key,
+        frames: this.anims.generateFrameNumbers(tex, { start: 0, end: count - 1 }),
+        frameRate: rate,
+        repeat: -1
+      });
+    });
   }
 
   // Backward-compatibility alias
@@ -2857,8 +3544,14 @@ class MainGameScene extends Phaser.Scene {
     if (this.campaignNPCs) {
       this.campaignNPCs.forEach(n => n.sprite && n.sprite.destroy());
     }
+    if (this.npcColliders) {
+      this.npcColliders.forEach(c => { try { c.destroy(); } catch (e) { } });
+    }
+    this.npcColliders = [];
 
     // NPC configs: exactly 4 NPCs in the requested order & quantity
+    // Patrol routes were validated against the map colliders: every leg is a straight
+    // walkable line (the old routes crossed a house roof, the cliff edge and the campfire).
     const npcConfigs = [
       {
         // 1. NPC 1: Near campfire and small house
@@ -2872,10 +3565,10 @@ class MainGameScene extends Phaser.Scene {
           'Bienvenido a nuestro hogar ✨'
         ],
         waypoints: [
-          { x: 248, y: 472 },
-          { x: 290, y: 500 },
-          { x: 320, y: 470 },
-          { x: 280, y: 445 }
+          { x: 305, y: 509 },
+          { x: 356, y: 509 },
+          { x: 332, y: 518 },
+          { x: 305, y: 539 }
         ],
         scale: 1.3,
         startWaypoint: 0,
@@ -2894,14 +3587,13 @@ class MainGameScene extends Phaser.Scene {
           'Descansa aquí, amigo 🍺'
         ],
         waypoints: [
-          { x: 340, y: 310 },
-          { x: 395, y: 350 },
-          { x: 420, y: 300 },
-          { x: 370, y: 265 },
-          { x: 310, y: 290 }
+          { x: 528, y: 272 },
+          { x: 484, y: 289 },
+          { x: 411, y: 250 },
+          { x: 449, y: 233 }
         ],
         scale: 1.3,
-        startWaypoint: 1,
+        startWaypoint: 0,
         idleChance: 0.30,
         speed: 32
       },
@@ -2917,13 +3609,13 @@ class MainGameScene extends Phaser.Scene {
           'Recolectando flores medicinales 🌸'
         ],
         waypoints: [
-          { x: 130, y: 370 },
-          { x: 175, y: 395 },
-          { x: 200, y: 360 },
-          { x: 155, y: 340 }
+          { x: 70, y: 356 },
+          { x: 140, y: 346 },
+          { x: 215, y: 338 },
+          { x: 140, y: 354 }
         ],
         scale: 1.3,
-        startWaypoint: 2,
+        startWaypoint: 0,
         idleChance: 0.40,
         speed: 30
       },
@@ -2939,23 +3631,55 @@ class MainGameScene extends Phaser.Scene {
           'La tierra es generosa con nosotros 🌻'
         ],
         waypoints: [
-          { x: 310, y: 200 },
-          { x: 370, y: 205 },
-          { x: 410, y: 230 },
-          { x: 360, y: 245 }
+          { x: 425, y: 215 },
+          { x: 336, y: 250 },
+          { x: 293, y: 220 },
+          { x: 388, y: 194 }
         ],
         scale: 1.3,
         startWaypoint: 0,
         idleChance: 0.35,
         speed: 26
+      },
+      {
+        // 5. KingPrueba: strolls along the north road in front of the big house
+        id: 'kingprueba',
+        texture: 'king_idle',
+        name: 'KingPrueba',
+        showName: true,
+        greetings: [
+          '¡Salud, súbdito! 👑',
+          'Este reino necesita héroes ⚔️',
+          'Vigilo mi aldea de cerca 🏰',
+          'Que la corona te proteja ✨'
+        ],
+        waypoints: [
+          { x: 206, y: 182 },
+          { x: 314, y: 170 },
+          { x: 314, y: 214 },
+          { x: 194, y: 214 }
+        ],
+        // 100x100 frame: the sprite's feet are at (54, 61), not at the bottom edge
+        originX: 0.54,
+        originY: 0.61,
+        body: { w: 14, h: 6, offX: 47, offY: 55 },
+        scale: 1.2,
+        startWaypoint: 0,
+        idleChance: 0.30,
+        speed: 24
       }
     ];
 
     this.campaignNPCs = npcConfigs.map((cfg, idx) => {
       const startPt = cfg.waypoints[cfg.startWaypoint];
+      // Skip NPCs whose own art failed to load instead of showing them with the wrong sprite
+      if (cfg.body && !this.textures.exists(cfg.texture)) {
+        console.warn('[NPC] Falta la textura de ' + cfg.name + ' (' + cfg.texture + ')');
+        return null;
+      }
       const texKey = this.textures.exists(cfg.texture) ? cfg.texture : 'npc1_villager';
       const sprite = this.add.sprite(startPt.x, startPt.y, texKey)
-        .setOrigin(0.5, 1)
+        .setOrigin(cfg.originX === undefined ? 0.5 : cfg.originX, cfg.originY === undefined ? 1 : cfg.originY)
         .setScale(cfg.scale)
         .setDepth(startPt.y);
 
@@ -2967,8 +3691,38 @@ class MainGameScene extends Phaser.Scene {
         sprite.play('npc1_idle');
       }
 
+      // Solid feet hitbox so the player can no longer walk through villagers.
+      // The NPC is moved by hand (not by velocity), so the body is immovable and only follows the sprite.
+      this.physics.add.existing(sprite);
+      if (cfg.body) {
+        sprite.body.setSize(cfg.body.w, cfg.body.h);
+        sprite.body.setOffset(cfg.body.offX, cfg.body.offY);
+      } else {
+        sprite.body.setSize(12, 6);
+        sprite.body.setOffset(10, 25);
+      }
+
+      // Optional name tag that follows the NPC
+      let nameTag = null;
+      if (cfg.showName) {
+        nameTag = this.add.text(startPt.x, startPt.y - 30, cfg.name, {
+          fontFamily: 'Pixuf, MedievalSharp, monospace',
+          fontSize: '10px',
+          fill: '#fde68a',
+          stroke: '#000000',
+          strokeThickness: 3
+        }).setOrigin(0.5, 1).setDepth(29000);
+        sprite.once('destroy', () => { if (nameTag) nameTag.destroy(); });
+      }
+      sprite.body.setImmovable(true);
+      sprite.body.moves = false;
+      if (this.player) {
+        this.npcColliders.push(this.physics.add.collider(this.player, sprite));
+      }
+
       const npc = {
         id: cfg.id,
+        nameTag,
         textureKey: texKey,
         name: cfg.name,
         greetings: cfg.greetings,
@@ -2982,7 +3736,7 @@ class MainGameScene extends Phaser.Scene {
         lastGreeting: 0
       };
       return npc;
-    });
+    }).filter(Boolean);
 
     console.log(`[NPC] Spawned ${this.campaignNPCs.length} unique NPCs in campaign lobby.`);
   }
@@ -3002,6 +3756,7 @@ class MainGameScene extends Phaser.Scene {
 
       // Dynamic depth sorting (y of feet) on every frame
       sprite.setDepth(Math.round(sprite.y));
+      if (npc.nameTag) npc.nameTag.setPosition(Math.round(sprite.x), Math.round(sprite.y) - 28);
 
       // Player proximity interaction: turn to face player and show friendly greeting
       if (this.player && this.player.active) {
@@ -3080,15 +3835,30 @@ class MainGameScene extends Phaser.Scene {
             });
           }
         } else {
-          // Move toward target
-          const speed = npc.speed;
-          const vx = (dx / dist) * speed;
-          const vy = (dy / dist) * speed;
-          sprite.x += vx * (dt / 1000);
-          sprite.y += vy * (dt / 1000);
+          // If the player is standing in the way, wait instead of pushing through them
+          let blocked = false;
+          if (this.player && this.player.active && this.player.body) {
+            const pdx = this.player.body.center.x - sprite.x;
+            const pdy = this.player.body.center.y - (sprite.y - 4);
+            const pd = Math.sqrt(pdx * pdx + pdy * pdy);
+            blocked = pd < 20 && (pdx * dx + pdy * dy) > 0;
+          }
 
-          // Flip sprite based on horizontal direction
-          sprite.setFlipX(dx < 0);
+          const idleKey = `${npc.id}_idle`;
+          const walkKey = `${npc.id}_walk`;
+          if (blocked) {
+            if (this.anims.exists(idleKey)) sprite.play(idleKey, true);
+          } else {
+            if (this.anims.exists(walkKey)) sprite.play(walkKey, true);
+            const speed = npc.speed;
+            const vx = (dx / dist) * speed;
+            const vy = (dy / dist) * speed;
+            sprite.x += vx * (dt / 1000);
+            sprite.y += vy * (dt / 1000);
+
+            // Sheets face right: flip only when walking left
+            sprite.setFlipX(dx < 0);
+          }
         }
       }
     });
@@ -3184,6 +3954,16 @@ class MainGameScene extends Phaser.Scene {
         yoyo: true
       });
     }
+    // One-shot open / close animations (no yoyo, no loop) used by checkDoorProximity()
+    [['door_normal', 'door_normal_anim'], ['door_small', 'door_small_anim']].forEach(([name, sheet]) => {
+      const fr = getSafeFrames(sheet, 4);
+      if (!this.anims.exists(`${name}_open`)) {
+        this.anims.create({ key: `${name}_open`, frames: fr, frameRate: 12, repeat: 0 });
+      }
+      if (!this.anims.exists(`${name}_close`)) {
+        this.anims.create({ key: `${name}_close`, frames: fr.slice().reverse(), frameRate: 12, repeat: 0 });
+      }
+    });
     if (!this.anims.exists('door_small_creak')) {
       this.anims.create({
         key: 'door_small_creak',
@@ -3512,18 +4292,20 @@ class MainGameScene extends Phaser.Scene {
 
         if (assetKey && MAP_ASSET_METADATA[assetKey]) {
           const meta = MAP_ASSET_METADATA[assetKey];
+          // renderTiledObjects() draws every object at its native texture size with origin (0,1),
+          // so hitboxes are computed from the native size too (Tiled's resized w/h is ignored).
           const left = o.x;
-          const top = o.y - (o.height || meta.h);
+          const top = o.y - meta.h;
 
-          const scaleX = o.width ? (o.width / meta.w) : 1;
-          const scaleY = o.height ? (o.height / meta.h) : 1;
+          const scaleX = 1;
+          const scaleY = 1;
 
           // Collect building tile bounding boxes to strictly exclude RockSlopes_Auto cliff artifacts under houses
           if (meta.cat === 'buildings') {
             const minTx = Math.floor(left / 16);
-            const maxTx = Math.ceil((left + (o.width || meta.w)) / 16);
+            const maxTx = Math.ceil((left + meta.w) / 16);
             const minTy = Math.floor(top / 16);
-            const maxTy = Math.ceil((top + (o.height || meta.h)) / 16);
+            const maxTy = Math.ceil((top + meta.h) / 16);
             buildingBoxes.push({ minTx, maxTx, minTy, maxTy });
           }
 
@@ -3632,63 +4414,58 @@ class MainGameScene extends Phaser.Scene {
     // - Any tiles on roads/paths (avoids blocking roads)
     // - The stone stairs corridor (tx: 26..34, ty: 18..26)
     // - Explicit stair and ramp tile GIDs
+    // FIX: the previous version tested the Road layer filler gid (5397) against the stair
+    // list, which marked EVERY cliff tile as "stairs" and produced zero cliff colliders.
+    // Cliffs now use the collision shapes authored in the tileset itself (Tiled objectgroup):
+    // rock faces are solid, stair tiles and the walkable top rim have no shape and stay open.
     const rsAuto = mapData.layers.find(l => l.name === 'RockSlopes_Auto');
     const rLayer = mapData.layers.find(l => l.name === 'Road');
     if (rsAuto && rsAuto.data) {
       const mapW = mapData.width || 40;
-      const mapH = mapData.height || 40;
-      const isStairs = (tx, ty) => tx >= 26 && tx <= 34 && ty >= 18 && ty <= 26;
-      const STAIR_RAMP_GIDS = new Set([
-        5351, 5352, 5357, 5374, 5381, 5397, 5400, 5406,
-        1671, 1722, 1735, 1786, 1799, 2105, 2106, 2107, 2169, 2170, 2171
-      ]);
-      const grid = Array(mapH).fill(0).map(() => Array(mapW).fill(0));
+      const tw = mapData.tilewidth || 16;
+      const th = mapData.tileheight || 16;
+      const shapeBounds = (c) => {
+        if (c.polygon && c.polygon.length > 0) {
+          let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+          c.polygon.forEach(pt => {
+            minX = Math.min(minX, pt.x); maxX = Math.max(maxX, pt.x);
+            minY = Math.min(minY, pt.y); maxY = Math.max(maxY, pt.y);
+          });
+          return { x: (c.x || 0) + minX, y: (c.y || 0) + minY, w: maxX - minX, h: maxY - minY };
+        }
+        return { x: c.x || 0, y: c.y || 0, w: c.width || tw, h: c.height || th };
+      };
 
       rsAuto.data.forEach((g, idx) => {
-        if (g > 0) {
-          const tx = idx % mapW;
-          const ty = Math.floor(idx / mapW);
-          const roadGid = rLayer?.data ? rLayer.data[idx] : 0;
-          const isRealRoad = roadGid > 0 && roadGid !== 5397;
-          const inBuilding = buildingBoxes.some(b => tx >= b.minTx && tx < b.maxTx && ty >= b.minTy && ty < b.maxTy);
-          const isStairTile = STAIR_RAMP_GIDS.has(g) || STAIR_RAMP_GIDS.has(roadGid);
-          if (!isRealRoad && !inBuilding && !isStairs(tx, ty) && !isStairTile) {
-            grid[ty][tx] = 1;
-          }
-        }
-      });
+        if (!g) return;
+        const tx = idx % mapW;
+        const ty = Math.floor(idx / mapW);
+        const roadGid = rLayer && rLayer.data ? rLayer.data[idx] : 0;
+        const isRealRoad = roadGid > 0 && roadGid !== 5397;
+        const inBuilding = buildingBoxes.some(bb => tx >= bb.minTx && tx < bb.maxTx && ty >= bb.minTy && ty < bb.maxTy);
+        if (isRealRoad || inBuilding) return;
 
-      const visited = Array(mapH).fill(0).map(() => Array(mapW).fill(false));
-      for (let y = 0; y < mapH; y++) {
-        for (let x = 0; x < mapW; x++) {
-          if (grid[y][x] === 1 && !visited[y][x]) {
-            let w = 0;
-            while (x + w < mapW && grid[y][x + w] === 1 && !visited[y][x + w]) w++;
-            let h = 1;
-            let canExpand = true;
-            while (y + h < mapH && canExpand) {
-              for (let k = 0; k < w; k++) {
-                if (grid[y + h][x + k] !== 1 || visited[y + h][x + k]) {
-                  canExpand = false;
-                  break;
-                }
-              }
-              if (canExpand) h++;
-            }
-            for (let dy = 0; dy < h; dy++) {
-              for (let dx = 0; dx < w; dx++) visited[y + dy][x + dx] = true;
-            }
-            colliders.push({
-              x: x * 16,
-              y: y * 16,
-              w: w * 16,
-              h: h * 16,
-              type: 'solid',
-              source: 'rock_cliff'
-            });
-          }
-        }
-      }
+        const d = getTileDef(g);
+        const shapes = d && d.tile && d.tile.objectgroup ? d.tile.objectgroup.objects : null;
+        if (!shapes || shapes.length === 0) return; // stairs / walkable rim
+
+        shapes.forEach(c => {
+          const sb = shapeBounds(c);
+          const x0 = Math.max(0, Math.round(sb.x));
+          const y0 = Math.max(0, Math.round(sb.y));
+          const x1 = Math.min(tw, Math.round(sb.x + sb.w));
+          const y1 = Math.min(th, Math.round(sb.y + sb.h));
+          if (x1 - x0 < 2 || y1 - y0 < 2) return;
+          colliders.push({
+            x: tx * tw + x0,
+            y: ty * th + y0,
+            w: x1 - x0,
+            h: y1 - y0,
+            type: 'solid',
+            source: 'rock_cliff'
+          });
+        });
+      });
     }
 
     return colliders;
@@ -4210,6 +4987,13 @@ class MainGameScene extends Phaser.Scene {
    * Includes diagonal normalization and world boundary protection.
    */
   handlePlayerMovement() {
+    // Frozen while fading in/out of a building
+    if (this._doorTransition) {
+      this.player.setVelocity(0, 0);
+      const idleKey = `${this.playerHero}_idle`;
+      if (this.anims.exists(idleKey)) this.player.play(idleKey, true);
+      return;
+    }
     if (this.isAttacking || this.isDashing || this.isSpinning) {
       if (this.isAttacking) {
         this.player.setVelocity(0, 0);
@@ -4220,8 +5004,6 @@ class MainGameScene extends Phaser.Scene {
     let vx = 0;
     let vy = 0;
 
-    const left = (this.keyMoveLeft && this.keyMoveLeft.isDown) || this.cursors.left.isDown;
-    const right = (this.keyMoveRight && this.keyMoveRight.isDown) || this.cursors.right.isDown;
     const up = (this.keyMoveUp && this.keyMoveUp.isDown) || this.cursors.up.isDown;
     const down = (this.keyMoveDown && this.keyMoveDown.isDown) || this.cursors.down.isDown;
 
@@ -4247,17 +5029,15 @@ class MainGameScene extends Phaser.Scene {
       }
 
       // Play walk animation
+      // play(key, true) restarts the cycle if it had been stopped (e.g. after hurt/attack)
+      // but never re-triggers it while it is already running.
       const walkAnim = `${this.playerHero}_walk`;
-      if (this.player.anims.currentAnim?.key !== walkAnim) {
-        this.player.play(walkAnim);
-      }
+      if (this.anims.exists(walkAnim)) this.player.play(walkAnim, true);
     } else {
       this.player.setVelocity(0, 0);
       // Play idle animation
       const idleAnim = `${this.playerHero}_idle`;
-      if (this.player.anims.currentAnim?.key !== idleAnim) {
-        this.player.play(idleAnim);
-      }
+      if (this.anims.exists(idleAnim)) this.player.play(idleAnim, true);
     }
   }
 
@@ -5371,7 +6151,7 @@ class MainGameScene extends Phaser.Scene {
       fill: `#${color.toString(16).padStart(6, '0')}`,
       stroke: '#000000',
       strokeThickness: 4
-    }).setOrigin(0.5).setDepth(20);
+    }).setOrigin(0.5).setDepth(30000); // above houses/trees (they use depth = world y)
 
     this.tweens.add({
       targets: txt,
@@ -6306,6 +7086,7 @@ class MainGameScene extends Phaser.Scene {
    * Open the Map Editor directly from Start Menu
    */
   openMapEditor() {
+    if (this.destroyInteriors) this.destroyInteriors();
     music.stopAll();
     this.enterFullscreen();
     this.gameStarted = false;
