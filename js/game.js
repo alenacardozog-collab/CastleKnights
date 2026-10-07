@@ -26,6 +26,15 @@ class SoundFX {
   constructor() {
     this.ctx = null;
     this.enabled = true;
+    this.bus = null;   // every synthesized sound goes through this gain node
+    this.level = 1;    // game volume x characters volume (0..1)
+  }
+
+  /** Volume for every character / effect sound (synth + recorded clips). */
+  setLevel(level) {
+    this.level = Math.max(0, Math.min(1, level));
+    if (this.bus && this.ctx) this.bus.gain.setValueAtTime(this.level, this.ctx.currentTime);
+    Object.values(this._clips || {}).forEach(a => { a.volume = Math.max(0, Math.min(1, (a._base || 1) * this.level)); });
   }
 
   init() {
@@ -35,9 +44,178 @@ class SoundFX {
         this.ctx = new AudioContext();
       }
     }
+    if (this.ctx && !this.bus) {
+      this.bus = this.ctx.createGain();
+      this.bus.gain.value = this.level;
+      this.bus.connect(this.ctx.destination);
+    }
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+  }
+
+  /** Low-level voice: a buzzy source through two vowel formants (rough human-like tone). */
+  _voice(t0, dur, f0, f1, formants, peak, type) {
+    const c = this.ctx;
+    const osc = c.createOscillator();
+    osc.type = type || 'sawtooth';
+    osc.frequency.setValueAtTime(f0, t0);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t0 + dur);
+    const out = c.createGain();
+    out.gain.setValueAtTime(0.0001, t0);
+    out.gain.exponentialRampToValueAtTime(peak, t0 + Math.min(0.03, dur * 0.3));
+    out.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    formants.forEach(([freq, q, g]) => {
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = q;
+      const fg = c.createGain(); fg.gain.value = g;
+      osc.connect(bp); bp.connect(fg); fg.connect(out);
+    });
+    out.connect(this.bus);
+    osc.start(t0); osc.stop(t0 + dur + 0.02);
+  }
+
+  /** Burst of noise through a filter (breath, growl grit, fire). */
+  _noise(t0, dur, type, f0, f1, q, peak) {
+    const c = this.ctx;
+    const len = Math.max(1, Math.floor(c.sampleRate * dur));
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = type; f.Q.value = q;
+    f.frequency.setValueAtTime(f0, t0);
+    f.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + dur * 0.25);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(f); f.connect(g); g.connect(this.bus);
+    src.start(t0); src.stop(t0 + dur + 0.02);
+  }
+
+  /**
+   * Play a recorded clip (assets/audio/heroes). Returns false when it cannot be played
+   * so the caller can fall back to the synthesized version.
+   */
+  _clip(name, volume, delayMs) {
+    try {
+      this._clips = this._clips || {};
+      let a = this._clips[name];
+      if (!a) {
+        a = new Audio('assets/audio/heroes/' + name + '.mp3');
+        a.preload = 'auto';
+        this._clips[name] = a;
+      }
+      if (a.error) return false;
+      const start = () => {
+        if (!this.enabled) return;
+        a.pause();
+        a.currentTime = 0;
+        a._base = volume;
+        a.volume = Math.max(0, Math.min(1, volume * this.level));
+        const p = a.play();
+        if (p && p.catch) p.catch(() => { });
+      };
+      clearTimeout(a._timer);
+      if (delayMs) a._timer = setTimeout(start, delayMs); else start();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /**
+   * Foley / combat clips (assets/audio/sfx). Up to 3 overlapping copies per sound.
+   * Returns false when the file is missing so callers can fall back to the synth:
+   *   sfx.fx('sword_hit', 0.8) || sfx.playHit();
+   */
+  fx(name, volume, opts) {
+    if (!this.enabled) return true;
+    try {
+      this._clips = this._clips || {};
+      this._pools = this._pools || {};
+      let pool = this._pools[name];
+      if (!pool) {
+        pool = this._pools[name] = { items: [], next: 0, last: 0 };
+        for (let i = 0; i < 3; i++) {
+          const a = new Audio('assets/audio/sfx/' + name + '.mp3');
+          a.preload = 'auto';
+          pool.items.push(a);
+          this._clips['fx:' + name + ':' + i] = a;
+        }
+      }
+      if (pool.items[0].error) return false;
+      const now = Date.now();
+      if (opts && opts.minGap && now - pool.last < opts.minGap) return true;
+      pool.last = now;
+      const a = pool.items[pool.next];
+      pool.next = (pool.next + 1) % pool.items.length;
+      a._base = volume === undefined ? 0.8 : volume;
+      a.volume = Math.max(0, Math.min(1, a._base * this.level));
+      a.playbackRate = opts && opts.rate ? opts.rate : 1;
+      a.currentTime = 0;
+      const pr = a.play();
+      if (pr && pr.catch) pr.catch(() => { });
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /** Stop every playing copy of a clip (used for the charge loop). */
+  fxStop(name) {
+    const pool = this._pools && this._pools[name];
+    if (pool) pool.items.forEach(a => { try { a.pause(); a.currentTime = 0; } catch (e) { } });
+  }
+
+  /** True when a recorded clip is available (already requested and not broken). */
+  fxOk(name) {
+    const pool = this._pools && this._pools[name];
+    return !!(pool && !pool.items[0].error);
+  }
+
+  /** Stop any hero voice clip that is still sounding (used when another hero is picked). */
+  stopHeroClips() {
+    Object.keys(this._clips || {}).forEach(key => {
+      if (key.indexOf('fx:') === 0) return;
+      const a = this._clips[key];
+      clearTimeout(a._timer); try { a.pause(); } catch (e) { }
+    });
+  }
+
+  /** Knight chosen: battle grunt (recorded clip, synthesized fallback). */
+  playKnightGrunt() {
+    if (!this.enabled) return;
+    this.stopHeroClips();
+    if (this._clip('knight_grunt', 0.9)) return;
+    if (!this.ctx) return;
+    try {
+      const t = this.ctx.currentTime + 0.01;
+      this._voice(t, 0.36, 150, 82, [[620, 5, 1.0], [1050, 6, 0.55], [2400, 8, 0.15]], 0.5, 'sawtooth');
+      this._voice(t, 0.36, 76, 44, [[300, 3, 0.9]], 0.35, 'square');
+      this._noise(t, 0.3, 'bandpass', 900, 350, 1.2, 0.16);
+      this._voice(t + 0.05, 0.5, 2600, 2450, [[2600, 30, 1]], 0.05, 'triangle');
+    } catch (e) { }
+  }
+
+  /** Wizard chosen: smug chuckle, then a flame catching (recorded clips, synthesized fallback). */
+  playWizardLaugh() {
+    if (!this.enabled) return;
+    this.stopHeroClips();
+    const laugh = this._clip('wizard_laugh', 0.9);
+    const flame = this._clip('wizard_flame', 0.75, 650);
+    if (laugh && flame) return;
+    if (!this.ctx) return;
+    try {
+      const t = this.ctx.currentTime + 0.01;
+      const notes = [230, 212, 196, 176, 150];
+      notes.forEach((f, i) => {
+        const t0 = t + i * 0.15;
+        this._noise(t0, 0.05, 'highpass', 1800, 1200, 0.7, 0.04);
+        this._voice(t0 + 0.02, i === notes.length - 1 ? 0.26 : 0.11, f * 1.06, f * 0.9, [[720, 6, 1.0], [1180, 7, 0.6], [2700, 9, 0.12]], 0.3, 'sawtooth');
+      });
+      const tf = t + 0.5;
+      this._noise(tf, 0.45, 'bandpass', 300, 2600, 0.8, 0.28);
+      this._noise(tf + 0.3, 0.9, 'lowpass', 900, 500, 0.5, 0.12);
+      for (let i = 0; i < 7; i++) this._noise(tf + 0.35 + Math.random() * 0.7, 0.025, 'highpass', 3000, 2000, 1, 0.1);
+    } catch (e) { }
   }
 
   playSwing() {
@@ -52,7 +230,7 @@ class SoundFX {
       gain.gain.setValueAtTime(0.25, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.bus);
       osc.start(now);
       osc.stop(now + 0.12);
     } catch (e) { }
@@ -71,7 +249,7 @@ class SoundFX {
       gain.gain.setValueAtTime(0.22, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.bus);
       osc.start(now);
       osc.stop(now + 0.38);
     } catch (e) { }
@@ -89,7 +267,7 @@ class SoundFX {
       gain.gain.setValueAtTime(0.22, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.bus);
       osc.start(now);
       osc.stop(now + 0.2);
     } catch (e) { }
@@ -108,7 +286,7 @@ class SoundFX {
       gain.gain.setValueAtTime(0.4, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.bus);
       osc.start(now);
       osc.stop(now + 0.15);
 
@@ -123,7 +301,7 @@ class SoundFX {
       noiseGain.gain.setValueAtTime(0.3, now);
       noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
       noise.connect(noiseGain);
-      noiseGain.connect(this.ctx.destination);
+      noiseGain.connect(this.bus);
       noise.start(now);
     } catch (e) { }
   }
@@ -140,7 +318,7 @@ class SoundFX {
       gain.gain.setValueAtTime(0.45, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.bus);
       osc.start(now);
       osc.stop(now + 0.25);
     } catch (e) { }
@@ -159,7 +337,7 @@ class SoundFX {
       gain.gain.setValueAtTime(0.3, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.bus);
       osc.start(now);
       osc.stop(now + 0.28);
     } catch (e) { }
@@ -177,7 +355,7 @@ class SoundFX {
       gain.gain.setValueAtTime(0.3, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.bus);
       osc.start(now);
       osc.stop(now + 0.1);
     } catch (e) { }
@@ -195,7 +373,7 @@ class SoundFX {
       gain.gain.setValueAtTime(0.3, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.bus);
       osc.start(now);
       osc.stop(now + 0.25);
     } catch (e) { }
@@ -213,7 +391,7 @@ class SoundFX {
       gain.gain.setValueAtTime(0.35, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.bus);
       osc.start(now);
       osc.stop(now + 0.22);
     } catch (e) { }
@@ -232,7 +410,7 @@ class SoundFX {
         gain.gain.setValueAtTime(0.35, now + idx * 0.15);
         gain.gain.exponentialRampToValueAtTime(0.01, now + (idx + 1) * 0.15);
         osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        gain.connect(this.bus);
         osc.start(now + idx * 0.15);
         osc.stop(now + (idx + 1) * 0.15);
       });
@@ -252,7 +430,7 @@ class SoundFX {
       gain.gain.setValueAtTime(0.28, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.bus);
       osc.start(now);
       osc.stop(now + 0.28);
     } catch (e) { }
@@ -271,7 +449,7 @@ class SoundFX {
       gain.gain.setValueAtTime(0.35, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
       osc.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.bus);
       osc.start(now);
       osc.stop(now + 0.35);
     } catch (e) { }
@@ -401,6 +579,53 @@ class MusicPlayer {
 }
 
 const music = new MusicPlayer();
+
+// ==========================================
+// VOLUME SETTINGS (Options menu sliders, saved in the browser)
+// ==========================================
+const VolumeSettings = {
+  KEY: 'castleknight_volume_v1',
+  values: { master: 1, music: 0.4, chars: 1 },
+  load() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(this.KEY) || 'null');
+      if (raw) ['master', 'music', 'chars'].forEach(k => {
+        if (typeof raw[k] === 'number' && isFinite(raw[k])) this.values[k] = Math.max(0, Math.min(1, raw[k]));
+      });
+    } catch (e) { }
+    this.apply();
+  },
+  set(key, value) {
+    if (!(key in this.values)) return;
+    this.values[key] = Math.max(0, Math.min(1, value));
+    try { localStorage.setItem(this.KEY, JSON.stringify(this.values)); } catch (e) { }
+    this.apply();
+  },
+  apply() {
+    const v = this.values;
+    music.setVolume(v.master * v.music);
+    sfx.setLevel(v.master * v.chars);
+  },
+  /** Connect the three sliders of the Options dialog. */
+  bindUI() {
+    ['master', 'music', 'chars'].forEach(k => {
+      const input = document.getElementById('vol-' + k);
+      const label = document.getElementById('vol-' + k + '-val');
+      if (!input) return;
+      const paint = () => {
+        const pct = Math.round(this.values[k] * 100);
+        input.value = pct;
+        input.style.setProperty('--fill', pct + '%');
+        if (label) label.textContent = pct + '%';
+      };
+      paint();
+      input.oninput = () => { this.set(k, Number(input.value) / 100); paint(); };
+      // Small audible preview when the handle is released
+      input.onchange = () => { if (k !== 'music') { sfx.init(); sfx.playSwing(); } };
+    });
+  }
+};
+VolumeSettings.load();
 
 // ==========================================
 // 1.4 MAP CONFIGURATION & 41 ASSETS CATALOG (ASSETS/MAP)
@@ -938,8 +1163,10 @@ const DEFAULT_KEYBINDS = {
   moveRight: 'D',
   attack: 'J',
   special: 'K',
-  dash: 'SHIFT',
+  dash: 'SPACE',
+  run: 'SHIFT',
   spin: 'E',
+  ultimate: 'Q',
   heroSoldier: '1',
   heroWizard: '2',
   devMode: 'F2',
@@ -951,10 +1178,12 @@ const KEYBIND_DEFINITIONS = [
   { id: 'moveDown', label: 'Mover Abajo', desc: 'Desplazarse al sur (S / Flecha Abajo)' },
   { id: 'moveLeft', label: 'Mover Izquierda', desc: 'Desplazarse al oeste (A / Flecha Izquierda)' },
   { id: 'moveRight', label: 'Mover Derecha', desc: 'Desplazarse al este (D / Flecha Derecha)' },
-  { id: 'attack', label: 'Ataque Principal', desc: 'Combo melee de espada / Hechizo arcano (J / Espacio)' },
+  { id: 'attack', label: 'Ataque Principal', desc: 'Combo melee de espada / Hechizo arcano (J)' },
   { id: 'special', label: 'Ataque Especial', desc: 'Disparo con arco / Bola de Fuego (K)' },
-  { id: 'dash', label: 'Dash Evasivo', desc: 'Deslizamiento rápido o Teletransporte (Shift) — Usa 50% Stamina' },
-  { id: 'spin', label: 'Giro Torbellino 360', desc: 'Torbellino doble en área del Guerrero (E) — Usa 35% Stamina' },
+  { id: 'run', label: 'Correr', desc: 'Mantener para correr más rápido (Shift)' },
+  { id: 'dash', label: 'Dash Evasivo', desc: 'Deslizamiento rápido o Teletransporte (Espacio) — Usa 50% Stamina' },
+  { id: 'spin', label: 'Giro / Trueno', desc: 'Lancent: torbellino doble (35% Stamina) — Horos: trueno en área (45% Stamina)' },
+  { id: 'ultimate', label: 'Habilidad Especial', desc: 'Lancent: lluvia de flechas — Horos: trueno (mantener para cargar hasta 3 s) — 45% Stamina' },
   { id: 'heroSoldier', label: 'Seleccionar Soldado', desc: 'Cambiar de personaje al Caballero (1)' },
   { id: 'heroWizard', label: 'Seleccionar Mago', desc: 'Cambiar de personaje al Mago Arcano (2)' },
   { id: 'devMode', label: 'Modo Desarrollador', desc: 'Herramientas de hitboxes y spawns (F2)' },
@@ -1013,6 +1242,8 @@ class KeybindsManager {
       if (stored) {
         const parsed = JSON.parse(stored);
         this.bindings = { ...DEFAULT_KEYBINDS, ...parsed };
+        // Older saves had Dash on Shift; Shift is now Run and Dash moved to Space
+        if (parsed.dash === 'SHIFT' && !parsed.run) this.bindings.dash = 'SPACE';
       }
     } catch (e) {
       console.warn('Error reading keybinds from storage:', e);
@@ -1170,7 +1401,9 @@ class KeybindsManager {
     const atk = this.formatKeyDisplay(this.get('attack'));
     const spc = this.formatKeyDisplay(this.get('special'));
     const dsh = this.formatKeyDisplay(this.get('dash'));
+    const run = this.formatKeyDisplay(this.get('run'));
     const spn = this.formatKeyDisplay(this.get('spin'));
+    const ult = this.formatKeyDisplay(this.get('ultimate'));
     const sld = this.formatKeyDisplay(this.get('heroSoldier'));
     const wiz = this.formatKeyDisplay(this.get('heroWizard') || '2');
     const dev = this.formatKeyDisplay(this.get('devMode'));
@@ -1193,12 +1426,20 @@ class KeybindsManager {
         <span>ESPECIAL</span>
       </div>
       <div class="control-pill">
+        <span class="key-cap">${run}</span>
+        <span>CORRER</span>
+      </div>
+      <div class="control-pill">
         <span class="key-cap">${dsh}</span>
         <span>DASH</span>
       </div>
       <div class="control-pill">
         <span class="key-cap">${spn}</span>
         <span>GIRO</span>
+      </div>
+      <div class="control-pill">
+        <span class="key-cap">${ult}</span>
+        <span>HABILIDAD</span>
       </div>
       <div class="control-pill">
         <span class="key-cap">${sld}</span> / <span class="key-cap">${wiz}</span>
@@ -1526,7 +1767,8 @@ class MainGameScene extends Phaser.Scene {
     this.gameStartTime = 0;
 
     // Movement & Dash
-    this.playerSpeed = 185;
+    this.playerSpeed = 115;   // walking
+    this.playerRunSpeed = 180; // holding the Run key
     this.facingDirection = 'right'; // 'left' or 'right'
     this.lastAttackCombo = 1;
     this.isDashing = false;
@@ -1982,6 +2224,12 @@ class MainGameScene extends Phaser.Scene {
     this.load.spritesheet('wizard_dash', getAsset('wizard_dash', 'assets/characters/Wizard/dash_anim.png'), {
       frameWidth: 100, frameHeight: 100
     });
+    this.load.spritesheet('soldier_arrowrain', getAsset('soldier_arrowrain', 'assets/characters/soldier/Soldier_ArrowRain.png'), {
+      frameWidth: 100, frameHeight: 100
+    });
+    this.load.spritesheet('wizard_thunder', getAsset('wizard_thunder', 'assets/characters/Wizard/Wizard_Thunder.png'), {
+      frameWidth: 100, frameHeight: 100
+    });
     this.load.spritesheet('wizard_fireball', getAsset('wizard_fireball', 'assets/characters/Wizard/Magic(projectile)/Wizard_Attack02_Effect.png'), {
       frameWidth: 100, frameHeight: 100
     });
@@ -2107,6 +2355,7 @@ class MainGameScene extends Phaser.Scene {
 
     // Bind DOM events
     this.bindDOMElements();
+    VolumeSettings.bindUI();
 
     // Initialize looping muted background intro video
     this.initIntroVideo();
@@ -2355,6 +2604,9 @@ class MainGameScene extends Phaser.Scene {
 
     const hud = document.querySelector('.in-game-hud');
     if (hud) hud.classList.remove('hidden');
+    // Campaign locks the chosen hero: no in-game switch buttons
+    const heroSwitch = document.querySelector('.hero-selector');
+    if (heroSwitch) heroSwitch.style.display = this._gameMode === 'campaign' ? 'none' : '';
 
     sfx.init();
     sfx.playSwing();
@@ -4143,6 +4395,33 @@ class MainGameScene extends Phaser.Scene {
         repeat: 0
       });
     }
+    // Lancent arrow rain: aims the bow at the sky and shoots
+    if (!this.anims.exists('soldier_arrowrain') && this.textures.exists('soldier_arrowrain')) {
+      this.anims.create({
+        key: 'soldier_arrowrain',
+        frames: this.anims.generateFrameNumbers('soldier_arrowrain', { start: 0, end: 8 }),
+        frameRate: 12,
+        repeat: 0
+      });
+    }
+    // Horos charged thunder: raise and hold the staff (0-4), then slam it down (7-8)
+    if (this.textures.exists('wizard_thunder')) {
+      if (!this.anims.exists('wizard_thunder_raise')) {
+        this.anims.create({ key: 'wizard_thunder_raise', frames: this.anims.generateFrameNumbers('wizard_thunder', { start: 0, end: 4 }), frameRate: 12, repeat: 0 });
+      }
+      if (!this.anims.exists('wizard_thunder_slam')) {
+        this.anims.create({ key: 'wizard_thunder_slam', frames: this.anims.generateFrameNumbers('wizard_thunder', { frames: [6, 7, 8, 8] }), frameRate: 14, repeat: 0 });
+      }
+    }
+    // Horos thunder cast: staff raised (frames 2-6), slammed on the ground (7-8)
+    if (!this.anims.exists('wizard_thunder') && this.textures.exists('wizard_thunder')) {
+      this.anims.create({
+        key: 'wizard_thunder',
+        frames: this.anims.generateFrameNumbers('wizard_thunder', { start: 0, end: 8 }),
+        frameRate: 12,
+        repeat: 0
+      });
+    }
     // Wizard Dash Special Move (6 frames from user dash.png)
     if (!this.anims.exists('wizard_dash')) {
       this.anims.create({
@@ -4887,7 +5166,9 @@ class MainGameScene extends Phaser.Scene {
     this.keyAttack = this.input.keyboard.addKey(resolvePhaserKeyCode(KeybindsManager.get('attack')));
     this.keySpecial = this.input.keyboard.addKey(resolvePhaserKeyCode(KeybindsManager.get('special')));
     this.keyDash = this.input.keyboard.addKey(resolvePhaserKeyCode(KeybindsManager.get('dash')));
+    this.keyRun = this.input.keyboard.addKey(resolvePhaserKeyCode(KeybindsManager.get('run')));
     this.keySpin = this.input.keyboard.addKey(resolvePhaserKeyCode(KeybindsManager.get('spin')));
+    this.keyUltimate = this.input.keyboard.addKey(resolvePhaserKeyCode(KeybindsManager.get('ultimate')));
 
     this.keyHeroSoldier = this.input.keyboard.addKey(resolvePhaserKeyCode(KeybindsManager.get('heroSoldier')));
     this.keyHeroWizard = this.input.keyboard.addKey(resolvePhaserKeyCode(KeybindsManager.get('heroWizard') || '2'));
@@ -4975,7 +5256,7 @@ class MainGameScene extends Phaser.Scene {
     }
 
     // Hotkey attacks
-    if (Phaser.Input.Keyboard.JustDown(this.keyAttack) || Phaser.Input.Keyboard.JustDown(this.keySpace)) {
+    if (Phaser.Input.Keyboard.JustDown(this.keyAttack)) {
       sfx.init();
       this.performAttack();
     }
@@ -4991,9 +5272,15 @@ class MainGameScene extends Phaser.Scene {
       sfx.init();
       this.performSpin();
     }
+    if (this.keyUltimate && Phaser.Input.Keyboard.JustDown(this.keyUltimate)) {
+      sfx.init();
+      if (this.playerHero === 'wizard') this.performThunder(); else this.performArrowRain();
+    }
 
     // Handle Player Movement
     this.handlePlayerMovement();
+    this.updateFootsteps();
+    this.updateThunderCharge();
 
     // Update Enemy AI & Chasing
     this.updateEnemies();
@@ -5040,7 +5327,10 @@ class MainGameScene extends Phaser.Scene {
     if (vx !== 0 || vy !== 0) {
       // Normalize diagonal vector
       const isSlowed = this._inSlowZone && this.time.now < this._slowZoneTimer;
-      const speed = isSlowed ? this.playerSpeed * 0.5 : this.playerSpeed;
+      const running = !!(this.keyRun && this.keyRun.isDown);
+      this.isRunning = running;
+      const baseSpeed = running ? (this.playerRunSpeed || 180) : this.playerSpeed;
+      const speed = isSlowed ? baseSpeed * 0.5 : baseSpeed;
       const mag = Math.hypot(vx, vy);
       this.player.setVelocity((vx / mag) * speed, (vy / mag) * speed);
 
@@ -5058,6 +5348,8 @@ class MainGameScene extends Phaser.Scene {
       // but never re-triggers it while it is already running.
       const walkAnim = `${this.playerHero}_walk`;
       if (this.anims.exists(walkAnim)) this.player.play(walkAnim, true);
+      // legs move in step with the pace
+      if (this.player.anims.currentAnim && this.player.anims.currentAnim.key === walkAnim) this.player.anims.timeScale = running ? 1.35 : 0.85;
     } else {
       this.player.setVelocity(0, 0);
       // Play idle animation
@@ -5077,7 +5369,7 @@ class MainGameScene extends Phaser.Scene {
     if (this.playerHero === 'wizard') {
       this.lastAttackCombo = this.lastAttackCombo === 1 ? 2 : 1;
       this.player.play('wizard_attack1');
-      sfx.playMagic();
+      sfx.fx('ice_cast', 0.7) || sfx.playMagic();
 
       // Magic hit window midway through animation
       this.time.delayedCall(190, () => {
@@ -5098,7 +5390,7 @@ class MainGameScene extends Phaser.Scene {
     const animKey = `${this.playerHero}_attack${this.lastAttackCombo}`;
 
     this.player.play(animKey);
-    sfx.playSwing();
+    sfx.fx(this.lastAttackCombo === 1 ? 'sword_swing1' : 'sword_swing2', 0.75) || sfx.playSwing();
 
     // Active hit window midway through animation
     this.time.delayedCall(160, () => {
@@ -5128,7 +5420,7 @@ class MainGameScene extends Phaser.Scene {
     if (this.playerHero === 'wizard') {
       // Wizard Fireball Cast (14 frames)
       this.player.play('wizard_attack2');
-      sfx.playFireball();
+      sfx.fx('fire_cast', 0.8) || sfx.playFireball();
 
       this.time.delayedCall(230, () => {
         if (!this.isDead) this.castFireball();
@@ -5141,7 +5433,7 @@ class MainGameScene extends Phaser.Scene {
     } else if (this.playerHero === 'soldier') {
       // Soldier Bow Shot
       this.player.play('soldier_attack3');
-      sfx.playShoot();
+      sfx.fx('bow_shot', 0.8) || sfx.playShoot();
 
       this.time.delayedCall(220, () => {
         if (!this.isDead) this.shootArrow();
@@ -5227,10 +5519,10 @@ class MainGameScene extends Phaser.Scene {
     // Play animation & sound (Wizard uses dash.png)
     if (isWizard) {
       this.player.play('wizard_dash');
-      sfx.playMagic();
+      sfx.fx('teleport', 0.8) || sfx.playMagic();
     } else {
       this.player.play('soldier_dash');
-      sfx.playDash();
+      sfx.fx('dash', 0.8) || sfx.playDash();
     }
 
     // Afterimage / ghost trail effect
@@ -5290,7 +5582,445 @@ class MainGameScene extends Phaser.Scene {
    * Spins 360 degrees TWO full times before stopping, dealing sweeping AOE damage
    * to all surrounding enemies in a 360-degree radius with wind ghost trails and whoosh sound.
    */
+  /**
+   * HOROS - THUNDER NOVA (chargeable area spell).
+   * Hold the key to charge, release to strike:
+   *   tap            level 1  small burst around him
+   *   held 2 seconds level 2  stronger bolt, wider shockwave
+   *   held 3 seconds level 3  epic strike: 5 tiles of reach, glowing bolts, big camera shake
+   * His own lightning never hurts him. While charging, an arcane guard blocks the first
+   * hit and later hits hurt him but never interrupt the charge.
+   */
+  performThunder() {
+    if (this.playerHero !== 'wizard') return;
+    if (this.isDead || this.thunderCharge || this.isCastingThunder || this.isDashing || this.isSpinning || this.isAttacking) return;
+    if (this._doorTransition || this.isGamePaused) return;
+    const now = this.time.now;
+    const COOLDOWN = 2500, COST = 45;
+    if (now - (this.lastThunderTime || -99999) < COOLDOWN) return;
+    if (this.stamina < COST) { this.showLowStaminaWarning('Trueno'); return; }
+
+    this.stamina = Math.max(0, this.stamina - COST);
+    this.updateStaminaBar();
+    this.isCastingThunder = true;
+    this.isAttacking = true;          // freezes movement, like any other attack
+    const p = this.player;
+    p.setVelocity(0, 0);
+    if (this.anims.exists('wizard_thunder_raise')) p.play('wizard_thunder_raise');
+    sfx.fx('thunder_hold', 0.7);
+
+    this.thunderCharge = {
+      start: now, level: 1, health: this.health, released: false,
+      glow: this.add.graphics().setDepth(p.depth + 2).setBlendMode(Phaser.BlendModes.ADD),
+      ring: this.add.graphics().setDepth(Math.max(8, p.depth - 2))
+    };
+  }
+
+  /** Reach / power of each charge level. */
+  thunderLevelInfo(level) {
+    return [
+      null,
+      { radius: 40, damage: 2, color: 0x7dd3fc },
+      { radius: 60, damage: 3, color: 0xe0f2fe },
+      { radius: 80, damage: 4, color: 0xfef08a }   // 5 tiles
+    ][level];
+  }
+
+  /** Called every frame: grows the charge while the key is held and fires on release. */
+  updateThunderCharge() {
+    const c = this.thunderCharge;
+    if (!c) return;
+    const p = this.player;
+    const end = () => {
+      c.glow.destroy(); c.ring.destroy();
+      sfx.fxStop('thunder_hold');
+      this.thunderCharge = null;
+    };
+    // cancelled only by dying or leaving the room (getting hit does not interrupt it)
+    if (this.isDead || this._doorTransition || this.playerHero !== 'wizard') {
+      end();
+      this.isCastingThunder = false;
+      this.isAttacking = false;
+      return;
+    }
+    const now = this.time.now;
+    const held = now - c.start;
+    const curAnim = p.anims.currentAnim && p.anims.currentAnim.key;
+    if (curAnim !== 'wizard_thunder_raise' && this.anims.exists('wizard_thunder_raise')) { p.play('wizard_thunder_raise'); p.anims.setProgress && p.anims.setProgress(1); }
+    const MIN_RAISE = 380, L2 = 2000, L3 = 3000, AUTO = 4200;
+    const keyDown = (this.keySpin && this.keySpin.isDown) || (this.keyUltimate && this.keyUltimate.isDown) ||
+      (this._thunderTestHold && held < this._thunderTestHold);
+    const level = held >= L3 ? 3 : held >= L2 ? 2 : 1;
+
+    if (level > c.level) {
+      c.level = level;
+      const info = this.thunderLevelInfo(level);
+      this.createFloatingText(p.x, p.y - 46, level === 3 ? '¡CARGA MÁXIMA!' : 'CARGA 2', info.color);
+      this.cameras.main.shake(90, level === 3 ? 0.004 : 0.002);
+      sfx.fx('ice_cast', 0.5, { rate: level === 3 ? 1.5 : 1.2 });
+      c.pulse = now;
+    }
+
+    // staff glow + reach preview on the ground
+    const k = p.scaleX, dir = p.flipX ? -1 : 1;
+    const info = this.thunderLevelInfo(c.level);
+    const prog = Math.min(1, held / L3);
+    const flick = 0.85 + Math.random() * 0.3;
+    const r = (2.5 + prog * 6 + (c.level - 1) * 1.5) * k / 1.2 * flick;
+    const gx = p.x + dir * 6.5 * k, gy = p.y - 18 * k;
+    const g = c.glow;
+    g.clear();
+    g.fillStyle(0x38bdf8, 0.25); g.fillCircle(gx, gy, r * 2.6);
+    g.fillStyle(info.color, 0.5); g.fillCircle(gx, gy, r * 1.5);
+    g.fillStyle(0xffffff, 0.95); g.fillCircle(gx, gy, r * 0.65);
+    g.lineStyle(1, 0xffffff, 0.9);
+    for (let i = 0; i < 2 + c.level * 2; i++) {
+      const a = Math.random() * Math.PI * 2, l = r * (1.6 + Math.random() * (1.5 + c.level));
+      const mx = gx + Math.cos(a) * l * 0.5 + (Math.random() * 4 - 2), my = gy + Math.sin(a) * l * 0.5 + (Math.random() * 4 - 2);
+      g.beginPath(); g.moveTo(gx, gy); g.lineTo(mx, my); g.lineTo(gx + Math.cos(a) * l, gy + Math.sin(a) * l); g.strokePath();
+    }
+    // arcane guard: faint shell while it is still up, bright flash when it eats a hit
+    const gf = c.guardFlash ? Math.max(0, 1 - (now - c.guardFlash) / 350) : 0;
+    if (!c.guardUsed || gf > 0) {
+      g.lineStyle(gf > 0 ? 3 : 1, 0xbae6fd, gf > 0 ? gf : 0.25 + 0.12 * Math.sin(now / 120));
+      g.strokeEllipse(p.x, p.y + 2 * k, 26 * k + gf * 8, 30 * k + gf * 8);
+    }
+    if (c.level === 3) {      // aura around the whole wizard at full charge
+      g.fillStyle(0xfef08a, 0.10 + 0.08 * Math.sin(now / 60)); g.fillCircle(p.x, p.y, 20 * k);
+    }
+    const cx = p.body ? p.body.center.x : p.x, cy = p.body ? p.body.bottom : p.y + 12;
+    const pulse = c.pulse ? Math.max(0, 1 - (now - c.pulse) / 300) : 0;
+    c.ring.clear();
+    c.ring.lineStyle(1 + Math.round(pulse * 2), info.color, 0.35 + 0.25 * Math.sin(now / 90) + pulse * 0.4);
+    c.ring.strokeEllipse(cx, cy, info.radius * 2, info.radius * 2 * 0.72);
+
+    // release
+    if ((!keyDown && held >= MIN_RAISE) || held >= AUTO) {
+      const lvl = c.level;
+      end();
+      if (this.anims.exists('wizard_thunder_slam')) p.play('wizard_thunder_slam');
+      this.isInvulnerable = true;
+      this.time.delayedCall(110, () => this.thunderStrike(lvl));
+      this.time.delayedCall(lvl === 3 ? 900 : 560, () => {
+        this.isCastingThunder = false;
+        this.isAttacking = false;
+        this.isInvulnerable = false;
+        if (!this.isDead && p.active && this.playerHero === 'wizard') p.play('wizard_idle', true);
+      });
+    }
+  }
+
+  /** The lightning itself. level 1..3 decides size, brightness, shake and damage. */
+  thunderStrike(level) {
+    const p = this.player;
+    if (this.isDead || !p.active) return;
+    const info = this.thunderLevelInfo(level);
+    const RADIUS = info.radius, SQUASH = 0.72;
+    const big = level === 3;
+    this.lastThunderTime = this.time.now;
+    const cx = p.body ? p.body.center.x : p.x;
+    const cy = p.body ? p.body.bottom : p.y + 12;
+    const cam = this.cameras.main;
+    const fx = [];
+    const mk = (o) => { fx.push(o); return o; };
+    const life = big ? 1500 : 900;
+    this.time.delayedCall(life, () => fx.forEach(o => { try { o.remove ? o.remove() : o.destroy(); } catch (e) { } }));
+
+    // Jagged line helper (pixel-art lightning)
+    const bolt = (g, x0, y0, x1, y1, jitter, width, color, alpha) => {
+      const steps = Math.max(3, Math.round(Math.hypot(x1 - x0, y1 - y0) / 7));
+      g.lineStyle(width, color, alpha);
+      g.beginPath(); g.moveTo(x0, y0);
+      const nx = -(y1 - y0), ny = (x1 - x0), nl = Math.hypot(nx, ny) || 1;
+      for (let i = 1; i < steps; i++) {
+        const t = i / steps, off = (Math.random() * 2 - 1) * jitter;
+        g.lineTo(Math.round(x0 + (x1 - x0) * t + (nx / nl) * off), Math.round(y0 + (y1 - y0) * t + (ny / nl) * off));
+      }
+      g.lineTo(x1, y1); g.strokePath();
+    };
+
+    // sound
+    if (big) { sfx.fx('thunder_epic', 1) || sfx.fx('thunder_strike', 1); sfx.fx('thunder_strike', 0.8, { rate: 0.8 }); }
+    else sfx.fx('thunder_strike', level === 2 ? 1 : 0.8, { rate: level === 2 ? 0.92 : 1.08 }) || (sfx.playAlert && sfx.playAlert());
+
+    // flash + shake (level 3: double flash like real lightning, long heavy shake)
+    const flash = mk(this.add.rectangle(cam.worldView.centerX, cam.worldView.centerY, cam.worldView.width + 60, cam.worldView.height + 60, big ? 0xfffbeb : 0xdbeafe, [0, 0.3, 0.45, 0.8][level]).setDepth(99990));
+    this.tweens.add({ targets: flash, alpha: 0, duration: big ? 160 : 200 });
+    if (big) this.time.delayedCall(210, () => { if (flash.active) { flash.setAlpha(0.55); this.tweens.add({ targets: flash, alpha: 0, duration: 380 }); } });
+    cam.shake([0, 200, 320, 750][level], [0, 0.005, 0.011, 0.024][level]);
+
+    // 1) bolts from the sky onto Horos
+    const sky = mk(this.add.graphics().setDepth(p.depth + 3));
+    const skyGlow = mk(this.add.graphics().setDepth(p.depth + 2).setBlendMode(Phaser.BlendModes.ADD));
+    const top = cam.worldView.y - 30;
+    const W = [0, 1, 1.5, 2.4][level];
+    const ticks = [0, 4, 6, 11][level];
+    let tick = 0;
+    const drawSky = () => {
+      sky.clear(); skyGlow.clear();
+      const fade = 1 - tick / (ticks + 1);
+      const strands = big ? 3 : level;
+      for (let sI = 0; sI < strands; sI++) {
+        const sx = cx + (Math.random() * 2 - 1) * (26 + sI * 22);
+        if (level >= 2) { skyGlow.lineStyle(Math.round(16 * W), 0x38bdf8, 0.10 * fade); skyGlow.lineBetween(sx, top, cx, cy); }
+        if (big) { skyGlow.lineStyle(Math.round(9 * W), 0xfef9c3, 0.16 * fade); skyGlow.lineBetween(sx, top, cx, cy); }
+        bolt(sky, sx, top, cx, cy, 9, Math.round(7 * W), 0x38bdf8, 0.35 * fade);
+        bolt(sky, sx, top, cx, cy, 7, Math.round(4 * W), big ? 0xfde68a : 0x7dd3fc, 0.8 * fade);
+        bolt(sky, sx, top, cx, cy, 5, Math.max(2, Math.round(2 * W)), 0xffffff, fade);
+        const by = top + (cy - top) * (0.3 + Math.random() * 0.4);
+        bolt(sky, cx, by, cx + (Math.random() < 0.5 ? -1 : 1) * (18 + Math.random() * 22 * W), by + 22 * W, 4, 1, 0xe0f2fe, 0.9 * fade);
+      }
+      // bright impact core
+      skyGlow.fillStyle(0xffffff, 0.5 * fade); skyGlow.fillEllipse(cx, cy, 9 * W, 5 * W);
+      tick++;
+    };
+    drawSky();
+    mk(this.time.addEvent({ delay: 45, repeat: ticks, callback: drawSky }));
+    this.time.delayedCall(45 * (ticks + 2), () => { sky.clear(); skyGlow.clear(); });
+
+    // 2) shockwave: random forked lightning racing over the ground (no rings).
+    //    Every cast builds a different set of crooked paths, then they grow outward,
+    //    crackle for a moment and burn out.
+    const ground = mk(this.add.graphics().setDepth(Math.max(8, p.depth - 2)));
+    const top8 = mk(this.add.graphics().setDepth(p.depth + 1).setBlendMode(Phaser.BlendModes.ADD));
+    const makePath = (angle, length, wobble) => {
+      const pts = [{ x: 0, y: 0 }];
+      let a = angle, d = 0;
+      while (d < length) {
+        const step = 4 + Math.random() * 5;
+        a += (Math.random() * 2 - 1) * wobble;
+        // keep heading roughly outward so it never curls back to the centre
+        a = angle + Math.max(-0.9, Math.min(0.9, a - angle));
+        d += step;
+        const last = pts[pts.length - 1];
+        pts.push({ x: last.x + Math.cos(a) * step, y: last.y + Math.sin(a) * step });
+      }
+      return pts;
+    };
+    const paths = [];
+    const mainCount = [0, 7, 10, 15][level];
+    const offset = Math.random() * Math.PI * 2;
+    for (let i = 0; i < mainCount; i++) {
+      const angle = offset + (i + (Math.random() * 0.7 - 0.35)) * Math.PI * 2 / mainCount;
+      const length = RADIUS * (0.55 + Math.random() * 0.5);
+      const main = makePath(angle, length, 0.55);
+      paths.push({ pts: main, start: 0, width: 1 });
+      // forks leaving the main bolt
+      const forks = (level === 1 ? 1 : 2) + (Math.random() < 0.5 ? 1 : 0);
+      for (let f = 0; f < forks; f++) {
+        const at = 2 + Math.floor(Math.random() * Math.max(1, main.length - 3));
+        const from = main[Math.min(at, main.length - 1)];
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const fork = makePath(angle + side * (0.5 + Math.random() * 0.6), length * (0.2 + Math.random() * 0.3), 0.6)
+          .map(q => ({ x: q.x + from.x, y: q.y + from.y }));
+        paths.push({ pts: fork, start: at / main.length * 0.75, width: 0.6 });
+      }
+    }
+    const spread = { t: 0 };
+    const GROW = 0.55;                      // fraction of the time spent travelling outward
+    const drawPath = (g, path, upto, width, color, alpha, jit) => {
+      const n = Math.max(2, Math.ceil(path.pts.length * upto));
+      g.lineStyle(width, color, alpha);
+      g.beginPath();
+      for (let i = 0; i < n && i < path.pts.length; i++) {
+        const q = path.pts[i];
+        const x = Math.round(cx + q.x + (i ? (Math.random() * 2 - 1) * jit : 0));
+        const y = Math.round(cy + q.y * SQUASH + (i ? (Math.random() * 2 - 1) * jit : 0));
+        if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      }
+      g.strokePath();
+      const tip = path.pts[Math.min(n, path.pts.length) - 1];
+      return { x: cx + tip.x, y: cy + tip.y * SQUASH };
+    };
+    const drawGround = () => {
+      ground.clear(); top8.clear();
+      const t = spread.t;
+      const fade = t < GROW ? 1 : Math.max(0, 1 - (t - GROW) / (1 - GROW));
+      const flicker = t < GROW ? 1 : (Math.random() < 0.82 ? 1 : 0.35);     // crackle while dying out
+      // scorch glow right under the impact (soft, irregular: drawn from the bolts themselves)
+      paths.forEach(path => {
+        const local = Math.max(0, Math.min(1, (t / GROW - path.start) / Math.max(0.05, 1 - path.start)));
+        if (local <= 0) return;
+        const al = fade * flicker;
+        drawPath(ground, path, local, Math.round((big ? 7 : 5) * path.width) + 1, big ? 0x854d0e : 0x0c4a6e, 0.35 * al, 0);
+        if (level >= 2) drawPath(top8, path, local, Math.round(6 * W * path.width) + 2, 0x38bdf8, 0.20 * al, 1);
+        drawPath(top8, path, local, Math.round(3 * W * path.width) + 1, big ? 0xfde68a : 0x38bdf8, 0.55 * al, 1);
+        const tip = drawPath(top8, path, local, path.width < 1 ? 1 : 2, 0xffffff, al, 1);
+        if (local < 1 || Math.random() < 0.4) {       // bright head while it travels, sparks after
+          top8.fillStyle(0xffffff, al); top8.fillRect(Math.round(tip.x) - 1, Math.round(tip.y) - 1, 3, 3);
+          top8.fillStyle(info.color, 0.8 * al); top8.fillRect(Math.round(tip.x) - 2 + Math.round(Math.random() * 4), Math.round(tip.y) - 3 - Math.round(Math.random() * 3), 1, 2);
+        }
+      });
+      // hot core where the bolt landed
+      top8.fillStyle(0xffffff, 0.55 * fade); top8.fillEllipse(cx, cy, 10 * W, 6 * W);
+    };
+    this.tweens.add({
+      targets: spread, t: 1, duration: [0, 620, 800, 1150][level], ease: 'Sine.easeOut', onUpdate: drawGround,
+      onComplete: () => { ground.clear(); top8.clear(); }
+    });
+
+    // level 3: leftover sparks jumping around the scorched area
+    if (big) {
+      const sparks = mk(this.add.graphics().setDepth(p.depth + 1).setBlendMode(Phaser.BlendModes.ADD));
+      mk(this.time.addEvent({
+        delay: 60, repeat: 16, callback: () => {
+          sparks.clear();
+          for (let i = 0; i < 5; i++) {
+            const a = Math.random() * Math.PI * 2, d = Math.random() * RADIUS;
+            const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d * SQUASH;
+            bolt(sparks, x, y, x + (Math.random() * 16 - 8), y - 6 - Math.random() * 12, 3, 1, 0xfef9c3, 0.9);
+          }
+        }
+      }));
+    }
+
+    // 3) damage: every enemy inside the ring (never the player)
+    if (this.enemies) {
+      this.enemies.getChildren().slice().forEach(e => {
+        if (!e.active || e.isDead) return;
+        const dx = e.x - cx, dy = (e.y + 10 - cy) / SQUASH;
+        if (Math.hypot(dx, dy) <= RADIUS + 10) {
+          this.damageEnemy(e, info.damage, cx, cy);
+          if (e.active && e.setTint) { e.setTint(0x7dd3fc); this.time.delayedCall(180, () => e.active && e.clearTint()); }
+        }
+      });
+    }
+  }
+
+  /**
+   * Footstep foley: one step every ~0.3 s while the hero is walking, chosen by the
+   * surface under his feet (grass, dirt road, wooden floor, stone floor).
+   */
+  updateFootsteps() {
+    const p = this.player;
+    // the walk-cycle speed-up/slow-down must never leak into attacks or other animations
+    if (p && p.anims && p.anims.currentAnim && !/_walk$/.test(p.anims.currentAnim.key) && p.anims.timeScale !== 1) p.anims.timeScale = 1;
+    if (!p || !p.body || this.isDead || this.isDashing || this.isSpinning || this._doorTransition) return;
+    const speed = Math.hypot(p.body.velocity.x, p.body.velocity.y);
+    if (speed < 20) { this._stepAt = 0; return; }
+    const now = this.time.now;
+    if (!this._stepAt) this._stepAt = now + 90;
+    if (now < this._stepAt) return;
+    this._stepAt = now + (speed > 150 ? 230 : 360);
+
+    let surface = 'grass';
+    if (this.currentInterior) {
+      const kind = this.currentInterior.building.kind;
+      surface = kind === 'tienda' ? 'stone' : kind === 'granero' ? 'dirt' : 'wood';
+    } else if (this._gameMode === 'campaign' && this.layerRoad && this.layerRoad.getTileAtWorldXY) {
+      const fx = p.body.center.x, fy = p.body.bottom - 2;
+      try { if (this.layerRoad.getTileAtWorldXY(fx, fy)) surface = 'dirt'; } catch (e) { }
+    }
+    this._stepFlip = !this._stepFlip;
+    const names = { grass: ['step_grass1', 'step_grass2'], wood: ['step_wood1', 'step_wood2'], stone: ['step_stone1', 'step_stone1'], dirt: ['step_dirt1', 'step_dirt1'] }[surface];
+    sfx.fx(names[this._stepFlip ? 0 : 1], surface === 'grass' ? 0.4 : 0.5, { rate: 0.92 + Math.random() * 0.16 });
+  }
+
+  /**
+   * LANCENT - ARROW RAIN (area skill).
+   * He aims the bow at the sky and shoots; a moment later a volley falls at random
+   * spots around the place where he was standing and hurts every enemy under an arrow.
+   */
+  performArrowRain() {
+    if (this.playerHero !== 'soldier') return;
+    if (this.isDead || this.isCastingRain || this.isDashing || this.isSpinning || this.isAttacking) return;
+    if (this._doorTransition || this.isGamePaused) return;
+    const now = this.time.now;
+    const COOLDOWN = 3000, COST = 45, RADIUS = 58, ARROWS = 14, SHOT_AT = 500, RAIN_AT = 950, END_AT = 800;
+    const HIT_R = 15, SQUASH = 0.75, FALL_MS = 240;
+    if (now - (this.lastRainTime || -99999) < COOLDOWN) return;
+    if (this.stamina < COST) { this.showLowStaminaWarning('Lluvia de flechas'); return; }
+
+    this.stamina = Math.max(0, this.stamina - COST);
+    this.updateStaminaBar();
+    this.lastRainTime = now;
+    this.isCastingRain = true;
+    this.isAttacking = true;
+    this.isInvulnerable = true;       // cannot be interrupted while aiming
+    const p = this.player;
+    p.setVelocity(0, 0);
+    if (this.anims.exists('soldier_arrowrain')) p.play('soldier_arrowrain');
+    sfx._clip('bow_shot', 0.9, 250);
+
+    const k = p.scaleX;
+    const cx = p.body ? p.body.center.x : p.x;
+    const cy = p.body ? p.body.bottom : p.y + 12;
+    const cam = this.cameras.main;
+    const hasArrow = this.textures.exists('arrow');
+
+    // 1) the arrow that goes up
+    this.time.delayedCall(SHOT_AT, () => {
+      if (this.isDead) return;
+      const up = hasArrow
+        ? this.add.image(p.x, p.y - 16 * k, 'arrow').setRotation(-Math.PI / 2)
+        : this.add.rectangle(p.x, p.y - 16 * k, 2, 12, 0xfde68a);
+      up.setDepth(p.depth + 5);
+      this.tweens.add({ targets: up, y: cam.worldView.y - 40, duration: 260, ease: 'Quad.easeIn', onComplete: () => up.destroy() });
+    });
+
+    // 2) the volley coming down
+    this.time.delayedCall(RAIN_AT, () => {
+      sfx._clip('arrow_rain', 0.9);
+      for (let i = 0; i < ARROWS; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const dist = (i === 0 ? 0.25 : Math.sqrt(Math.random())) * RADIUS;
+        const tx = Math.round(cx + Math.cos(ang) * dist);
+        const ty = Math.round(cy + Math.sin(ang) * dist * SQUASH);
+        this.time.delayedCall(i * 55 + Math.random() * 40, () => {
+          // shadow that tells where it will land
+          const shadow = this.add.ellipse(tx, ty, 4, 2, 0x000000, 0.35).setDepth(Math.max(8, ty - 6));
+          this.tweens.add({ targets: shadow, scaleX: 2.6, scaleY: 2.6, duration: FALL_MS });
+          const sx = tx - 34, sy = ty - 230;
+          const rot = Math.atan2(ty - sy, tx - sx);
+          const arrow = hasArrow
+            ? this.add.image(sx, sy, 'arrow').setRotation(rot)
+            : this.add.rectangle(sx, sy, 12, 2, 0xfde68a).setRotation(rot);
+          arrow.setDepth(ty + 40);
+          this.tweens.add({
+            targets: arrow, x: tx - 5, y: ty - 8, duration: FALL_MS, ease: 'Quad.easeIn',
+            onComplete: () => {
+              arrow.setDepth(ty);
+              // impact: little dust burst + damage under the arrow
+              const dust = this.add.graphics().setDepth(ty + 1);
+              const d = { t: 0 };
+              this.tweens.add({
+                targets: d, t: 1, duration: 200,
+                onUpdate: () => {
+                  dust.clear();
+                  dust.fillStyle(0xe7d7b0, 0.8 * (1 - d.t));
+                  for (let j = 0; j < 5; j++) {
+                    const a = j * 1.2566 + 0.4;
+                    dust.fillRect(Math.round(tx + Math.cos(a) * (3 + 8 * d.t)), Math.round(ty + Math.sin(a) * (2 + 5 * d.t)) - Math.round(4 * d.t * (1 - d.t) * 4), 2, 2);
+                  }
+                },
+                onComplete: () => dust.destroy()
+              });
+              if (this.enemies && !this.isDead) {
+                this.enemies.getChildren().slice().forEach(e => {
+                  if (!e.active || e.isDead) return;
+                  const ex = e.body ? e.body.center.x : e.x, ey = e.body ? e.body.bottom : e.y + 12;
+                  if (Math.hypot(ex - tx, (ey - ty) / SQUASH) <= HIT_R) this.damageEnemy(e, 1, tx, ty - 20);
+                });
+              }
+              this.tweens.add({ targets: [arrow, shadow], alpha: 0, delay: 450, duration: 250, onComplete: () => { arrow.destroy(); shadow.destroy(); } });
+            }
+          });
+        });
+      }
+    });
+
+    // Lancent can move again as soon as the shot is done; the arrows fall on their own
+    this.time.delayedCall(END_AT, () => {
+      this.isCastingRain = false;
+      this.isAttacking = false;
+      this.isInvulnerable = false;
+      if (!this.isDead && p.active && this.playerHero === 'soldier') p.play('soldier_idle', true);
+    });
+  }
+
   performSpin() {
+    // Horos uses the same key for his area spell
+    if (this.playerHero === 'wizard') { this.performThunder(); return; }
     if (this._gameMode === 'campaign' || this.isDead || this.isSpinning || this.isDashing) return;
     if (this.playerHero !== 'soldier') return;
 
@@ -5330,7 +6060,7 @@ class MainGameScene extends Phaser.Scene {
 
     // Play animation (repeat: 1 -> 2 complete spins before stopping)
     this.player.play('soldier_spin');
-    sfx.playSpin();
+    sfx.fx('spin', 0.85) || sfx.playSpin();
 
     // Afterimage / whirlwind wind trail effect
     const ghostTimer = this.time.addEvent({
@@ -5365,7 +6095,7 @@ class MainGameScene extends Phaser.Scene {
     // 2nd spin hit check (midway through second rotation: ~580ms) and whoosh sound
     this.time.delayedCall(580, () => {
       if (this.isDead || !this.isSpinning) return;
-      sfx.playSpin();
+      if (!sfx.fxOk('spin')) sfx.playSpin();
       this.checkSpinHits();
     });
 
@@ -5412,7 +6142,7 @@ class MainGameScene extends Phaser.Scene {
     });
 
     if (hitCount > 0) {
-      sfx.playHit();
+      sfx.fx('sword_hit', 0.8, { minGap: 60 }) || sfx.playHit();
       this.cameras.main.shake(120, 0.0035);
     }
   }
@@ -5526,7 +6256,7 @@ class MainGameScene extends Phaser.Scene {
     });
 
     if (hitCount > 0) {
-      sfx.playHit();
+      sfx.fx('sword_hit', 0.8, { minGap: 60 }) || sfx.playHit();
       this.cameras.main.shake(120, 0.005);
     }
   }
@@ -5579,7 +6309,7 @@ class MainGameScene extends Phaser.Scene {
     });
 
     if (hitCount > 0) {
-      sfx.playHit();
+      sfx.fx('sword_hit', 0.8, { minGap: 60 }) || sfx.playHit();
       this.cameras.main.shake(120, 0.004);
     }
   }
@@ -5596,6 +6326,7 @@ class MainGameScene extends Phaser.Scene {
     if (enemy.isDead) return;
 
     enemy.hp -= amount;
+    if (enemy.hp > 0) sfx.fx(enemy.type === 'orc' ? 'orc_hurt' : 'knight_hurt', 0.65, { minGap: 90, rate: 0.92 + Math.random() * 0.2 });
 
     // Floating damage text
     this.createFloatingText(enemy.x, enemy.y - 20, `-${amount}`, 0xffdd44);
@@ -5616,7 +6347,7 @@ class MainGameScene extends Phaser.Scene {
       enemy.isDead = true;
       enemy.body.setVelocity(0, 0);
       enemy.body.checkCollision.none = true;
-      sfx.playEnemyDeath();
+      sfx.fx(enemy.type === 'orc' ? 'orc_death' : 'knight_death', 0.8, { minGap: 120, rate: 0.95 + Math.random() * 0.15 }) || sfx.playEnemyDeath();
 
       // Play death animation
       enemy.play(`${enemy.type}_death`);
@@ -5666,7 +6397,7 @@ class MainGameScene extends Phaser.Scene {
     projectile.destroy();
 
     if (isFireball) {
-      sfx.playHit();
+      sfx.fx('fire_hit', 0.85) || sfx.playHit();
       this.cameras.main.shake(160, 0.007);
       // Fireball explosion visual
       const boom = this.add.circle(px, py, 18, 0xf97316, 0.85);
@@ -5690,7 +6421,7 @@ class MainGameScene extends Phaser.Scene {
       });
     } else {
       this.damageEnemy(enemy, 1, px, py);
-      sfx.playHit();
+      sfx.fx('sword_hit', 0.7, { minGap: 60 }) || sfx.playHit();
     }
   }
 
@@ -5987,6 +6718,7 @@ class MainGameScene extends Phaser.Scene {
             enemy.attackCooldown = now + 1400; // Attack every 1.4s
 
             enemy.play(`${enemy.type}_attack1`);
+            sfx.fx(enemy.type === 'orc' ? 'orc_attack' : 'sword_swing1', 0.55, { minGap: 150, rate: 0.92 + Math.random() * 0.18 });
 
             this.time.delayedCall(220, () => {
               if (enemy.active && !enemy.isDead && !this.isDead) {
@@ -6068,10 +6800,23 @@ class MainGameScene extends Phaser.Scene {
   damagePlayer(amount) {
     if (this._gameMode === 'campaign' || this.isInvulnerable || this.isDead) return;
 
+    // Horos charging his thunder: an arcane guard soaks up the first hit of each charge
+    const charging = this.thunderCharge;
+    if (charging && !charging.guardUsed) {
+      charging.guardUsed = true;
+      charging.guardFlash = this.time.now;
+      this.createFloatingText(this.player.x, this.player.y - 40, '¡BLOQUEADO!', 0x7dd3fc);
+      sfx.fx('ice_cast', 0.6, { rate: 0.8 });
+      this.cameras.main.shake(90, 0.004);
+      this.isInvulnerable = true;
+      this.time.delayedCall(500, () => { if (this.thunderCharge || !this.isCastingThunder) this.isInvulnerable = false; });
+      return;
+    }
+
     this.health -= amount;
     if (this.health < 0) this.health = 0;
 
-    sfx.playPlayerHurt();
+    sfx.fx(this.playerHero === 'wizard' ? 'wizard_hurt' : 'knight_hurt', 0.9) || sfx.playPlayerHurt();
     this.cameras.main.shake(200, 0.012);
 
     // Screen flash red
@@ -6085,6 +6830,7 @@ class MainGameScene extends Phaser.Scene {
       this.isDead = true;
       this.player.setVelocity(0, 0);
       this.player.play(`${this.playerHero}_death`);
+      sfx.fx(this.playerHero === 'wizard' ? 'wizard_death' : 'knight_death', 1);
       sfx.playGameOver();
 
       this.time.delayedCall(1200, () => {
@@ -6093,7 +6839,8 @@ class MainGameScene extends Phaser.Scene {
     } else {
       // Invulnerability period
       this.isInvulnerable = true;
-      this.player.play(`${this.playerHero}_hurt`);
+      // a hit never breaks Horos' charging pose
+      if (!this.thunderCharge) this.player.play(`${this.playerHero}_hurt`);
 
       // Flashing alpha tween
       this.tweens.add({
@@ -6193,6 +6940,8 @@ class MainGameScene extends Phaser.Scene {
    */
   switchHero(newHero) {
     if (this.playerHero === newHero || this.isDead) return;
+    // Campaign: the hero chosen on the selection screen is locked for the whole run
+    if (this._gameMode === 'campaign') return;
 
     this.isDashing = false;
     this.isSpinning = false;
@@ -6217,7 +6966,7 @@ class MainGameScene extends Phaser.Scene {
     // Update HUD display
     this.updateHUD();
 
-    const heroDisplayName = newHero === 'wizard' ? 'MAGO ARCANO' : 'CABALLERO';
+    const heroDisplayName = newHero === 'wizard' ? 'HOROS' : 'LANCENT';
     this.createFloatingText(this.player.x, this.player.y - 44, `¡${heroDisplayName} ACTIVADO!`, newHero === 'wizard' ? 0xc084fc : 0xfbbf24);
   }
 
@@ -6230,13 +6979,13 @@ class MainGameScene extends Phaser.Scene {
     const portraitFrame = document.getElementById('hud-portrait-frame');
     const heroName = document.getElementById('hud-hero-name');
     if (portraitImg) {
-      portraitImg.src = this.playerHero === 'wizard' ? 'assets/UI/Wizard.portraid.png' : 'assets/UI/SoldierPortraid.png';
+      portraitImg.src = this.playerHero === 'wizard' ? 'assets/UI/portraits/wizard.png' : 'assets/UI/portraits/knight.png';
     }
     if (portraitFrame) {
       portraitFrame.src = this.playerHero === 'wizard' ? 'assets/UI/icons/card_frame_wizard.png' : 'assets/UI/icons/card_frame_soldier.png';
     }
     if (heroName) {
-      heroName.textContent = this.playerHero === 'wizard' ? 'MAGO ARCANO' : 'CABALLERO';
+      heroName.textContent = this.playerHero === 'wizard' ? 'HOROS' : 'LANCENT';
     }
 
     // 2. Health Bar Fill & Pixel Hearts
@@ -6300,7 +7049,7 @@ class MainGameScene extends Phaser.Scene {
         lobbyBadge = document.createElement('div');
         lobbyBadge.id = 'hud-lobby-badge';
         lobbyBadge.className = 'stats-badge lobby-peace-badge';
-        lobbyBadge.innerHTML = '<span>🕊️ ALDEA EN PAZ (LOBBY)</span>';
+        lobbyBadge.innerHTML = '<span><img src="assets/UI/pix/home.png" class="px-ico" alt=""> ALDEA EN PAZ (LOBBY)</span>';
         statsBadge.parentNode.insertBefore(lobbyBadge, statsBadge.nextSibling);
       }
       if (lobbyBadge) lobbyBadge.style.display = 'flex';
@@ -6395,10 +7144,10 @@ class MainGameScene extends Phaser.Scene {
    */
   syncOptionsAudioUI() {
     const icon = document.getElementById('sound-icon');
-    if (icon) icon.textContent = sfx.enabled ? '🔊' : '🔇';
+    if (icon) icon.innerHTML = sfx.enabled ? '<img src="assets/UI/pix/sound_on.png" class="px-ico" alt="">' : '<img src="assets/UI/pix/sound_off.png" class="px-ico" alt="">';
 
     const optIcon = document.getElementById('opt-sound-icon');
-    if (optIcon) optIcon.textContent = sfx.enabled ? '🔊' : '🔇';
+    if (optIcon) optIcon.innerHTML = sfx.enabled ? '<img src="assets/UI/pix/sound_on.png" class="px-ico px-ico-lg" alt="">' : '<img src="assets/UI/pix/sound_off.png" class="px-ico px-ico-lg" alt="">';
 
     const optStatus = document.getElementById('opt-sound-status');
     if (optStatus) {
@@ -6679,7 +7428,7 @@ class MainGameScene extends Phaser.Scene {
         sfx.enabled = !sfx.enabled;
         music.setEnabled(sfx.enabled);
         const icon = document.getElementById('sound-icon');
-        if (icon) icon.textContent = sfx.enabled ? '🔊' : '🔇';
+        if (icon) icon.innerHTML = sfx.enabled ? '<img src="assets/UI/pix/sound_on.png" class="px-ico" alt="">' : '<img src="assets/UI/pix/sound_off.png" class="px-ico" alt="">';
         this.syncOptionsAudioUI();
       };
     }
@@ -6740,14 +7489,44 @@ class MainGameScene extends Phaser.Scene {
         : 'Modo Práctica — Campo de Entrenamiento';
     }
 
-    const curHero = this.selectedHero || this.playerHero || 'soldier';
-    this.selectHeroInModal(curHero);
+    // Nobody is selected yet: both portraits show their calm pose
+    this.selectHeroInModal(null);
 
     modal.classList.add('active');
+
+    // Book intro: closed book -> cover swings open -> both hero pages are shown
+    const box = modal.querySelector('.hero-selection-modal-box');
+    if (box) {
+      clearTimeout(this._bookTimer);
+      box.classList.remove('book-opening');
+      void box.offsetWidth;
+      box.classList.add('book-opening');
+      (this._bookSounds || []).forEach(clearTimeout);
+      this._bookSounds = [
+        setTimeout(() => { sfx.init(); sfx.fx('book_open', 0.9); }, 1540),
+        setTimeout(() => sfx.fx('page_flip', 0.9), 2620)
+      ];
+      this._bookTimer = setTimeout(() => box.classList.remove('book-opening'), 4600);
+    }
   }
 
   selectHeroInModal(hero) {
     this.selectedHero = hero;
+    const btnConfirm = document.getElementById('btn-hero-confirm');
+    if (btnConfirm) {
+      btnConfirm.disabled = !hero;
+      btnConfirm.classList.toggle('is-disabled', !hero);
+    }
+    // Replay the "chosen" animation on the card that was just picked
+    ['soldier', 'wizard'].forEach(h => {
+      const card = document.getElementById('hero-card-' + h);
+      if (!card) return;
+      card.classList.remove('just-picked');
+      if (h === hero) {
+        void card.offsetWidth;
+        card.classList.add('just-picked');
+      }
+    });
     const cardSoldier = document.getElementById('hero-card-soldier');
     const cardWizard = document.getElementById('hero-card-wizard');
     if (cardSoldier) {
@@ -6777,6 +7556,7 @@ class MainGameScene extends Phaser.Scene {
   }
 
   closeHeroSelectionModal() {
+    (this._bookSounds || []).forEach(clearTimeout);
     const modal = document.getElementById('hero-selection-modal');
     if (modal) modal.classList.remove('active');
   }
@@ -6790,19 +7570,20 @@ class MainGameScene extends Phaser.Scene {
     if (cardSoldier) {
       cardSoldier.onclick = () => {
         sfx.init();
-        sfx.playSwing();
+        if (this.selectedHero !== 'soldier') sfx.playKnightGrunt();
         this.selectHeroInModal('soldier');
       };
     }
     if (cardWizard) {
       cardWizard.onclick = () => {
         sfx.init();
-        sfx.playMagic();
+        if (this.selectedHero !== 'wizard') sfx.playWizardLaugh();
         this.selectHeroInModal('wizard');
       };
     }
     if (btnConfirm) {
       btnConfirm.onclick = () => {
+        if (!this.selectedHero) return;
         sfx.init();
         sfx.playSwing();
         this.confirmHeroSelection();
@@ -8938,7 +9719,11 @@ const DEFAULT_ENEMY_SPAWNS = ${JSON.stringify(this.enemySpawns, null, 2)};
     if (!toast || !msgEl) return;
 
     msgEl.textContent = message;
-    if (iconEl) iconEl.textContent = icon;
+    if (iconEl) {
+      // Toasts are called with an emoji; show the matching pixel icon instead
+      const map = { '💾': 'save', '📤': 'upload', '📥': 'download', '📋': 'copy', '🗑️': 'trash', '🔄': 'retry', '🎲': 'dice', '🎯': 'target', '📦': 'box', '🧱': 'bricks', '🚩': 'flag', '🔒': 'lock', '🔓': 'unlock', '⚠️': 'bolt', '✅': 'check', '❌': 'close', '📄': 'copy', '📐': 'ruler' };
+      iconEl.innerHTML = '<img src="assets/UI/pix/' + (map[icon] || 'check') + '.png" class="px-ico" alt="">';
+    }
     toast.classList.remove('hidden');
 
     if (this._toastTimer) clearTimeout(this._toastTimer);
@@ -8965,7 +9750,7 @@ const DEFAULT_ENEMY_SPAWNS = ${JSON.stringify(this.enemySpawns, null, 2)};
       inspector.classList.remove('hidden');
 
       const typeStr = (obs.type || 'solid').toUpperCase();
-      document.getElementById('dev-inspector-title').textContent = `🧱 HITBOX #${this.selectedHitboxIndex + 1} [${typeStr}]`;
+      document.getElementById('dev-inspector-title').textContent = `HITBOX #${this.selectedHitboxIndex + 1} [${typeStr}]`;
       document.getElementById('inp-dev-x').value = obs.x;
       document.getElementById('inp-dev-y').value = obs.y;
       document.getElementById('inp-dev-w').value = obs.w;
@@ -8981,7 +9766,7 @@ const DEFAULT_ENEMY_SPAWNS = ${JSON.stringify(this.enemySpawns, null, 2)};
       if (inpHitboxType) inpHitboxType.value = obs.type || 'solid';
 
       const lockIcon = document.getElementById('dev-lock-icon');
-      if (lockIcon) lockIcon.textContent = obs.locked ? '🔒' : '🔓';
+      if (lockIcon) lockIcon.innerHTML = obs.locked ? '<img src="assets/UI/pix/lock.png" class="px-ico" alt="">' : '<img src="assets/UI/pix/unlock.png" class="px-ico" alt="">';
       const btnLock = document.getElementById('dev-btn-lock');
       if (btnLock) btnLock.classList.toggle('active', !!obs.locked);
 
@@ -8993,7 +9778,7 @@ const DEFAULT_ENEMY_SPAWNS = ${JSON.stringify(this.enemySpawns, null, 2)};
       }
 
       inspector.classList.remove('hidden');
-      document.getElementById('dev-inspector-title').textContent = `📦 OBJETO: ${obj.name}`;
+      document.getElementById('dev-inspector-title').textContent = `OBJETO: ${obj.name}`;
       document.getElementById('inp-dev-x').value = obj.x;
       document.getElementById('inp-dev-y').value = obj.y;
       document.getElementById('inp-dev-name').value = obj.name;
@@ -9024,7 +9809,7 @@ const DEFAULT_ENEMY_SPAWNS = ${JSON.stringify(this.enemySpawns, null, 2)};
       }
 
       inspector.classList.remove('hidden');
-      document.getElementById('dev-inspector-title').textContent = `🚩 SPAWN: ${s.name}`;
+      document.getElementById('dev-inspector-title').textContent = `SPAWN: ${s.name}`;
       document.getElementById('inp-dev-x').value = s.x;
       document.getElementById('inp-dev-y').value = s.y;
       document.getElementById('inp-dev-name').value = s.name;
@@ -9718,3 +10503,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+
+// Epic golden flash when the Campaign button is chosen on the start menu
+document.addEventListener('click', (ev) => {
+  const btn = ev.target && ev.target.closest && ev.target.closest('#btn-menu-campaign');
+  if (!btn) return;
+  const host = document.getElementById('game-wrapper') || document.body;
+  const fx = document.createElement('div');
+  fx.className = 'epic-flash';
+  fx.innerHTML = '<div class="epic-flash-rays"></div><div class="epic-flash-core"></div><div class="epic-flash-ring"></div>';
+  const r = btn.getBoundingClientRect();
+  const h = host.getBoundingClientRect();
+  fx.style.setProperty('--fx-x', (r.left + r.width / 2 - h.left) + 'px');
+  fx.style.setProperty('--fx-y', (r.top + r.height / 2 - h.top) + 'px');
+  host.appendChild(fx);
+  setTimeout(() => fx.remove(), 1100);
+}, true);

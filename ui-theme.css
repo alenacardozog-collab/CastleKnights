@@ -472,3 +472,391 @@ body {
 .hero-modal-subtitle { margin-top: 6px !important; }
 .modal-box .start-menu-btn.hero-btn-confirm { border-image-source: url('assets/UI/theme/plank_gold.png') !important; }
 .modal-box .start-menu-btn.hero-btn-cancel { border-image-source: url('assets/UI/theme/plank_dark.png') !important; }
+
+/* ---------- pixel icons (assets/UI/pix, 16x16) ---------- */
+.px-ico {
+  width: 16px !important; height: 16px !important;
+  image-rendering: pixelated; object-fit: contain;
+  vertical-align: -3px; margin-right: 5px; flex: 0 0 auto;
+  filter: none !important;
+}
+.px-ico-lg { width: 32px !important; height: 32px !important; margin: 0; }
+.btn-menu-icon.px-ico, .btn-ready-icon-img.px-ico { margin-right: 6px; }
+#sound-icon, #dev-lock-icon, #dev-toast-icon { display: inline-flex; align-items: center; }
+#sound-icon .px-ico, #dev-lock-icon .px-ico { margin-right: 0; }
+
+/* ---------- start menu: calmer title, smaller buttons, per-button hover ---------- */
+.start-menu-title { animation: none !important; transform: none !important; transition: none !important; }
+.start-menu-nav { margin-top: 20px !important; gap: 0 !important; }
+.start-menu-btn {
+  width: 306px !important;
+  min-height: 45px !important;
+  font-size: 17px !important;
+  border-width: 16px 31px !important;
+  border-image-width: 16px 31px !important;
+  transition: transform 0.14s ease-out, filter 0.14s ease-out !important;
+  animation: none !important;
+  will-change: transform;
+  position: relative;
+}
+/* only the button under the cursor reacts; nothing else moves */
+.start-menu-btn:hover, .start-menu-btn:focus-visible {
+  transform: scale(1.07) !important;
+  z-index: 2;
+  filter: brightness(1.28) drop-shadow(0 4px 0 var(--ui-shadow)) drop-shadow(0 0 10px rgba(255, 214, 110, 0.85)) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+}
+.start-menu-btn:active { transform: scale(0.98) !important; filter: brightness(1.05) drop-shadow(0 1px 0 var(--ui-shadow)) !important; }
+
+/* ---------- epic flash when Campaign is chosen ---------- */
+.epic-flash { position: absolute; inset: 0; z-index: 9999; pointer-events: none; overflow: hidden; }
+.epic-flash-core {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at var(--fx-x) var(--fx-y), #fffbe6 0%, rgba(255, 226, 130, 0.95) 12%, rgba(255, 170, 40, 0.55) 34%, rgba(255, 140, 20, 0) 70%);
+  animation: epicFlashCore 1s ease-out forwards;
+}
+.epic-flash-rays {
+  position: absolute; left: var(--fx-x); top: var(--fx-y); width: 240vmax; height: 240vmax; margin: -120vmax 0 0 -120vmax;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 240, 180, 0.75) 0deg 5deg, rgba(255, 240, 180, 0) 5deg 20deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.6) 18%, transparent 42%);
+  mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.6) 18%, transparent 42%);
+  animation: epicFlashRays 1s ease-out forwards;
+}
+.epic-flash-ring {
+  position: absolute; left: var(--fx-x); top: var(--fx-y); width: 40px; height: 40px; margin: -20px 0 0 -20px;
+  border: 6px solid #fff3c4; border-radius: 50%;
+  box-shadow: 0 0 24px 6px rgba(255, 210, 90, 0.9), inset 0 0 18px rgba(255, 210, 90, 0.9);
+  animation: epicFlashRing 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes epicFlashCore { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes epicFlashRays { 0% { opacity: 0; transform: rotate(0deg) scale(0.3); } 18% { opacity: 1; } 100% { opacity: 0; transform: rotate(40deg) scale(1); } }
+@keyframes epicFlashRing { 0% { transform: scale(0.2); opacity: 1; } 100% { transform: scale(38); opacity: 0; border-width: 1px; } }
+@media (prefers-reduced-motion: reduce) { .epic-flash-rays, .epic-flash-ring { display: none; } }
+/* keep the plank on the Campaign button while hovered (an old rule removed its border) */
+#btn-menu-campaign, #btn-menu-campaign:hover, #btn-menu-campaign:focus-visible, #btn-menu-campaign:active {
+  border-style: solid !important;
+  border-color: transparent !important;
+  border-width: 16px 31px !important;
+  border-image: url('assets/UI/theme/plank.png') 10 18 fill / 16px 31px stretch !important;
+}
+
+/* ---------- hero selection: portraits ---------- */
+.hero-card-frame-wrapper { width: 152px !important; height: 152px !important; background: radial-gradient(circle at 50% 35%, #3a2414 0%, #140a04 75%) !important; }
+.hero-card-portrait { object-fit: contain !important; object-position: center bottom !important; }
+.hero-card-portrait-action { position: absolute !important; inset: 0; opacity: 0; z-index: 3 !important; }
+.hero-select-card.active .hero-card-portrait-action { opacity: 1; }
+.hero-select-card.active .hero-card-portrait:not(.hero-card-portrait-action) { opacity: 0; }
+/* hover: the card under the cursor lights up */
+.hero-select-card { filter: brightness(0.8) saturate(0.85) !important; cursor: pointer; }
+.hero-select-card:hover, .hero-select-card:focus-visible {
+  filter: brightness(1.12) drop-shadow(0 0 10px rgba(255, 214, 110, 0.75)) !important;
+  transform: translateY(-4px) scale(1.03) !important;
+}
+.hero-select-card:hover .hero-card-portrait { transform: scale(1.06); }
+.hero-select-card.active { filter: none !important; transform: translateY(-4px) scale(1.03) !important; }
+/* chosen animation */
+.hero-select-card.just-picked { animation: heroPicked 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) !important; }
+.hero-select-card.just-picked .hero-card-frame-wrapper::after {
+  content: ''; position: absolute; inset: 0; z-index: 6; pointer-events: none;
+  background: radial-gradient(circle, #fff7d6 0%, rgba(255, 200, 90, 0.7) 40%, rgba(255, 160, 40, 0) 75%);
+  animation: heroPickedFlash 0.5s ease-out forwards;
+}
+#hero-card-wizard.just-picked .hero-card-frame-wrapper::after { background: radial-gradient(circle at 25% 40%, #fff1c9 0%, rgba(255, 140, 40, 0.75) 40%, rgba(255, 90, 20, 0) 75%); }
+.hero-select-card.just-picked .hero-card-portrait-action { animation: heroPortraitPop 0.45s ease-out; }
+@keyframes heroPicked { 0% { transform: scale(0.94); } 55% { transform: translateY(-7px) scale(1.07); } 100% { transform: translateY(-4px) scale(1.03); } }
+@keyframes heroPickedFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes heroPortraitPop { 0% { transform: scale(1.25); } 100% { transform: scale(1); } }
+#btn-hero-confirm.is-disabled { filter: grayscale(0.8) brightness(0.6) !important; cursor: not-allowed; pointer-events: none; }
+.hud-portrait-img { object-fit: contain !important; image-rendering: pixelated; }
+
+/* ---------- options: volume sliders ---------- */
+.volume-panel {
+  display: flex; flex-direction: column; gap: 8px;
+  margin: 6px 0 12px; padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.3); border: 2px solid #5a3418;
+}
+.vol-row { display: grid; grid-template-columns: 20px 150px 1fr 48px; align-items: center; gap: 10px; cursor: pointer; }
+.vol-name { font-family: var(--ui-font); color: var(--ui-cream); font-size: 14px; letter-spacing: 0.5px; text-align: left; line-height: 1.15; }
+.vol-name small { display: block; font-size: 10px; color: var(--ui-cream-dim); letter-spacing: 0; }
+.vol-val { font-family: var(--ui-font); color: var(--ui-gold); font-size: 13px; text-align: right; }
+.vol-slider {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 12px; margin: 0; cursor: pointer;
+  --fill: 100%;
+  background: linear-gradient(to right, #f0a83a 0, #ffd56b var(--fill), #2a1608 var(--fill), #2a1608 100%);
+  border: 2px solid #1c0d04; box-shadow: 0 0 0 2px #7a4a22, inset 0 2px 0 rgba(0, 0, 0, 0.35);
+  border-radius: 0; outline: none;
+}
+.vol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 14px; height: 24px; border-radius: 0;
+  background: linear-gradient(180deg, #fff3d6 0%, #e2b565 55%, #a8742c 100%);
+  border: 2px solid #2e180a; box-shadow: 0 2px 0 #1c0d04;
+}
+.vol-slider::-moz-range-thumb {
+  width: 12px; height: 22px; border-radius: 0;
+  background: linear-gradient(180deg, #fff3d6 0%, #e2b565 55%, #a8742c 100%);
+  border: 2px solid #2e180a; box-shadow: 0 2px 0 #1c0d04;
+}
+.vol-slider:hover::-webkit-slider-thumb, .vol-slider:focus-visible::-webkit-slider-thumb { filter: brightness(1.15); }
+.vol-slider:focus-visible { box-shadow: 0 0 0 2px var(--ui-gold), inset 0 2px 0 rgba(0, 0, 0, 0.35); }
+@media (max-width: 620px) { .vol-row { grid-template-columns: 20px 96px 1fr 40px; } .vol-name small { display: none; } }
+/* options dialog: never spill out of its frame on short screens */
+.options-modal-card { overflow-y: auto !important; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: #a8742c #2a1608; }
+.options-modal-card .modal-subtitle { margin-bottom: 10px !important; }
+.options-modal-card > * { flex-shrink: 0; }
+
+/* =====================================================================
+   HERO SELECTION v2: bigger dialog, portraits first, one style per hero
+   ===================================================================== */
+@font-face { font-family: 'Pirata One'; src: url('assets/font/PirataOne-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Italianno'; src: url('assets/font/Italianno-Regular.ttf') format('truetype'); font-display: swap; }
+
+.hero-selection-modal-box {
+  --hero-pic: clamp(170px, 36vh, 330px);
+  zoom: 1 !important;
+  max-width: 1040px !important;
+  width: min(96%, calc(var(--hero-pic) * 2 + 190px)) !important;
+  padding: 0 12px 6px !important;
+}
+.hero-selection-grid { gap: 20px !important; margin-bottom: 10px !important; align-items: stretch; }
+.hero-modal-title { font-size: clamp(22px, 3.6vh, 34px) !important; }
+
+.hero-select-card { padding: 10px 12px 12px !important; border-width: 0 !important; border-image: none !important; position: relative; }
+.hero-card-frame-wrapper {
+  width: var(--hero-pic) !important; height: var(--hero-pic) !important;
+  margin-bottom: 10px !important; border-radius: 0 !important; outline: none !important;
+}
+.hero-card-info { width: 100%; }
+.hero-card-name { margin: 0 0 2px !important; line-height: 1 !important; text-transform: none !important; letter-spacing: 1px !important; }
+.hero-card-class { font-size: 11px !important; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px !important; opacity: 0.9; }
+.hero-card-stats { padding: 6px 10px !important; }
+.hero-stat-row, .hero-stat-row * { font-size: 11px !important; }
+.hero-card-check { top: 6px !important; right: 6px !important; border-radius: 0 !important; }
+
+/* ----- Lancent: steel plates, rivets, dark red leather ----- */
+#hero-card-soldier {
+  background:
+    radial-gradient(circle at 10px 10px, #e9edf1 0 2px, #4b535b 3px 4px, transparent 5px),
+    radial-gradient(circle at calc(100% - 10px) 10px, #e9edf1 0 2px, #4b535b 3px 4px, transparent 5px),
+    radial-gradient(circle at 10px calc(100% - 10px), #e9edf1 0 2px, #4b535b 3px 4px, transparent 5px),
+    radial-gradient(circle at calc(100% - 10px) calc(100% - 10px), #e9edf1 0 2px, #4b535b 3px 4px, transparent 5px),
+    linear-gradient(180deg, #4a1c1a 0%, #2e1110 55%, #1c0a0a 100%) !important;
+  border: 4px solid #8f99a3 !important;
+  box-shadow: 0 0 0 2px #1b1f24, inset 0 0 0 2px #2a3037, inset 0 0 0 4px #c3ccd4, inset 0 0 26px rgba(0, 0, 0, 0.75) !important;
+}
+#hero-card-soldier .hero-card-frame-wrapper {
+  border: 5px solid #aab3bc !important;
+  box-shadow: 0 0 0 2px #1b1f24, inset 0 0 0 2px #1b1f24, 0 6px 0 rgba(0, 0, 0, 0.45) !important;
+  background: radial-gradient(circle at 50% 30%, #5a2a26 0%, #1a0b0a 78%) !important;
+}
+#hero-card-soldier .hero-card-name {
+  font-family: 'Pirata One', 'MedievalSharp', serif !important;
+  font-size: clamp(34px, 6.4vh, 58px) !important;
+  color: #eef1f4 !important; -webkit-text-fill-color: #eef1f4;
+  background: none !important;
+  text-shadow: 0 2px 0 #7b848d, 0 4px 0 #2a0d0c, 0 0 14px rgba(200, 40, 30, 0.55) !important;
+}
+#hero-card-soldier .hero-card-info > .hero-card-name::after {
+  content: ''; display: block; height: 4px; margin: 4px auto 6px; width: 70%;
+  background: linear-gradient(90deg, transparent, #c3ccd4 20%, #f4f6f8 50%, #c3ccd4 80%, transparent);
+}
+#hero-card-soldier .hero-card-class { color: #d9a59c !important; }
+#hero-card-soldier .hero-card-stats { border-color: #6d7780 !important; background: rgba(10, 4, 4, 0.45) !important; }
+
+/* ----- Horos: midnight arcane blue, gold filigree, name on a parchment strip ----- */
+#hero-card-wizard {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 235, 170, 0.9) 0 1px, transparent 2px),
+    radial-gradient(circle at 82% 20%, rgba(255, 235, 170, 0.8) 0 1px, transparent 2px),
+    radial-gradient(circle at 70% 70%, rgba(190, 170, 255, 0.7) 0 1px, transparent 2px),
+    radial-gradient(circle at 12% 62%, rgba(190, 170, 255, 0.7) 0 1px, transparent 2px),
+    radial-gradient(circle at 90% 88%, rgba(255, 235, 170, 0.8) 0 1px, transparent 2px),
+    linear-gradient(180deg, #2a2466 0%, #1a1646 55%, #0f0c2c 100%) !important;
+  border: 4px solid #d9b25a !important;
+  box-shadow: 0 0 0 2px #17122f, inset 0 0 0 2px #17122f, inset 0 0 0 3px #8c6a2a, inset 0 0 28px rgba(0, 0, 0, 0.7) !important;
+}
+#hero-card-wizard .hero-card-frame-wrapper {
+  border: 5px solid #e2bd66 !important;
+  box-shadow: 0 0 0 2px #17122f, inset 0 0 0 2px #17122f, 0 6px 0 rgba(0, 0, 0, 0.45), 0 0 18px rgba(130, 110, 255, 0.35) !important;
+  background: radial-gradient(circle at 50% 30%, #3d3691 0%, #0d0a26 78%) !important;
+}
+#hero-card-wizard .hero-card-name {
+  font-family: 'Italianno', 'Pinyon Script', cursive !important;
+  font-size: clamp(40px, 7.4vh, 66px) !important;
+  color: #3a2208 !important; -webkit-text-fill-color: #3a2208;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+  display: inline-block; padding: 0 34px 2px !important; margin-bottom: 6px !important;
+  background: linear-gradient(180deg, #f6e7bf 0%, #ead29a 60%, #d2b477 100%) !important;
+  box-shadow: 0 0 0 2px #6b4a1c, 0 3px 0 rgba(0, 0, 0, 0.45), inset 0 0 12px rgba(120, 80, 20, 0.35);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 50%, 100% 100%, 0 100%, 12px 50%);
+}
+#hero-card-wizard .hero-card-class { color: #cfc4ff !important; }
+#hero-card-wizard .hero-card-stats { border-color: #8c6a2a !important; background: rgba(6, 4, 24, 0.5) !important; }
+
+/* selected glow in each hero's colour (base glow comes from the earlier rules) */
+#hero-card-soldier.active { box-shadow: 0 0 0 2px #1b1f24, 0 0 0 5px #f4f6f8, 0 0 30px rgba(230, 60, 40, 0.65), inset 0 0 0 2px #2a3037, inset 0 0 0 4px #c3ccd4, inset 0 0 26px rgba(0, 0, 0, 0.6) !important; }
+#hero-card-wizard.active { box-shadow: 0 0 0 2px #17122f, 0 0 0 5px #ffe08a, 0 0 30px rgba(140, 120, 255, 0.75), inset 0 0 0 2px #17122f, inset 0 0 0 3px #8c6a2a, inset 0 0 28px rgba(0, 0, 0, 0.6) !important; }
+.hero-selection-grid { margin-top: 14px !important; }
+
+/* =====================================================================
+   HERO SELECTION AS A BOOK
+   No dialog frame: the open book is the container. Left board = the front
+   cover swung open, right board = back cover, heroes are the two pages.
+   Intro (4.4 s): book drifts in under a spotlight -> cover opens slowly ->
+   pages riffle -> heroes appear -> title and buttons fade in.
+   ===================================================================== */
+.hero-selection-modal-box {
+  background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important;
+  padding: 0 !important; overflow: visible !important; position: relative;
+  --book-t: 4.4s;
+}
+.hero-modal-header, .hero-modal-actions { position: relative; z-index: 2; }
+.hero-modal-header { margin-bottom: 14px !important; text-shadow: 0 2px 0 #000, 0 0 18px rgba(0, 0, 0, 0.9); }
+.hero-modal-actions { margin-top: 22px !important; }
+
+/* soft light that presents the book and then goes away (no hard edges: only blurred gradients) */
+.hero-book-spot {
+  position: absolute; left: 50%; top: 50%; width: 200vmax; height: 200vmax; margin: -100vmax 0 0 -100vmax; z-index: 0; pointer-events: none; opacity: 0;
+  background:
+    radial-gradient(ellipse 15% 12% at 50% 51%, rgba(255, 238, 196, 0.26) 0%, rgba(255, 238, 196, 0.13) 38%, rgba(255, 238, 196, 0.04) 70%, rgba(255, 238, 196, 0) 100%);
+}
+.hero-book-spot::before {      /* faint beam from above, feathered on every side */
+  content: ''; position: absolute; left: 50%; top: 0; width: 70vmin; height: 51%; margin-left: -35vmin;
+  background: radial-gradient(ellipse 50% 100% at 50% 100%, rgba(255, 240, 205, 0.16) 0%, rgba(255, 240, 205, 0.07) 45%, rgba(255, 240, 205, 0) 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 55%, #000 100%);
+  filter: blur(6px);
+}
+
+/* ---- the book ---- */
+.hero-selection-grid {
+  position: relative; z-index: 1; perspective: 2000px;
+  gap: 30px !important; padding: 16px 22px 24px !important; margin: 0 auto 0 !important;
+}
+.hero-selection-grid::before {           /* gutter shadow at the spine */
+  content: ''; position: absolute; top: 8px; bottom: 12px; left: 50%; width: 34px; margin-left: -17px; z-index: 4; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(40, 20, 5, 0.45) 35%, rgba(20, 8, 2, 0.75) 50%, rgba(40, 20, 5, 0.45) 65%, transparent);
+}
+.hero-select-card { z-index: 3; }
+
+/* boards: leather with gold tooling; the stacked shadows are the page block seen from the side */
+.hero-book-back, .hero-book-cover {
+  position: absolute; top: 0; bottom: 0; left: 50%; right: 0; pointer-events: none;
+  background:
+    radial-gradient(circle at 16px 16px, #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 16px) 16px, #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px),
+    radial-gradient(circle at 16px calc(100% - 16px), #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 16px) calc(100% - 16px), #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px),
+    linear-gradient(90deg, #2a0f0c 0, #5b1f18 7%, #6f271d 50%, #54190f 100%);
+  border: 4px solid #d9b25a;
+  box-shadow:
+    0 0 0 2px #1c0a06, inset 0 0 0 2px #1c0a06, inset 0 0 0 5px #8c6a2a, inset 0 0 40px rgba(0, 0, 0, 0.6),
+    4px 4px 0 #1c0a06, 6px 6px 0 #efe2bd, 8px 8px 0 #cdb98a, 10px 10px 0 #efe2bd, 12px 12px 0 #cdb98a, 14px 14px 0 #efe2bd,
+    17px 17px 0 #3a120c, 19px 19px 0 #1c0a06, 30px 36px 40px rgba(0, 0, 0, 0.65);
+}
+.hero-book-back { z-index: 0; }
+.hero-book-cover {
+  z-index: 0; transform-origin: left center; transform: rotateY(-180deg);     /* resting state: open, lying on the left */
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.35) 0, rgba(0, 0, 0, 0) 12%),
+    linear-gradient(90deg, #4a1711 0%, #5f2219 100%);
+}
+.hero-book-cover-inner {
+  position: absolute; inset: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; opacity: 0;
+  border: 2px solid #b98a35; box-shadow: inset 0 0 0 2px #2a0f0c, inset 0 0 0 3px #8c6a2a;
+}
+.hero-book-emblem { font-size: 38px; color: #f6d27a; text-shadow: 0 2px 0 #3a1c05; }
+.hero-book-title {
+  font-family: 'Pirata One', 'MedievalSharp', serif; font-size: clamp(32px, 5.6vh, 58px); line-height: 1; color: #f6d27a;
+  text-shadow: 0 2px 0 #6b4a14, 0 4px 0 #1c0a06;
+}
+.hero-book-sub { font-family: 'Italianno', cursive; font-size: clamp(24px, 3.8vh, 36px); color: #ead29a; text-shadow: 0 2px 0 #1c0a06; }
+
+/* parchment pages under each hero, and the loose pages that riffle */
+.hero-book-page, .hero-book-flip {
+  position: absolute; top: 9px; bottom: 13px; pointer-events: none;
+  background:
+    repeating-linear-gradient(180deg, rgba(110, 80, 30, 0) 0 15px, rgba(110, 80, 30, 0.16) 15px 16px),
+    linear-gradient(90deg, #cdb682 0%, #efe2bd 12%, #f3e8c8 60%, #e2d0a0 100%);
+  box-shadow: inset 0 0 0 1px #8a6a30, inset 0 0 24px rgba(120, 80, 20, 0.35);
+}
+.hero-book-page { z-index: 1; }
+.hero-book-page-right { left: 50%; right: 9px; }
+.hero-book-page-left { left: 9px; right: 50%; transform: scaleX(-1); }
+.hero-book-flip { left: 50%; right: 12px; z-index: 6; transform-origin: left center; opacity: 0; backface-visibility: visible; }
+
+/* ---------------- intro sequence ---------------- */
+.book-opening .hero-selection-grid { animation: bookEnter var(--book-t) both; pointer-events: none; }
+.book-opening .hero-book-spot { animation: bookSpot var(--book-t) both; }
+.book-opening .hero-book-cover { animation: bookCoverOpen var(--book-t) both; }
+.book-opening .hero-book-cover-inner { animation: bookCoverArt var(--book-t) both; }
+.book-opening .hero-book-page-left { animation: bookLeftIn var(--book-t) both; }
+.book-opening .hero-selection-grid::before { animation: bookSpine var(--book-t) both; }
+/* loose pages: they lie stacked on the right page (hiding Horos) and turn one after another */
+.book-opening .hero-book-flip { animation: bookFlip 0.52s cubic-bezier(0.45, 0.05, 0.55, 0.95) both; }
+.book-opening .hero-book-flip.f1 { animation-delay: 2.62s; }
+.book-opening .hero-book-flip.f2 { animation-delay: 2.74s; }
+.book-opening .hero-book-flip.f3 { animation-delay: 2.86s; }
+.book-opening .hero-book-flip.f4 { animation-delay: 2.98s; }
+.book-opening .hero-book-flip.f5 { animation-delay: 3.10s; }
+/* the last page only rises to edge-on; its other side IS Lancent's page, which finishes the turn */
+.book-opening .hero-book-flip.f6 { animation: bookFlipLast 0.30s cubic-bezier(0.45, 0, 0.9, 0.6) 3.25s both; }
+.book-opening #hero-card-soldier { transform-origin: calc(100% + 15px) center; animation: bookHeroPage 0.34s cubic-bezier(0.1, 0.4, 0.4, 1) 3.55s both; }
+.book-opening .hero-modal-header { animation: bookTitle var(--book-t) both; }
+.book-opening .hero-modal-actions { animation: bookButtons var(--book-t) both; }
+
+/* appears small in the centre, comes closer, a small bounce, settles; then slides half a page while it opens */
+@keyframes bookEnter {
+  0% { transform: translateX(-25%) scale(0.3); opacity: 0; animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1); }
+  7% { opacity: 1; }
+  21% { transform: translateX(-25%) scale(1.07); opacity: 1; animation-timing-function: ease-in-out; }
+  26% { transform: translateX(-25%) scale(0.975); animation-timing-function: ease-in-out; }
+  30% { transform: translateX(-25%) scale(1.012); animation-timing-function: ease-in-out; }
+  33%, 35% { transform: translateX(-25%) scale(1); animation-timing-function: cubic-bezier(0.5, 0, 0.3, 1); }
+  60%, 100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+/* light: fades in with the book, stays while it opens, gone once the heroes are shown */
+@keyframes bookSpot {
+  0% { opacity: 0; transform: scale(1.25); }
+  24% { opacity: 1; transform: scale(1); }
+  76% { opacity: 1; transform: scale(1); }
+  94%, 100% { opacity: 0; transform: scale(1.06); }
+}
+/* One continuous swing: the two halves share the same speed where they meet (edge-on),
+   and the cover stays in front all the way down so nothing pops in over it. */
+@keyframes bookCoverOpen {
+  0%, 35% { transform: rotateY(0deg); z-index: 8; filter: brightness(1); background: radial-gradient(circle at 16px 16px, #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px), radial-gradient(circle at calc(100% - 16px) 16px, #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px), radial-gradient(circle at 16px calc(100% - 16px), #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px), radial-gradient(circle at calc(100% - 16px) calc(100% - 16px), #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px), linear-gradient(90deg, #2a0f0c 0, #5b1f18 7%, #6f271d 50%, #54190f 100%);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.75, 0.5); }
+  47.9% { transform: rotateY(-90deg); z-index: 8; filter: brightness(0.6); background: radial-gradient(circle at 16px 16px, #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px), radial-gradient(circle at calc(100% - 16px) 16px, #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px), radial-gradient(circle at 16px calc(100% - 16px), #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px), radial-gradient(circle at calc(100% - 16px) calc(100% - 16px), #f6d27a 0 3px, #6b4a14 4px 5px, transparent 6px), linear-gradient(90deg, #2a0f0c 0, #5b1f18 7%, #6f271d 50%, #54190f 100%); }
+  48% { transform: rotateY(-90deg); z-index: 8; filter: brightness(0.6); background: linear-gradient(90deg, rgba(0, 0, 0, 0.35) 0, rgba(0, 0, 0, 0) 12%), linear-gradient(90deg, #4a1711 0%, #5f2219 100%);
+    animation-timing-function: cubic-bezier(0.25, 0.5, 0.55, 1); }
+  60% { transform: rotateY(-180deg); z-index: 8; filter: brightness(1); background: linear-gradient(90deg, rgba(0, 0, 0, 0.35) 0, rgba(0, 0, 0, 0) 12%), linear-gradient(90deg, #4a1711 0%, #5f2219 100%); }
+  60.1%, 100% { transform: rotateY(-180deg); z-index: 0; filter: brightness(1); background: linear-gradient(90deg, rgba(0, 0, 0, 0.35) 0, rgba(0, 0, 0, 0) 12%), linear-gradient(90deg, #4a1711 0%, #5f2219 100%); }
+}
+@keyframes bookCoverArt { 0%, 47.9% { opacity: 1; } 48%, 100% { opacity: 0; } }
+/* the left page block only exists once the first loose page has landed on it */
+@keyframes bookLeftIn { 0%, 71.3% { opacity: 0; } 71.4%, 100% { opacity: 1; } }
+@keyframes bookSpine { 0%, 56% { opacity: 0; } 62%, 100% { opacity: 1; } }
+@keyframes bookFlip {
+  0% { transform: rotateY(0deg); opacity: 1; filter: brightness(1); }
+  50% { transform: rotateY(-90deg); opacity: 1; filter: brightness(0.72); }
+  99.9% { transform: rotateY(-180deg); opacity: 1; filter: brightness(0.96); }
+  100% { transform: rotateY(-180deg); opacity: 0; }
+}
+@keyframes bookFlipLast {
+  0% { transform: rotateY(0deg); opacity: 1; filter: brightness(1); }
+  99.9% { transform: rotateY(-90deg); opacity: 1; filter: brightness(0.72); }
+  100% { transform: rotateY(-90deg); opacity: 0; }
+}
+/* Lancent is already drawn on the page that is coming down: no fade, just the turn */
+@keyframes bookHeroPage {
+  0% { transform: rotateY(90deg); }
+  100% { transform: rotateY(0deg); }
+}
+@keyframes bookTitle { 0%, 88% { opacity: 0; transform: translateY(12px); } 98%, 100% { opacity: 1; transform: none; } }
+@keyframes bookButtons { 0%, 91% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .book-opening .hero-selection-grid, .book-opening .hero-book-spot, .book-opening .hero-book-cover, .book-opening .hero-book-cover-inner,
+  .book-opening .hero-book-page-left, .book-opening .hero-modal-header, .book-opening .hero-modal-actions { animation-duration: 0.01s !important; }
+  .book-opening .hero-book-flip, .book-opening #hero-card-soldier { animation: none !important; }
+}
