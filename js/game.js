@@ -7181,7 +7181,7 @@ class MainGameScene extends Phaser.Scene {
     if (btnPlay) {
       btnPlay.onclick = () => {
         sfx.init();
-        sfx.playSwing();
+        sfx.fx('ui_click', 0.8, { minGap: 150 }) || sfx.playSwing();
         this.openHeroSelectionModal('practice');
       };
     }
@@ -7190,7 +7190,7 @@ class MainGameScene extends Phaser.Scene {
     if (btnCampaign) {
       btnCampaign.onclick = () => {
         sfx.init();
-        sfx.playSwing();
+        sfx.fx('ui_click', 0.8, { minGap: 150 }) || sfx.playSwing();
         this.openHeroSelectionModal('campaign');
       };
     }
@@ -7202,7 +7202,7 @@ class MainGameScene extends Phaser.Scene {
     if (btnMenuEditor) {
       btnMenuEditor.onclick = () => {
         sfx.init();
-        sfx.playSwing();
+        sfx.fx('ui_click', 0.8, { minGap: 150 }) || sfx.playSwing();
         this.openMapEditor();
       };
     }
@@ -7211,7 +7211,7 @@ class MainGameScene extends Phaser.Scene {
     if (btnMenuOptions) {
       btnMenuOptions.onclick = () => {
         sfx.init();
-        sfx.playAlert();
+        sfx.fx('ui_click', 0.8, { minGap: 150 }) || sfx.playAlert();
         document.getElementById('options-modal')?.classList.add('active');
         this.syncOptionsAudioUI();
         KeybindsManager.renderUI();
@@ -7222,7 +7222,7 @@ class MainGameScene extends Phaser.Scene {
     if (btnMenuExit) {
       btnMenuExit.onclick = () => {
         sfx.init();
-        sfx.playAlert();
+        sfx.fx('ui_click', 0.8, { minGap: 150 }) || sfx.playAlert();
         document.getElementById('exit-modal')?.classList.add('active');
       };
     }
@@ -7503,10 +7503,12 @@ class MainGameScene extends Phaser.Scene {
       box.classList.add('book-opening');
       (this._bookSounds || []).forEach(clearTimeout);
       this._bookSounds = [
-        setTimeout(() => { sfx.init(); sfx.fx('book_open', 0.9); }, 1540),
+        setTimeout(() => { sfx.init(); sfx.fx('book_clasp', 0.9); }, 1300),
+        setTimeout(() => sfx.fx('book_open', 0.9), 1540),
         setTimeout(() => sfx.fx('page_flip', 0.9), 2620)
       ];
       this._bookTimer = setTimeout(() => box.classList.remove('book-opening'), 4600);
+      this.spawnBookParticles(box);
     }
   }
 
@@ -7541,11 +7543,84 @@ class MainGameScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Dust and sparkles for the book intro. Everything is plain DOM + CSS animation;
+   * each particle only gets its own position / size / timing through CSS variables.
+   */
+  spawnBookParticles(box) {
+    const layer = box.querySelector('.hero-book-fx');
+    if (!layer) return;
+    layer.innerHTML = '';
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const add = (cls, vars) => {
+      const el = document.createElement('i');
+      el.className = cls;
+      Object.keys(vars).forEach(k => el.style.setProperty(k, vars[k]));
+      layer.appendChild(el);
+    };
+    // motes drifting in the light while the book is presented
+    for (let i = 0; i < 30; i++) {
+      add('bk-mote', {
+        '--x': rnd(18, 82).toFixed(1) + '%', '--y': rnd(-12, 96).toFixed(1) + '%', '--s': rnd(2, 4).toFixed(1) + 'px',
+        '--dx': rnd(-26, 26).toFixed(0) + 'px', '--dy': rnd(-46, -12).toFixed(0) + 'px',
+        '--d': rnd(2.4, 4.2).toFixed(2) + 's', '--delay': rnd(0, 1.6).toFixed(2) + 's', '--o': rnd(0.35, 0.85).toFixed(2)
+      });
+    }
+    // puff of dust when the cover lifts (from the fore edge of the closed book)
+    for (let i = 0; i < 16; i++) {
+      add('bk-dust', {
+        '--x': rnd(46, 74).toFixed(1) + '%', '--y': rnd(8, 92).toFixed(1) + '%', '--s': rnd(5, 12).toFixed(0) + 'px',
+        '--dx': rnd(10, 90).toFixed(0) + 'px', '--dy': rnd(-40, 24).toFixed(0) + 'px',
+        '--d': rnd(0.8, 1.4).toFixed(2) + 's', '--delay': (1.62 + rnd(0, 0.35)).toFixed(2) + 's'
+      });
+    }
+    // golden sparkles once both heroes are on the page
+    for (let i = 0; i < 18; i++) {
+      const side = Math.random();
+      add('bk-spark', {
+        '--x': (side < 0.5 ? rnd(-3, 12) : rnd(88, 103)).toFixed(1) + '%', '--y': rnd(-4, 100).toFixed(1) + '%', '--s': rnd(5, 10).toFixed(0) + 'px',
+        '--dy': rnd(-34, -10).toFixed(0) + 'px', '--d': rnd(0.7, 1.3).toFixed(2) + 's', '--delay': (3.85 + rnd(0, 0.55)).toFixed(2) + 's'
+      });
+    }
+    clearTimeout(this._bookFxTimer);
+    this._bookFxTimer = setTimeout(() => { layer.innerHTML = ''; }, 6200);
+  }
+
   confirmHeroSelection() {
     const modal = document.getElementById('hero-selection-modal');
-    if (modal) modal.classList.remove('active');
-
     const hero = this.selectedHero || 'soldier';
+    const box = modal && modal.querySelector('.hero-selection-modal-box');
+    const card = document.getElementById('hero-card-' + hero);
+
+    // Exit: the camera dives into the chosen hero's page, then the game starts behind a fade
+    if (box && card && !this._bookLeaving) {
+      this._bookLeaving = true;
+      const b = box.getBoundingClientRect(), c = card.getBoundingClientRect();
+      const zoom = parseFloat(getComputedStyle(box).zoom) || 1;
+      box.style.transformOrigin = ((c.left + c.width / 2 - b.left) / zoom) + 'px ' + ((c.top + c.height * 0.36 - b.top) / zoom) + 'px';
+      box.classList.remove('book-opening');
+      box.classList.add('book-leaving');
+      modal.classList.add('book-leaving-overlay');
+      sfx.fx('book_enter', 0.9);
+      setTimeout(() => {
+        const veil = document.createElement('div');
+        veil.className = 'book-veil';
+        (document.getElementById('game-wrapper') || document.body).appendChild(veil);
+        setTimeout(() => veil.remove(), 900);
+        box.classList.remove('book-leaving');
+        modal.classList.remove('book-leaving-overlay');
+        box.style.transformOrigin = '';
+        this._bookLeaving = false;
+        this.finishHeroSelection(hero);
+      }, 760);
+      return;
+    }
+    this.finishHeroSelection(hero);
+  }
+
+  finishHeroSelection(hero) {
+    const modal = document.getElementById('hero-selection-modal');
+    if (modal) modal.classList.remove('active');
     this.playerHero = hero;
 
     if (this.heroSelectionTargetMode === 'campaign') {
@@ -7583,9 +7658,8 @@ class MainGameScene extends Phaser.Scene {
     }
     if (btnConfirm) {
       btnConfirm.onclick = () => {
-        if (!this.selectedHero) return;
+        if (!this.selectedHero || this._bookLeaving) return;
         sfx.init();
-        sfx.playSwing();
         this.confirmHeroSelection();
       };
     }
@@ -10403,7 +10477,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnPlay.addEventListener('click', () => {
       if (typeof sfx !== 'undefined') {
         sfx.init();
-        sfx.playSwing();
+        sfx.fx('ui_click', 0.8, { minGap: 150 }) || sfx.playSwing();
       }
       if (window.activeGameScene && window.activeGameScene.openHeroSelectionModal) {
         window.activeGameScene.openHeroSelectionModal('practice');
@@ -10418,7 +10492,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCampaign.addEventListener('click', () => {
       if (typeof sfx !== 'undefined') {
         sfx.init();
-        sfx.playSwing();
+        sfx.fx('ui_click', 0.8, { minGap: 150 }) || sfx.playSwing();
       }
       if (window.activeGameScene && window.activeGameScene.openHeroSelectionModal) {
         window.activeGameScene.openHeroSelectionModal('campaign');
@@ -10433,7 +10507,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnEditor.addEventListener('click', () => {
       if (typeof sfx !== 'undefined') {
         sfx.init();
-        sfx.playSwing();
+        sfx.fx('ui_click', 0.8, { minGap: 150 }) || sfx.playSwing();
       }
       if (window.activeGameScene && window.activeGameScene.openMapEditor) {
         window.activeGameScene.openMapEditor();
@@ -10448,7 +10522,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnOptions.addEventListener('click', () => {
       if (typeof sfx !== 'undefined') {
         sfx.init();
-        sfx.playAlert();
+        sfx.fx('ui_click', 0.8, { minGap: 150 }) || sfx.playAlert();
       }
       document.getElementById('options-modal')?.classList.add('active');
       if (typeof KeybindsManager !== 'undefined') KeybindsManager.renderUI();
@@ -10505,18 +10579,95 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// Epic golden flash when the Campaign button is chosen on the start menu
-document.addEventListener('click', (ev) => {
-  const btn = ev.target && ev.target.closest && ev.target.closest('#btn-menu-campaign');
-  if (!btn) return;
-  const host = document.getElementById('game-wrapper') || document.body;
-  const fx = document.createElement('div');
-  fx.className = 'epic-flash';
-  fx.innerHTML = '<div class="epic-flash-rays"></div><div class="epic-flash-core"></div><div class="epic-flash-ring"></div>';
-  const r = btn.getBoundingClientRect();
-  const h = host.getBoundingClientRect();
-  fx.style.setProperty('--fx-x', (r.left + r.width / 2 - h.left) + 'px');
-  fx.style.setProperty('--fx-y', (r.top + r.height / 2 - h.top) + 'px');
-  host.appendChild(fx);
-  setTimeout(() => fx.remove(), 1100);
-}, true);
+// ==========================================
+// START MENU v2: press-any-key gate, keyboard / sword selector, fireflies
+// (plain DOM, independent from the Phaser scene)
+// ==========================================
+(function setupStartMenu() {
+  const overlay = document.getElementById('start-menu-overlay');
+  if (!overlay) return;
+  const nav = overlay.querySelector('.start-menu-nav');
+  const cursor = document.getElementById('sm-cursor');
+  const buttons = () => Array.from(overlay.querySelectorAll('.start-menu-btn'));
+  let index = 0;
+
+  // fireflies and embers
+  const flies = document.getElementById('sm-flies');
+  if (flies) {
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    for (let i = 0; i < 26; i++) {
+      const el = document.createElement('i');
+      const ember = i % 4 === 0;
+      const vars = {
+        '--x': rnd(2, 98).toFixed(1) + '%', '--y': rnd(ember ? 55 : 30, 96).toFixed(1) + '%', '--s': rnd(2, 4).toFixed(1) + 'px',
+        '--dx': rnd(-60, 60).toFixed(0) + 'px', '--dy': rnd(ember ? -160 : -70, ember ? -60 : 30).toFixed(0) + 'px',
+        '--d': rnd(6, 13).toFixed(1) + 's', '--delay': rnd(-12, 0).toFixed(1) + 's', '--o': rnd(0.45, 0.95).toFixed(2)
+      };
+      if (ember) { vars['--c'] = '#ffb056'; vars['--g'] = 'rgba(255, 140, 50, 0.7)'; }
+      else if (i % 3 === 0) { vars['--c'] = '#d9ffb0'; vars['--g'] = 'rgba(190, 255, 140, 0.6)'; }
+      Object.keys(vars).forEach(k => el.style.setProperty(k, vars[k]));
+      flies.appendChild(el);
+    }
+  }
+
+  const menuActive = () => !overlay.classList.contains('hidden') && overlay.style.display !== 'none' &&
+    !document.querySelector('.modal-overlay.active');
+
+  const select = (i, viaKeyboard) => {
+    const list = buttons();
+    if (!list.length) return;
+    const prev = index;
+    index = (i + list.length) % list.length;
+    if (index !== prev || !list[index].classList.contains('is-selected')) { if (overlay.classList.contains('sm-ready')) sfx.fx('ui_hover', 0.45, { minGap: 50 }); }
+    list.forEach((b, n) => b.classList.toggle('is-selected', n === index));
+    const b = list[index];
+    if (cursor && nav) {
+      const nr = nav.getBoundingClientRect(), br = b.getBoundingClientRect();
+      const zoom = nr.width / (nav.offsetWidth || nr.width) || 1;
+      cursor.style.transform = 'translate(' + ((br.left - nr.left) / zoom - 40) + 'px, ' + ((br.top - nr.top + br.height / 2) / zoom - 17) + 'px)';
+      cursor.classList.add('is-on');
+    }
+    if (viaKeyboard) { try { b.focus({ preventScroll: true }); } catch (e) { } }
+    else if (document.activeElement && document.activeElement !== b && document.activeElement.classList && document.activeElement.classList.contains('start-menu-btn')) document.activeElement.blur();
+  };
+
+  // the whole block grows with the screen so it never looks lost on a big monitor
+  const fit = () => {
+    const h = overlay.clientHeight || 720, w = overlay.clientWidth || 1280;
+    const k = Math.max(0.72, Math.min(1.7, Math.min(h / 680, w / 1100)));
+    overlay.style.setProperty('--sm-scale', k.toFixed(3));
+  };
+  fit();
+
+  const open = () => {
+    if (overlay.classList.contains('sm-open')) return;
+    overlay.classList.remove('sm-wait');
+    overlay.classList.add('sm-open');
+    setTimeout(() => { select(0); overlay.classList.add('sm-ready'); }, 620);     // once the cascade has landed
+  };
+
+  // logo forges in first, then the prompt
+  setTimeout(() => { if (!overlay.classList.contains('sm-open')) overlay.classList.add('sm-wait'); }, 1700);
+
+  window.addEventListener('keydown', (ev) => {
+    if (!menuActive()) return;
+    if (!overlay.classList.contains('sm-open')) { open(); ev.preventDefault(); return; }
+    const k = ev.key;
+    if (k === 'ArrowDown' || k === 's' || k === 'S') { select(index + 1, true); ev.preventDefault(); }
+    else if (k === 'ArrowUp' || k === 'w' || k === 'W') { select(index - 1, true); ev.preventDefault(); }
+    else if (k === 'Enter') {
+      const b = buttons()[index];
+      // always activate it ourselves: the game captures Enter, so the browser's own button activation never fires
+      if (b) { ev.preventDefault(); b.click(); }
+    }
+  }, true);
+  overlay.addEventListener('pointerdown', () => { if (!overlay.classList.contains('sm-open')) open(); });
+  overlay.addEventListener('pointermove', (ev) => {
+    if (!overlay.classList.contains('sm-open')) return;
+    const b = ev.target && ev.target.closest && ev.target.closest('.start-menu-btn');
+    if (b) { const n = buttons().indexOf(b); if (n >= 0 && n !== index) select(n); else if (n === index && !b.classList.contains('is-selected')) select(n); }
+  });
+  const refit = () => { fit(); if (overlay.classList.contains('sm-open')) select(index); };
+  window.addEventListener('resize', refit);
+  document.addEventListener('fullscreenchange', () => setTimeout(refit, 60));
+})();

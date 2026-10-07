@@ -17,7 +17,7 @@
   <!-- Custom Styles (CastleKnight Theme) -->
   <link rel="stylesheet" href="styles.css?v=7.0">
   <!-- UI skin cut from assets/UI/fantasyUI.png (overrides only) -->
-  <link rel="stylesheet" href="ui-theme.css?v=1.8">
+  <link rel="stylesheet" href="ui-theme.css?v=2.0">
 </head>
 <body>
 
@@ -161,29 +161,45 @@
         <source src="assets/intro/videointro_clean.mp4?v=2" type="video/mp4">
       </video>
       <div class="start-menu-vignette"></div>
+      <!-- living layers over the video: fog, lantern glow, fireflies -->
+      <div class="sm-ambient" aria-hidden="true">
+        <span class="sm-fog sm-fog-a"></span><span class="sm-fog sm-fog-b"></span>
+        <span class="sm-glow sm-glow-1"></span><span class="sm-glow sm-glow-2"></span><span class="sm-glow sm-glow-3"></span>
+        <span class="sm-flies" id="sm-flies"></span>
+      </div>
+      <div class="sm-shade" aria-hidden="true"></div>
       <div class="start-menu-content">
-        <div class="start-menu-badge">✦ REINO MEDIEVAL ✦</div>
-        <h1 class="start-menu-title" id="start-menu-title">CastleKnight</h1>
-        <nav class="start-menu-nav" aria-label="Menu Principal">
-          <button id="btn-menu-play" class="start-menu-btn" title="Iniciar Partida — Modo Práctica">
-            <span>INICIAR PARTIDA</span>
-          </button>
-          <button id="btn-menu-campaign" class="start-menu-btn btn-menu-campaign" title="Modo Campaña — Mapa del reino">
-            <span>CAMPAÑA</span>
-          </button>
-          <button id="btn-menu-editor" class="start-menu-btn btn-menu-editor" title="Abrir el Creador y Editor de Mapas">
-            <span>CREADOR DE MAPA</span>
-          </button>
-          <button id="btn-menu-options" class="start-menu-btn" title="Configurar controles de teclado y opciones">
-            <span>OPCIONES</span>
-          </button>
-          <button id="btn-menu-exit" class="start-menu-btn" title="Salir del juego">
-            <span>SALIR DEL JUEGO</span>
-          </button>
-        </nav>
-        <div class="start-menu-footer">
-          <span>AVENTURA Y COMBATE EN LA FORTALEZA DE LOS CABALLEROS</span>
+        <div class="sm-logo">
+          <img class="sm-logo-emblem" src="assets/UI/book/emblem.png" alt="">
+          <span class="sm-logo-flash" aria-hidden="true"></span>
+          <h1 class="start-menu-title" id="start-menu-title">CastleKnight</h1>
+          <div class="start-menu-badge sm-pennant">✦ REINO MEDIEVAL ✦</div>
         </div>
+        <div class="sm-press" id="sm-press">Presiona cualquier tecla</div>
+        <nav class="start-menu-nav" aria-label="Menu Principal">
+          <span class="sm-cursor" id="sm-cursor" aria-hidden="true"><img src="assets/UI/pix/sword.png" alt=""></span>
+          <button id="btn-menu-campaign" class="start-menu-btn btn-menu-campaign sm-primary" title="Modo Campaña — Mapa del reino">
+            <span><img src="assets/UI/pix/castle.png" class="px-ico sm-ico" alt="">CAMPAÑA</span>
+          </button>
+          <button id="btn-menu-play" class="start-menu-btn sm-secondary" title="Iniciar Partida — Modo Práctica">
+            <span><img src="assets/UI/pix/sword.png" class="px-ico sm-ico" alt="">INICIAR PARTIDA</span>
+          </button>
+          <div class="sm-minor">
+            <button id="btn-menu-editor" class="start-menu-btn btn-menu-editor sm-small" title="Abrir el Creador y Editor de Mapas">
+              <span><img src="assets/UI/pix/bricks.png" class="px-ico sm-ico" alt="">CREADOR DE MAPA</span>
+            </button>
+            <button id="btn-menu-options" class="start-menu-btn sm-small" title="Configurar controles de teclado y opciones">
+              <span><img src="assets/UI/pix/gear.png" class="px-ico sm-ico" alt="">OPCIONES</span>
+            </button>
+            <button id="btn-menu-exit" class="start-menu-btn sm-small" title="Salir del juego">
+              <span><img src="assets/UI/pix/door.png" class="px-ico sm-ico" alt="">SALIR</span>
+            </button>
+          </div>
+        </nav>
+      </div>
+      <div class="sm-bottom" aria-hidden="true">
+        <span>CastleKnight · v0.9</span>
+        <span class="sm-hint"><b>↑</b> <b>↓</b> elegir &nbsp; <b>ENTER</b> confirmar</span>
       </div>
     </div>
 
@@ -191,6 +207,7 @@
     <div id="hero-selection-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="hero-modal-title">
       <div class="modal-box hero-selection-modal-box">
         <div class="hero-book-spot" aria-hidden="true"></div>
+        <div class="hero-book-fx" aria-hidden="true"></div>
         <div class="hero-modal-header">
           <div class="hero-modal-badge">✦ ELIGE TU DESTINO ✦</div>
           <h2 id="hero-modal-title" class="hero-modal-title">SELECCIONA TU HÉROE</h2>
@@ -209,8 +226,11 @@
           <div class="hero-book-flip f5" aria-hidden="true"></div>
           <div class="hero-book-flip f6" aria-hidden="true"></div>
           <div class="hero-book-cover" aria-hidden="true">
+            <span class="hero-book-corner tl"></span><span class="hero-book-corner tr"></span>
+            <span class="hero-book-corner bl"></span><span class="hero-book-corner br"></span>
+            <span class="hero-book-clasp"><span class="hero-book-buckle"></span></span>
             <span class="hero-book-cover-inner">
-              <span class="hero-book-emblem">✦</span>
+              <img class="hero-book-emblem-img" src="assets/UI/book/emblem.png" alt="">
               <span class="hero-book-title">CastleKnight</span>
               <span class="hero-book-sub">Libro de Héroes</span>
             </span>
@@ -853,6 +873,6 @@
   <!-- Interior furniture + cow (embedded PNGs) -->
   <script src="js/interior_assets.js?v=1.1"></script>
   <script src="js/hero_fx_assets.js?v=1.3"></script>
-  <script src="js/game.js?v=9.5"></script>
+  <script src="js/game.js?v=9.8"></script>
 </body>
 </html>
