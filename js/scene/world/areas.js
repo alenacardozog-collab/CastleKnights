@@ -233,6 +233,7 @@ Object.assign(MainGameScene.prototype, {
       cam.setZoom(ret.zoom || 1.5);
       cam.startFollow(this.player, true, 0.09, 0.09);
       cam.centerOn(this.player.x, this.player.y);
+      if (this.onVillageShown) this.onVillageShown();
     });
   },
 
@@ -266,6 +267,7 @@ Object.assign(MainGameScene.prototype, {
     ambience.set(area.ambient || []);
     this.setInteriorVisible(area);
     this.physics.world.setBounds(area.x, area.y, area.w, area.h);
+    if (this.onAreaShown) this.onAreaShown(area, at);
     if (area.outdoor) {
       // open-air area: the camera follows the hero inside the map, like in the village
       cam.setBounds(area.x, area.y, area.w, area.h);
@@ -365,6 +367,7 @@ Object.assign(MainGameScene.prototype, {
     if (!this.interiorObstacles) {
       this.interiorObstacles = this.physics.add.staticGroup();
       this._interiorCollider = this.physics.add.collider(this.player, this.interiorObstacles);
+      if (this.enemies) this._interiorEnemyCollider = this.physics.add.collider(this.enemies, this.interiorObstacles);
     }
 
     Object.keys(layout.areas).forEach((name, areaIdx) => {
@@ -618,7 +621,7 @@ Object.assign(MainGameScene.prototype, {
         if (a.type === 'king' && this.textures.exists('king_idle')) {
           const king = this.add.sprite(ox + a.x, oy + a.y, 'king_idle').setOrigin(0.54, 0.61).setScale(1.75).setDepth(oy + a.y);
           if (this.anims.exists('kingprueba_idle')) king.play('kingprueba_idle');
-          const tag = this.add.text(ox + a.x, oy + a.y - 46, 'KingPrueba', {
+          const tag = this.add.text(ox + a.x, oy + a.y - 46, 'Rey Aldric', {
             fontFamily: 'Pixuf, MedievalSharp, monospace', fontSize: '10px', fill: '#fde68a', stroke: '#000000', strokeThickness: 3
           }).setOrigin(0.5, 1).setDepth(oy + a.y + 200);
           addSolid({ x: a.x - 9, y: a.y - 8, w: 18, h: 8 });
@@ -635,6 +638,8 @@ Object.assign(MainGameScene.prototype, {
 
       areas[name] = {
         name,
+        key: layout.kind + '.' + name,          // "castle.road": used by ZONE_ENEMIES and the story
+        solids: la.colliders,
         x: ox, y: oy, w: la.w, h: la.h,
         spawn: { x: ox + la.spawn.x, y: oy + la.spawn.y },
         exits: la.exits.map(e => ({ x: ox + e.x, y: oy + e.y, w: e.w, h: e.h, key: e.key, to: e.to, arrive: e.arrive, hint: e.hint, hintAt: 0 })),

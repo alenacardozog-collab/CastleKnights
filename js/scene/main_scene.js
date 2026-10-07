@@ -221,6 +221,7 @@ class MainGameScene extends Phaser.Scene {
    * Start the generic Practice map (embedded meadow / mapa1_data.js)
    */
   startPractice() {
+    if (this.endStory) this.endStory();
     if (this.destroyInteriors) this.destroyInteriors();
     this._gameMode = 'practice';
     this._currentMapKey = 'tiled_map';
@@ -362,6 +363,7 @@ class MainGameScene extends Phaser.Scene {
       this.cameras.main.setZoom(1.5);
 
       this.startGame('campaign');
+      this.initStory();
 
       // Ensure NPCs are spawned in peaceful village lobby
       this.spawnCampaignNPCs();
@@ -574,6 +576,8 @@ class MainGameScene extends Phaser.Scene {
    * Return to Start Menu from Pause, Game Over, or Exit
    */
   returnToStartMenu() {
+    if (this.saveStory) this.saveStory();
+    if (this.endStory) this.endStory();
     if (this.destroyInteriors) this.destroyInteriors();
     this.gameStarted = false;
     this.isGamePaused = false;
@@ -700,7 +704,11 @@ class MainGameScene extends Phaser.Scene {
       this.switchHero('soldier');
     } else if (this.keyHeroWizard && Phaser.Input.Keyboard.JustDown(this.keyHeroWizard)) {
       this.switchHero('wizard');
+    } else if (this.keyHeroSwordsman && Phaser.Input.Keyboard.JustDown(this.keyHeroSwordsman)) {
+      this.switchHero('swordsman');
     }
+    if (this.keyInteract && Phaser.Input.Keyboard.JustDown(this.keyInteract)) this.interact();
+    this.updateStory(dt);
 
     // Hotkey attacks
     if (Phaser.Input.Keyboard.JustDown(this.keyAttack)) {
@@ -721,7 +729,7 @@ class MainGameScene extends Phaser.Scene {
     }
     if (this.keyUltimate && Phaser.Input.Keyboard.JustDown(this.keyUltimate)) {
       sfx.init();
-      if (this.playerHero === 'wizard') this.performThunder(); else this.performArrowRain();
+      if (this.playerHero === 'wizard') this.performThunder(); else if (this.playerHero === 'swordsman') this.performBladeDance(); else this.performArrowRain();
     }
 
     // Handle Player Movement
@@ -735,7 +743,7 @@ class MainGameScene extends Phaser.Scene {
     // Animate doors based on player proximity
     this.checkDoorProximity();
 
-    // Update wandering NPCs
-    this.updateNPCs();
+    // Update wandering NPCs (the village sleeps while the hero is in another map)
+    if (!this.currentInterior) this.updateNPCs();
   }
 }

@@ -431,6 +431,9 @@ Object.assign(MainGameScene.prototype, {
       frameWidth: 100, frameHeight: 100
     });
 
+    // 3b. Aby, enemies by zone, castle guards and the new villagers (data: js/config/characters.js)
+    this.preloadRoster(getAsset);
+
     // 4. Props & Map Decoratives
     this.createProceduralPropTextures();
   }

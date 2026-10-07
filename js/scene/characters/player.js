@@ -80,6 +80,7 @@ Object.assign(MainGameScene.prototype, {
     this.registerNPCAnimations();
 
     // Helper to register standard animation sets
+    this.createRosterAnimations();
     const heroes = ['orc', 'soldier'];
     heroes.forEach(h => {
       // Idle (6 frames)
@@ -329,6 +330,8 @@ Object.assign(MainGameScene.prototype, {
     this.keyEnter.on('down', () => {
       if (this._gameMode !== 'campaign' && !this.readyForCombat && this.gameStarted && !this.isDead) {
         this.triggerStartCombat();
+      } else if (this._gameMode === 'campaign' && this.gameStarted) {
+        this.interact();
       }
     });
 
@@ -377,6 +380,7 @@ Object.assign(MainGameScene.prototype, {
       if (!this.gameStarted || this.isDead || this.isGamePaused) return;
 
       sfx.init();
+      if (this.dialogOpen) { this.advanceDialog(); return; }
       if (pointer.leftButtonDown()) {
         this.performAttack();
       } else if (pointer.rightButtonDown()) {
@@ -430,6 +434,9 @@ Object.assign(MainGameScene.prototype, {
     this.keyHeroSoldier = this.input.keyboard.addKey(resolvePhaserKeyCode(KeybindsManager.get('heroSoldier')));
     this.keyHeroWizard = this.input.keyboard.addKey(resolvePhaserKeyCode(KeybindsManager.get('heroWizard') || '2'));
 
+    this.keyHeroSwordsman = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE);
+    this.keyInteract = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T);
+
     // Auxiliary space key for fallback melee attack
     this.keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
@@ -455,7 +462,7 @@ Object.assign(MainGameScene.prototype, {
 
   handlePlayerMovement() {
     // Frozen while fading in/out of a building
-    if (this._doorTransition) {
+    if (this._doorTransition || this.dialogOpen) {
       this.player.setVelocity(0, 0);
       const idleKey = `${this.playerHero}_idle`;
       if (this.anims.exists(idleKey)) this.player.play(idleKey, true);
@@ -559,7 +566,7 @@ Object.assign(MainGameScene.prototype, {
    * - Game Over on 0 hearts
    */
   damagePlayer(amount) {
-    if (this._gameMode === 'campaign' || this.isInvulnerable || this.isDead) return;
+    if (this.isInvulnerable || this.isDead || this.dialogOpen || this._doorTransition) return;
 
     // Horos charging his thunder: an arcane guard soaks up the first hit of each charge
     const charging = this.thunderCharge;
@@ -577,7 +584,7 @@ Object.assign(MainGameScene.prototype, {
     this.health -= amount;
     if (this.health < 0) this.health = 0;
 
-    sfx.fx(this.playerHero === 'wizard' ? 'wizard_hurt' : 'knight_hurt', 0.9) || sfx.playPlayerHurt();
+    sfx.fx(HEROES[this.playerHero].hurt, 0.9) || sfx.playPlayerHurt();
     this.cameras.main.shake(200, 0.012);
 
     // Screen flash red
@@ -591,11 +598,12 @@ Object.assign(MainGameScene.prototype, {
       this.isDead = true;
       this.player.setVelocity(0, 0);
       this.player.play(`${this.playerHero}_death`);
-      sfx.fx(this.playerHero === 'wizard' ? 'wizard_death' : 'knight_death', 1);
+      sfx.fx(HEROES[this.playerHero].death, 1);
       sfx.playGameOver();
 
       this.time.delayedCall(1200, () => {
-        this.showGameOverModal();
+        if (this._gameMode === 'campaign') this.campaignDefeat();
+        else this.showGameOverModal();
       });
     } else {
       // Invulnerability period
@@ -649,7 +657,7 @@ Object.assign(MainGameScene.prototype, {
     // Update HUD display
     this.updateHUD();
 
-    const heroDisplayName = newHero === 'wizard' ? 'HOROS' : 'LANCENT';
-    this.createFloatingText(this.player.x, this.player.y - 44, `¡${heroDisplayName} ACTIVADO!`, newHero === 'wizard' ? 0xc084fc : 0xfbbf24);
+    const heroDef = HEROES[newHero];
+    this.createFloatingText(this.player.x, this.player.y - 44, `¡${heroDef.name} ACTIVADO!`, heroDef.color);
   }
 });

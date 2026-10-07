@@ -8,6 +8,7 @@ Object.assign(MainGameScene.prototype, {
    */
   spawnEnemyWave() {
     if (this._gameMode === 'campaign' || !this.readyForCombat || this.isDead || (this.devModeEnabled && this.devAiPaused)) return;
+    if (this.currentInterior) return;
     const currentEnemies = this.enemies.countActive(true);
     const maxEnemies = 7 + this.wave;
 
@@ -29,7 +30,7 @@ Object.assign(MainGameScene.prototype, {
         const dist = Math.random() * radius;
         const ex = Phaser.Math.Clamp(spawnPoint.x + Math.cos(angle) * dist, 32, this.mapWidth - 32);
         const ey = Phaser.Math.Clamp(spawnPoint.y + Math.sin(angle) * dist, 32, this.mapHeight - 32);
-        this.spawnEnemy(ex, ey, 'orc');
+        this.spawnEnemy(ex, ey, this.pickWaveEnemyType());
       } else {
         const defaultPoints = [
           { x: 520, y: 320 },
@@ -38,7 +39,7 @@ Object.assign(MainGameScene.prototype, {
           { x: 160, y: 120 }
         ];
         const pt = Phaser.Utils.Array.GetRandom(defaultPoints);
-        this.spawnEnemy(pt.x, pt.y);
+        this.spawnEnemy(pt.x, pt.y, this.pickWaveEnemyType());
       }
     }
 
@@ -55,19 +56,19 @@ Object.assign(MainGameScene.prototype, {
    * until they spot the player or player comes close.
    */
   spawnEnemy(x, y, overrideType = null) {
-    if (this._gameMode === 'campaign') return null; // Peaceful lobby
-    // Orc is strictly the enemy; Soldier and Wizard are the only playable characters
-    const enemyType = 'orc';
+    const enemyType = ENEMY_TYPES[overrideType] && this.textures.exists(`${overrideType}_idle`) ? overrideType : 'orc';
+    const def = ENEMY_TYPES[enemyType];
 
     const enemy = this.enemies.create(x, y, `${enemyType}_idle`);
     enemy.type = enemyType;
-    enemy.hp = 2;
-    enemy.maxHp = 2;
+    enemy.def = def;
+    enemy.hp = def.hp;
+    enemy.maxHp = def.hp;
     enemy.isDead = false;
     enemy.isAttacking = false;
     enemy.attackCooldown = 0;
     enemy.setDepth(8);
-    enemy.setScale(1.20);
+    enemy.setScale(def.scale || 1.20);
 
     // Dynamic Physics Body with Hitbox placed at feet:
     // Tight 16x8 box placed at feet so obstacles physically block movement
@@ -87,6 +88,18 @@ Object.assign(MainGameScene.prototype, {
 
     enemy.play(`${enemyType}_idle`);
 
+    // Life bar over tough enemies (drawn only after the first hit); the boss gets its name too
+    if (def.hp > 2) {
+      enemy.hpBar = this.add.graphics().setDepth(26000);
+      enemy.once('destroy', () => { if (enemy.hpBar) enemy.hpBar.destroy(); if (enemy.nameTag) enemy.nameTag.destroy(); });
+    }
+    if (def.boss) {
+      enemy.nameTag = this.add.text(x, y - 60, def.name, {
+        fontFamily: 'Pixuf, MedievalSharp, monospace', fontSize: '11px', fill: '#e9d5ff', stroke: '#000000', strokeThickness: 3
+      }).setOrigin(0.5, 1).setDepth(26001);
+      enemy.nextSummon = this.time.now + 5000;
+    }
+
     // Gentle fade-in spawn effect
     enemy.setAlpha(0);
     this.tweens.add({
@@ -95,6 +108,75 @@ Object.assign(MainGameScene.prototype, {
       duration: 350
     });
     return enemy;
+  },
+
+  /** Enemy type for the practice arena at the current wave (data: PRACTICE_WAVES). */
+  pickWaveEnemyType() {
+    let pool = PRACTICE_WAVES[0].types;
+    PRACTICE_WAVES.forEach(w => { if (this.wave >= w.from) pool = w.types; });
+    return Phaser.Utils.Array.GetRandom(pool);
+  },
+
+  /**
+   * Campaign: put the enemies of a zone on the map when the hero enters it (data: ZONE_ENEMIES).
+   * Whatever was left from the previous zone is removed first.
+   */
+  spawnZoneEnemies(area) {
+    this.clearZoneEnemies();
+    if (this._gameMode !== 'campaign' || !area || !area.key) return;
+    const list = ZONE_ENEMIES[area.key];
+    if (!list) return;
+    const solids = area.solids || [];
+    const free = (x, y) => x > 20 && y > 30 && x < area.w - 20 && y < area.h - 16 &&
+      !solids.some(c => x > c.x - 12 && x < c.x + c.w + 12 && y > c.y - 10 && y < c.y + c.h + 10);
+    const sp = area.spawn;
+    list.forEach(([type, x, y, r]) => {
+      if (ENEMY_TYPES[type].boss && this.story && this.story.flags['boss_' + type]) return;
+      let px = x, py = y, ok = free(x, y);
+      for (let i = 0; i < 40 && !ok; i++) {
+        const a = Math.random() * Math.PI * 2, d = Math.random() * (r + i * 3);
+        px = x + Math.cos(a) * d; py = y + Math.sin(a) * d; ok = free(px, py);
+      }
+      if (!ok) return;
+      // never on top of the place where the hero arrives
+      if (Phaser.Math.Distance.Between(area.x + px, area.y + py, sp.x, sp.y) < 150) return;
+      const e = this.spawnEnemy(area.x + px, area.y + py - 26, type);
+      if (e) e.zone = area.key;
+    });
+  },
+
+  clearZoneEnemies() {
+    if (this.enemies) this.enemies.clear(true, true);
+    if (this.enemyShots) this.enemyShots.clear(true, true);
+    if (this.heartPickups) this.heartPickups.clear(true, true);
+  },
+
+  /** A ranged enemy lets go of its arrow / spell towards the hero. */
+  enemyShoot(enemy) {
+    const r = enemy.def.ranged;
+    if (!this.enemyShots) {
+      this.enemyShots = this.physics.add.group();
+      this.physics.add.overlap(this.player, this.enemyShots, (pl, shot) => {
+        if (!shot.active) return;
+        const dmg = shot.dmg || 1;
+        shot.destroy();
+        this.damagePlayer(dmg);
+      });
+      if (this.obstacles) this.physics.add.collider(this.enemyShots, this.obstacles, s => s.destroy());
+    }
+    const sx = enemy.x + (enemy.flipX ? -14 : 14), sy = enemy.y + 4;
+    const shot = this.enemyShots.create(sx, sy, r.key);
+    shot.dmg = enemy.def.dmg;
+    shot.homing = r.homing ? 0.9 : 0;
+    shot.speed = r.speed;
+    shot.body.setAllowGravity(false);
+    shot.body.setSize(10, 10);
+    shot.setDepth(Math.max(10, Math.round(sy + 30)));
+    if (r.frames > 1 && this.anims.exists(r.key + '_fly')) shot.play(r.key + '_fly');
+    const ang = Phaser.Math.Angle.Between(sx, sy, this.player.x, this.player.y + 6);
+    shot.setVelocity(Math.cos(ang) * r.speed, Math.sin(ang) * r.speed);
+    shot.setRotation(ang);
+    this.time.delayedCall(r.homing ? 3200 : 1800, () => { if (shot.active) shot.destroy(); });
   },
 
   /**
@@ -178,8 +260,14 @@ Object.assign(MainGameScene.prototype, {
    *    - De-aggros with '?' indicator if player flees > 480px away.
    */
   updateEnemies() {
-    if (this._gameMode === 'campaign') return;
     const now = this.time.now;
+    // homing spells bend towards the hero
+    if (this.enemyShots) this.enemyShots.getChildren().forEach(s => {
+      if (!s.active || !s.homing) return;
+      const want = Phaser.Math.Angle.Between(s.x, s.y, this.player.x, this.player.y + 6);
+      const cur = Phaser.Math.Angle.RotateTo(s.rotation, want, s.homing * this.game.loop.delta / 1000);
+      s.setRotation(cur); s.setVelocity(Math.cos(cur) * s.speed, Math.sin(cur) * s.speed);
+    });
 
     this.enemies.getChildren().forEach(enemy => {
       if (!enemy.active || enemy.isDead) return;
@@ -188,6 +276,31 @@ Object.assign(MainGameScene.prototype, {
       enemy.setDepth(Math.max(10, Math.round(enemy.body ? enemy.body.bottom : enemy.y + 24)));
 
       const dist = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+      const def = enemy.def || ENEMY_TYPES.orc;
+      if (enemy.hpBar) {
+        const g = enemy.hpBar; g.clear();
+        if (enemy.hp < enemy.maxHp || def.boss) {
+          const w = def.boss ? 44 : 24, bx = enemy.x - w / 2, by = enemy.y - (def.boss ? 52 : 34);
+          g.fillStyle(0x000000, 0.75); g.fillRect(bx - 1, by - 1, w + 2, 5);
+          g.fillStyle(def.boss ? 0xa855f7 : 0xdc2626, 1); g.fillRect(bx, by, w * Math.max(0, enemy.hp / enemy.maxHp), 3);
+        }
+        if (enemy.nameTag) enemy.nameTag.setPosition(enemy.x, enemy.y - 56);
+      }
+      // the boss raises the dead while it fights
+      if (def.summon && enemy.state === 'chase' && now > enemy.nextSummon) {
+        enemy.nextSummon = now + def.summon.every;
+        const minions = this.enemies.getChildren().filter(e => e.active && !e.isDead && e.type === def.summon.type).length;
+        if (minions < def.summon.max) {
+          if (this.anims.exists(`${enemy.type}_attack2`)) { enemy.isAttacking = true; enemy.setVelocity(0, 0); enemy.play(`${enemy.type}_attack2`);
+            enemy.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => { enemy.isAttacking = false; }); }
+          sfx.fx('necro_cast', 0.7, { rate: 0.7 });
+          for (let i = 0; i < 2; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const m = this.spawnEnemy(enemy.x + Math.cos(a) * 46, enemy.y + Math.sin(a) * 34, def.summon.type);
+            if (m) { m.zone = enemy.zone; m.setTint(0xc4b5fd); this.time.delayedCall(500, () => m.active && m.clearTint()); this.alertEnemy(m); }
+          }
+        }
+      }
 
       // -------------------------------------------------------------
       // STATE: IDLE OR PATROL (Un-alerted / Peaceful)
@@ -287,21 +400,24 @@ Object.assign(MainGameScene.prototype, {
         enemy.facing = faceLeft ? 'left' : 'right';
         enemy.setFlipX(faceLeft);
 
-        // Attack if within melee reach (50px)
-        if (dist <= 50) {
+        // Attack: melee when close enough, or a shot from a distance for archers and casters
+        const rng = def.ranged;
+        if (dist <= (rng ? rng.range : def.reach)) {
           enemy.setVelocity(0, 0);
+          if (!enemy.isAttacking && enemy.anims.currentAnim?.key === `${enemy.type}_walk`) enemy.play(`${enemy.type}_idle`);
           if (now > enemy.attackCooldown && !enemy.isAttacking) {
             enemy.isAttacking = true;
-            enemy.attackCooldown = now + 1400; // Attack every 1.4s
+            enemy.attackCooldown = now + def.cd;
 
             enemy.play(`${enemy.type}_attack1`);
-            sfx.fx(enemy.type === 'orc' ? 'orc_attack' : 'sword_swing1', 0.55, { minGap: 150, rate: 0.92 + Math.random() * 0.18 });
+            sfx.fx(def.sfx[0], 0.55, { minGap: 150, rate: def.sfx[3] * (0.92 + Math.random() * 0.18) });
 
-            this.time.delayedCall(220, () => {
+            this.time.delayedCall(def.hitAt, () => {
               if (enemy.active && !enemy.isDead && !this.isDead) {
+                if (rng) { this.enemyShoot(enemy); return; }
                 const currentDist = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y);
-                if (currentDist <= 58) {
-                  this.damagePlayer(1);
+                if (currentDist <= def.reach + 8) {
+                  this.damagePlayer(def.dmg);
                 }
               }
             });
@@ -315,7 +431,7 @@ Object.assign(MainGameScene.prototype, {
           }
         } else if (dist <= 480 && !enemy.isAttacking) {
           // Rush towards player
-          const speed = 95 + (this.wave * 4);
+          const speed = def.speed + (this._gameMode === 'campaign' ? 0 : this.wave * 4);
           const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, this.player.x, this.player.y);
 
           let vx = Math.cos(angle) * speed;

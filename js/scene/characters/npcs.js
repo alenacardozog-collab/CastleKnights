@@ -19,6 +19,8 @@ Object.assign(MainGameScene.prototype, {
       { id: 'npc3', texture: 'npc3_villager', ...base, ...fiveRows },
       { id: 'npc4', texture: 'npc4_villager', ...base, ...fiveRows }
     ];
+    // villagers added later (noble woman, old man, old woman, princess, queen, worker)
+    Object.keys(VILLAGER_SHEETS).forEach(id => npcDefs.push({ id, texture: VILLAGER_SHEETS[id], ...base, ...fiveRows }));
 
     npcDefs.forEach(cfg => {
       if (!this.textures.exists(cfg.texture)) return;
@@ -179,6 +181,27 @@ Object.assign(MainGameScene.prototype, {
         startWaypoint: 0,
         idleChance: 0.35,
         speed: 26
+      },
+      {
+        // 5. Old woman: keeps the fire company (same validated legs as npc1, walked the other way)
+        id: 'npc7', texture: 'npc7_villager', name: 'Abuela Mirta',
+        greetings: ['En mis tiempos la niebla no bajaba del monte', 'Abrigate, que refresca', 'Ese fuego lo prendió mi marido hace cuarenta años', 'Cuidate en el camino, criatura'],
+        waypoints: [{ x: 305, y: 539 }, { x: 332, y: 518 }, { x: 356, y: 509 }, { x: 305, y: 509 }],
+        scale: 1.3, startWaypoint: 2, idleChance: 0.6, speed: 18
+      },
+      {
+        // 6. Old man: slow walk between the well and the north house
+        id: 'npc6', texture: 'npc6_villager', name: 'Don Anselmo',
+        greetings: ['Yo conocí Brumavieja cuando tenía feria', 'Estas piernas ya no son lo que eran', 'El pozo nunca se secó, ni en la gran sequía', 'Buen día, buen día'],
+        waypoints: [{ x: 388, y: 194 }, { x: 293, y: 220 }, { x: 336, y: 250 }, { x: 425, y: 215 }],
+        scale: 1.3, startWaypoint: 1, idleChance: 0.6, speed: 16
+      },
+      {
+        // 7. Worker: carries goods along the plaza road
+        id: 'npc10', texture: 'npc10_villager', name: 'Bruno el Cargador',
+        greetings: ['¡Paso, que pesa!', 'Hoy llegan barriles del castillo', 'Si buscás trabajo, acá sobra', 'Los caminos andan peligrosos'],
+        waypoints: [{ x: 449, y: 233 }, { x: 411, y: 250 }, { x: 484, y: 289 }, { x: 528, y: 272 }],
+        scale: 1.3, startWaypoint: 3, idleChance: 0.25, speed: 36
       }
       // (KingPrueba no longer walks in the village: he holds court in the castle's throne room)
     ];

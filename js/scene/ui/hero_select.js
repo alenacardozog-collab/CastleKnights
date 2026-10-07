@@ -20,12 +20,13 @@ Object.assign(MainGameScene.prototype, {
     if (titleEl) titleEl.textContent = 'SELECCIONA TU HÉROE';
     if (subEl) {
       subEl.textContent = mode === 'campaign'
-        ? 'Modo Campaña — Fortaleza de los Caballeros (Lobby de Aldea)'
+        ? 'Modo Campaña — Capítulo 1: La niebla del norte'
         : 'Modo Práctica — Campo de Entrenamiento';
     }
 
     // Nobody is selected yet: both portraits show their calm pose
     this.selectHeroInModal(null);
+    this.setBookPage(1, true);
 
     modal.classList.add('active');
 
@@ -55,7 +56,11 @@ Object.assign(MainGameScene.prototype, {
       btnConfirm.classList.toggle('is-disabled', !hero);
     }
     // Replay the "chosen" animation on the card that was just picked
-    ['soldier', 'wizard'].forEach(h => {
+    ['soldier', 'wizard', 'swordsman'].forEach(h => {
+      const c = document.getElementById('hero-card-' + h);
+      if (c) { c.classList.toggle('active', h === hero); c.setAttribute('aria-pressed', h === hero ? 'true' : 'false'); }
+    });
+    ['soldier', 'wizard', 'swordsman'].forEach(h => {
       const card = document.getElementById('hero-card-' + h);
       if (!card) return;
       card.classList.remove('just-picked');
@@ -119,6 +124,31 @@ Object.assign(MainGameScene.prototype, {
     }
     clearTimeout(this._bookFxTimer);
     this._bookFxTimer = setTimeout(() => { layer.innerHTML = ''; }, 6200);
+  },
+
+  /**
+   * Turn the book to a page (1: Lancent + Horos, 2: Aby + the locked hero).
+   * A loose sheet swings over the spine and the heroes change when it stands upright.
+   */
+  setBookPage(page, instant) {
+    const grid = document.querySelector('.hero-selection-grid');
+    if (!grid) return;
+    const cur = parseInt(grid.dataset.page || '1', 10);
+    const apply = () => {
+      grid.dataset.page = String(page);
+      const num = document.getElementById('book-page-num');
+      if (num) num.textContent = page + ' / 2';
+      // a hero on a page that is no longer open cannot stay selected
+      const card = this.selectedHero && document.getElementById('hero-card-' + this.selectedHero);
+      if (card && !card.classList.contains('book-p' + page)) this.selectHeroInModal(null);
+    };
+    if (instant || cur === page || this._bookTurning) { if (!this._bookTurning) apply(); return; }
+    this._bookTurning = true;
+    const cls = page > cur ? 'turning-next' : 'turning-prev';
+    grid.classList.add(cls);
+    sfx.init(); sfx.fx('page_flip', 0.9);
+    setTimeout(apply, 290);
+    setTimeout(() => { grid.classList.remove(cls); this._bookTurning = false; }, 600);
   },
 
   confirmHeroSelection() {
@@ -191,6 +221,24 @@ Object.assign(MainGameScene.prototype, {
         this.selectHeroInModal('wizard');
       };
     }
+    const cardAby = document.getElementById('hero-card-swordsman');
+    if (cardAby) {
+      cardAby.onclick = () => {
+        sfx.init();
+        if (this.selectedHero !== 'swordsman') sfx.fx('sword_swing1', 0.8, { rate: 1.3 });
+        this.selectHeroInModal('swordsman');
+      };
+    }
+    const cardLocked = document.getElementById('hero-card-locked');
+    if (cardLocked) {
+      cardLocked.onclick = () => {
+        sfx.init(); sfx.fx('book_clasp', 0.7, { rate: 1.4 });
+        cardLocked.classList.remove('shake'); void cardLocked.offsetWidth; cardLocked.classList.add('shake');
+      };
+    }
+    const btnNext = document.getElementById('btn-book-next'), btnPrev = document.getElementById('btn-book-prev');
+    if (btnNext) btnNext.onclick = () => this.setBookPage(2);
+    if (btnPrev) btnPrev.onclick = () => this.setBookPage(1);
     if (btnConfirm) {
       btnConfirm.onclick = () => {
         if (!this.selectedHero || this._bookLeaving) return;

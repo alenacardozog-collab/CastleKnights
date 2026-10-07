@@ -99,3 +99,20 @@ Si agrega métodos a la escena, usá el mismo `Object.assign(MainGameScene.proto
 - Respetá el orden de los grupos en `index.html`: arte → datos de mapas → core/config → layouts → escena → `game.js`.
 - Al cambiar un archivo, subí su `?v=` en `index.html` para que el navegador no use la copia vieja.
 - Los `*_assets.js` son generados: si cambiás un PNG de `assets/castle` o `assets/ruins`, regenerá con `npm run build:*`.
+
+## Personajes, enemigos e historia (octubre)
+
+| Quiero… | Archivo |
+|---|---|
+| Cambiar vida / velocidad / daño / recompensa de un enemigo | `js/config/characters.js` → `ENEMY_TYPES` |
+| Decidir qué enemigos salen en cada zona y dónde | `js/config/characters.js` → `ZONE_ENEMIES` (`[tipo, x, y, radio]`) |
+| Cambiar qué enemigos salen en Práctica según la oleada | `js/config/characters.js` → `PRACTICE_WAVES` |
+| Agregar un héroe jugable | `HEROES` en `characters.js` + ataques en `js/scene/characters/combat.js` + tarjeta en `index.html` |
+| Cambiar textos de misiones o diálogos | `js/scene/systems/story.js` → `QUESTS` y `STORY_NPCS` |
+| Cambiar el diseño de un guardia del castillo | `js/maps/castle.js` (claves `g_knight_idle`, `g_templar_idle`, `g_lancer_idle`, `g_axeman_idle`, `g_archer_idle`, `g_priest_idle`) |
+| Agregar hojas de sprites nuevas | copiarlas a `assets/…`, luego `npm run build:chars` (regenera `js/chars_assets.js`) |
+
+- Carga y animaciones del elenco: `js/scene/characters/roster.js`.
+- IA y aparición de enemigos: `js/scene/characters/enemies.js`.
+- Guardado: `localStorage`, clave `castleknight_save_v1`, un progreso por héroe.
+- Hablar: tecla **T** o **Enter** (campaña). Aby en Práctica: tecla **3**.

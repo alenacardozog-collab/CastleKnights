@@ -17,7 +17,7 @@
   <!-- Custom Styles (CastleKnight Theme) -->
   <link rel="stylesheet" href="styles.css?v=7.0">
   <!-- UI skin cut from assets/UI/fantasyUI.png (overrides only) -->
-  <link rel="stylesheet" href="ui-theme.css?v=2.1">
+  <link rel="stylesheet" href="ui-theme.css?v=3.0">
 </head>
 <body>
 
@@ -214,7 +214,7 @@
           <p id="hero-modal-subtitle" class="hero-modal-subtitle">Modo Campaña — Fortaleza de los Caballeros</p>
         </div>
 
-        <div class="hero-selection-grid">
+        <div class="hero-selection-grid" data-page="1">
           <!-- The book: back board, page blocks, pages that flip, and the front cover -->
           <div class="hero-book-back" aria-hidden="true"></div>
           <div class="hero-book-page hero-book-page-right" aria-hidden="true"></div>
@@ -236,7 +236,7 @@
             </span>
           </div>
           <!-- Soldier Card -->
-          <div class="hero-select-card" data-hero="soldier" id="hero-card-soldier" tabindex="0" role="button" aria-pressed="false">
+          <div class="hero-select-card book-p1" data-hero="soldier" id="hero-card-soldier" tabindex="0" role="button" aria-pressed="false">
             <div class="hero-card-frame-wrapper frame-soldier">
               <img src="assets/UI/portraits/knight.png" class="hero-card-portrait" alt="Lancent, el caballero">
               <img src="assets/UI/portraits/knight_action.png" class="hero-card-portrait hero-card-portrait-action" alt="">
@@ -263,7 +263,7 @@
           </div>
 
           <!-- Wizard Card -->
-          <div class="hero-select-card" data-hero="wizard" id="hero-card-wizard" tabindex="0" role="button" aria-pressed="false">
+          <div class="hero-select-card book-p1" data-hero="wizard" id="hero-card-wizard" tabindex="0" role="button" aria-pressed="false">
             <div class="hero-card-frame-wrapper frame-wizard">
               <img src="assets/UI/portraits/wizard.png" class="hero-card-portrait" alt="Mago Arcano">
               <img src="assets/UI/portraits/wizard_action.png" class="hero-card-portrait hero-card-portrait-action" alt="">
@@ -288,6 +288,55 @@
               </div>
             </div>
           </div>
+        
+          <!-- Page 2: Aby + a hero still to be unlocked -->
+          <div class="hero-select-card book-p2" data-hero="swordsman" id="hero-card-swordsman" tabindex="0" role="button" aria-pressed="false">
+            <div class="hero-card-frame-wrapper frame-swordsman">
+              <img src="assets/UI/portraits/swordsman.png" class="hero-card-portrait" alt="Aby, la espadachina">
+              <img src="assets/UI/portraits/swordsman_action.png" class="hero-card-portrait hero-card-portrait-action" alt="">
+              <span class="hero-card-check">✓</span>
+            </div>
+            <div class="hero-card-info">
+              <h3 class="hero-card-name">Aby</h3>
+              <div class="hero-card-class">Espadachina · Filo Carmesí</div>
+              <div class="hero-card-stats">
+                <div class="hero-stat-row">
+                  <span class="stat-label"><img src="assets/UI/pix/sword.png" class="px-ico" alt=""> Combate:</span>
+                  <span class="stat-val">Espada Larga Veloz</span>
+                </div>
+                <div class="hero-stat-row">
+                  <span class="stat-label"><img src="assets/UI/pix/shield.png" class="px-ico" alt=""> Defensa:</span>
+                  <span class="stat-val">Agilidad & Esquiva</span>
+                </div>
+                <div class="hero-stat-row">
+                  <span class="stat-label"><img src="assets/UI/pix/bolt.png" class="px-ico" alt=""> Habilidad:</span>
+                  <span class="stat-val">Danza de Filos & Estocadas</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-select-card hero-card-locked book-p2" id="hero-card-locked" aria-disabled="true" title="Héroe por desbloquear">
+            <div class="hero-card-frame-wrapper frame-locked">
+              <img src="assets/UI/portraits/knight.png" class="hero-card-portrait hero-locked-shape" alt="">
+              <span class="hero-lock"><span class="hero-lock-shackle"></span><span class="hero-lock-body"></span></span>
+            </div>
+            <div class="hero-card-info">
+              <h3 class="hero-card-name">? ? ?</h3>
+              <div class="hero-card-class">Héroe por desbloquear</div>
+              <div class="hero-card-stats">
+                <div class="hero-stat-row"><span class="stat-label"><img src="assets/UI/pix/lock.png" class="px-ico" alt=""> Estado:</span><span class="stat-val">Bloqueado</span></div>
+                <div class="hero-stat-row"><span class="stat-label"><img src="assets/UI/pix/flag.png" class="px-ico" alt=""> Requisito:</span><span class="stat-val">Completar el Capítulo 1</span></div>
+                <div class="hero-stat-row"><span class="stat-label"><img src="assets/UI/pix/bolt.png" class="px-ico" alt=""> Habilidad:</span><span class="stat-val">???</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- page turning -->
+          <div class="hero-book-turn" aria-hidden="true"></div>
+          <button id="btn-book-prev" class="book-turn-btn book-turn-prev" title="Página anterior" aria-label="Página anterior"><span>◂</span></button>
+          <button id="btn-book-next" class="book-turn-btn book-turn-next" title="Pasar página" aria-label="Pasar página"><span>▸</span></button>
+          <div class="book-page-num" id="book-page-num">1 / 2</div>
         </div>
 
         <div class="hero-modal-actions">
@@ -377,6 +426,9 @@
           </button>
           <button id="btn-hero-wizard" class="hero-btn" data-hero="wizard" title="Cambiar a Mago Arcano">
             <img src="assets/UI/pix/staff.png" class="hero-selector-icon px-ico" alt=""> <span>MAGO</span>
+          </button>
+          <button id="btn-hero-swordsman" class="hero-btn" data-hero="swordsman" title="Cambiar a Aby, la espadachina (3)">
+            <img src="assets/UI/pix/sword.png" class="hero-selector-icon px-ico" alt=""> <span>ABY</span>
           </button>
         </div>
       </div>
@@ -876,6 +928,7 @@
   <script src="js/hero_fx_assets.js?v=1.3"></script>
   <script src="js/hero_dir_assets.js?v=1.0"></script>
   <script src="js/king_assets.js?v=1.0"></script>
+  <script src="js/chars_assets.js?v=1.0"></script>
 
   <!-- 2) Map data (positions of props and solid rectangles; editable by hand) -->
   <script src="js/maps/data/castle_maps.js?v=11.4"></script>
@@ -886,6 +939,7 @@
   <script src="js/core/keybinds.js?v=11.0"></script>
   <script src="js/config/map_catalog.js?v=11.0"></script>
   <script src="js/config/world_constants.js?v=11.2"></script>
+  <script src="js/config/characters.js?v=12.0"></script>
 
   <!-- 4) Map layouts (one file per building / map) -->
   <script src="js/maps/layout_kit.js?v=11.0"></script>
@@ -893,22 +947,24 @@
   <script src="js/maps/interiors/tienda.js?v=11.0"></script>
   <script src="js/maps/interiors/granero.js?v=11.0"></script>
   <script src="js/maps/interiors/casa.js?v=11.0"></script>
-  <script src="js/maps/castle.js?v=11.4"></script>
-  <script src="js/maps/ruins.js?v=11.0"></script>
+  <script src="js/maps/castle.js?v=12.0"></script>
+  <script src="js/maps/ruins.js?v=12.0"></script>
 
   <!-- 5) The scene: life cycle first, then one file per feature -->
-  <script src="js/scene/main_scene.js?v=11.0"></script>
-  <script src="js/scene/assets_preload.js?v=11.0"></script>
+  <script src="js/scene/main_scene.js?v=12.0"></script>
+  <script src="js/scene/assets_preload.js?v=12.0"></script>
   <script src="js/scene/world/village_map.js?v=11.0"></script>
   <script src="js/scene/world/collisions.js?v=11.0"></script>
-  <script src="js/scene/world/areas.js?v=11.1"></script>
+  <script src="js/scene/world/areas.js?v=12.0"></script>
   <script src="js/scene/world/area_effects.js?v=11.0"></script>
-  <script src="js/scene/characters/npcs.js?v=11.0"></script>
-  <script src="js/scene/characters/player.js?v=11.0"></script>
-  <script src="js/scene/characters/combat.js?v=11.0"></script>
-  <script src="js/scene/characters/enemies.js?v=11.0"></script>
-  <script src="js/scene/ui/hud.js?v=11.0"></script>
-  <script src="js/scene/ui/hero_select.js?v=11.0"></script>
+  <script src="js/scene/characters/npcs.js?v=12.0"></script>
+  <script src="js/scene/characters/player.js?v=12.0"></script>
+  <script src="js/scene/characters/combat.js?v=12.0"></script>
+  <script src="js/scene/characters/enemies.js?v=12.0"></script>
+  <script src="js/scene/characters/roster.js?v=12.0"></script>
+  <script src="js/scene/systems/story.js?v=12.0"></script>
+  <script src="js/scene/ui/hud.js?v=12.0"></script>
+  <script src="js/scene/ui/hero_select.js?v=12.0"></script>
   <script src="js/scene/editor/map_editor.js?v=11.0"></script>
   <script src="js/scene/editor/dev_mode.js?v=11.0"></script>
   <script src="js/scene/editor/dev_tools.js?v=11.0"></script>

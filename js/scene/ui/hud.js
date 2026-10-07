@@ -34,13 +34,13 @@ Object.assign(MainGameScene.prototype, {
     const portraitFrame = document.getElementById('hud-portrait-frame');
     const heroName = document.getElementById('hud-hero-name');
     if (portraitImg) {
-      portraitImg.src = this.playerHero === 'wizard' ? 'assets/UI/portraits/wizard.png' : 'assets/UI/portraits/knight.png';
+      portraitImg.src = HEROES[this.playerHero].portrait;
     }
     if (portraitFrame) {
-      portraitFrame.src = this.playerHero === 'wizard' ? 'assets/UI/icons/card_frame_wizard.png' : 'assets/UI/icons/card_frame_soldier.png';
+      portraitFrame.src = HEROES[this.playerHero].frame;
     }
     if (heroName) {
-      heroName.textContent = this.playerHero === 'wizard' ? 'HOROS' : 'LANCENT';
+      heroName.textContent = HEROES[this.playerHero].name;
     }
 
     // 2. Health Bar Fill & Pixel Hearts
@@ -50,7 +50,17 @@ Object.assign(MainGameScene.prototype, {
       hpFill.style.width = `${pct}%`;
     }
 
-    for (let i = 1; i <= 3; i++) {
+    // one heart icon per point of maximum health (it grows with levels and rewards)
+    const heartsRow = document.querySelector('.hud-hearts-row');
+    if (heartsRow) {
+      for (let i = heartsRow.children.length + 1; i <= this.maxHealth; i++) {
+        const img = document.createElement('img');
+        img.id = `hud-heart-${i}`; img.className = 'hud-pixel-heart'; img.alt = 'Vida ' + i;
+        heartsRow.appendChild(img);
+      }
+      Array.from(heartsRow.children).forEach((el, i) => { el.style.display = i < this.maxHealth ? '' : 'none'; });
+    }
+    for (let i = 1; i <= this.maxHealth; i++) {
       const heartImg = document.getElementById(`hud-heart-${i}`);
       if (heartImg) {
         heartImg.src = i <= this.health ? 'assets/UI/icons/heart_full.png' : 'assets/UI/icons/heart_empty.png';
@@ -64,7 +74,11 @@ Object.assign(MainGameScene.prototype, {
     if (manaFill) {
       const staminaPct = Math.max(0, Math.min(100, (this.stamina / this.maxStamina) * 100));
       manaFill.style.width = `${staminaPct}%`;
-      if (this.playerHero === 'wizard') {
+      if (this.playerHero === 'swordsman') {
+        manaFill.style.background = 'linear-gradient(180deg, #fda4af 0%, #f43f5e 50%, #9f1239 100%)';
+        manaFill.style.boxShadow = '0 0 6px rgba(244, 63, 94, 0.6)';
+        if (manaContainer) manaContainer.title = `Aguante (Espadachina): ${Math.round(this.stamina)}% | Dash: 50%, Danza de filos: 35%`;
+      } else if (this.playerHero === 'wizard') {
         manaFill.style.background = 'linear-gradient(180deg, #c084fc 0%, #9333ea 50%, #6b21a8 100%)';
         manaFill.style.boxShadow = '0 0 6px rgba(168, 85, 247, 0.6)';
         if (manaContainer) manaContainer.title = `Energía Arcana: ${Math.round(this.stamina)}% | Dash: 50%`;
@@ -104,7 +118,7 @@ Object.assign(MainGameScene.prototype, {
         lobbyBadge = document.createElement('div');
         lobbyBadge.id = 'hud-lobby-badge';
         lobbyBadge.className = 'stats-badge lobby-peace-badge';
-        lobbyBadge.innerHTML = '<span><img src="assets/UI/pix/home.png" class="px-ico" alt=""> ALDEA EN PAZ (LOBBY)</span>';
+        lobbyBadge.innerHTML = '<span><img src="assets/UI/pix/flag.png" class="px-ico" alt=""> CAMPAÑA · CAP. 1</span>';
         statsBadge.parentNode.insertBefore(lobbyBadge, statsBadge.nextSibling);
       }
       if (lobbyBadge) lobbyBadge.style.display = 'flex';
@@ -502,6 +516,8 @@ Object.assign(MainGameScene.prototype, {
     const btnWizard = document.getElementById('btn-hero-wizard');
     if (btnSoldier) btnSoldier.onclick = () => this.switchHero('soldier');
     if (btnWizard) btnWizard.onclick = () => this.switchHero('wizard');
+    const btnAby = document.getElementById('btn-hero-swordsman');
+    if (btnAby) btnAby.onclick = () => this.switchHero('swordsman');
 
     // Ready for combat button ("¡ESTOY LISTO!")
     const btnReadyCombat = document.getElementById('btn-ready-combat');

@@ -6,7 +6,7 @@ Object.assign(MainGameScene.prototype, {
    * Primary Attack (Combo Attack01 & Attack02)
    */
   performAttack() {
-    if (this._gameMode === 'campaign' || this.isAttacking || this.isDead) return;
+    if (this.combatLocked() || this.isAttacking || this.isDead) return;
 
     this.isAttacking = true;
 
@@ -26,6 +26,22 @@ Object.assign(MainGameScene.prototype, {
         if (!this.isDead) {
           this.player.play('wizard_idle');
         }
+      });
+      return;
+    }
+
+    if (this.playerHero === 'swordsman') {
+      // Aby: one fast, wide slash; every third one in a row cuts harder
+      this.abyChain = (this.time.now - (this.abyChainAt || 0) < 900) ? (this.abyChain || 0) + 1 : 1;
+      this.abyChainAt = this.time.now;
+      const heavy = this.abyChain % 3 === 0;
+      this.player.play('swordsman_attack1');
+      this.player.anims.timeScale = 1;
+      sfx.fx(heavy ? 'sword_swing2' : 'sword_swing1', 0.75, { rate: heavy ? 1.05 : 1.3 }) || sfx.playSwing();
+      this.time.delayedCall(170, () => { if (!this.isDead) this.checkMeleeHits({ reach: 46, radius: 58, damage: heavy ? 2 : 1 }); });
+      this.player.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+        this.isAttacking = false;
+        if (!this.isDead) this.player.play('swordsman_idle');
       });
       return;
     }
@@ -57,9 +73,24 @@ Object.assign(MainGameScene.prototype, {
    * - Orc: Heavy ground smash shockwave AOE
    */
   performSpecialAttack() {
-    if (this._gameMode === 'campaign' || this.isAttacking || this.isDead) return;
+    if (this.combatLocked() || this.isAttacking || this.isDead) return;
 
     this.isAttacking = true;
+
+    if (this.playerHero === 'swordsman') {
+      // Aby: flurry of thrusts, long and narrow reach, three hits
+      this.player.play('swordsman_attack3');
+      [300, 440, 580].forEach((t, i) => this.time.delayedCall(t, () => {
+        if (this.isDead || !this.isAttacking) return;
+        sfx.fx('sword_swing1', 0.6, { rate: 1.5 + i * 0.1 });
+        this.checkThrustHits(i === 2 ? 2 : 1);
+      }));
+      this.player.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+        this.isAttacking = false;
+        if (!this.isDead) this.player.play('swordsman_idle');
+      });
+      return;
+    }
 
     if (this.playerHero === 'wizard') {
       // Wizard Fireball Cast (14 frames)
@@ -157,21 +188,25 @@ Object.assign(MainGameScene.prototype, {
 
     // Set forward dash velocity
     const isWizard = this.playerHero === 'wizard';
-    const dashSpeed = isWizard ? 460 : 440;
+    const isAby = this.playerHero === 'swordsman';
+    const dashSpeed = isWizard ? 460 : isAby ? 480 : 440;
     this.player.setVelocity(vx * dashSpeed, vy * dashSpeed);
 
     // Play animation & sound (Wizard uses dash.png)
     if (isWizard) {
       this.player.play('wizard_dash');
       sfx.fx('teleport', 0.8) || sfx.playMagic();
+    } else if (isAby) {
+      this.player.play('swordsman_walk');
+      sfx.fx('dash', 0.8, { rate: 1.25 }) || sfx.playDash();
     } else {
       this.player.play('soldier_dash');
       sfx.fx('dash', 0.8) || sfx.playDash();
     }
 
     // Afterimage / ghost trail effect
-    const ghostKey = isWizard ? 'wizard_dash' : 'soldier_dash';
-    const ghostTint = isWizard ? 0xc084fc : 0x38bdf8;
+    const ghostKey = isWizard ? 'wizard_dash' : isAby ? 'swordsman_walk' : 'soldier_dash';
+    const ghostTint = isWizard ? 0xc084fc : isAby ? 0xfb7185 : 0x38bdf8;
     const ghostTimer = this.time.addEvent({
       delay: 50,
       repeat: 4,
@@ -635,8 +670,10 @@ Object.assign(MainGameScene.prototype, {
 
   performSpin() {
     // Horos uses the same key for his area spell
+    if (this.combatLocked()) return;
     if (this.playerHero === 'wizard') { this.performThunder(); return; }
-    if (this._gameMode === 'campaign' || this.isDead || this.isSpinning || this.isDashing) return;
+    if (this.playerHero === 'swordsman') { this.performBladeDance(); return; }
+    if (this.isDead || this.isSpinning || this.isDashing) return;
     if (this.playerHero !== 'soldier') return;
 
     const now = this.time.now;
@@ -917,18 +954,20 @@ Object.assign(MainGameScene.prototype, {
   /**
    * Check melee hits against active enemies
    */
-  checkMeleeHits() {
+  checkMeleeHits(opt) {
+    const o = opt || {};
     const isLeft = this.facingDirection === 'left';
-    const hitX = isLeft ? this.player.x - 42 : this.player.x + 42;
+    const reach = o.reach === undefined ? 42 : o.reach;
+    const hitX = isLeft ? this.player.x - reach : this.player.x + reach;
     const hitY = this.player.y + 6;
-    const hitRadius = 50;
+    const hitRadius = o.radius || 50;
 
     let hitCount = 0;
     this.enemies.getChildren().forEach(enemy => {
       if (!enemy.active || enemy.isDead) return;
       const dist = Phaser.Math.Distance.Between(hitX, hitY, enemy.x, enemy.y);
       if (dist <= hitRadius) {
-        this.damageEnemy(enemy, 1, this.player.x, this.player.y);
+        this.damageEnemy(enemy, o.damage || 1, this.player.x, this.player.y);
         hitCount++;
       }
     });
@@ -936,7 +975,79 @@ Object.assign(MainGameScene.prototype, {
     if (hitCount > 0) {
       sfx.fx('sword_hit', 0.8, { minGap: 60 }) || sfx.playHit();
       this.cameras.main.shake(120, 0.004);
+      this.hitStop(o.damage > 1 ? 70 : 40);
     }
+    return hitCount;
+  },
+
+  /** Tiny freeze of the action when a blow lands: makes hits feel heavy. */
+  hitStop(ms) {
+    if (this._hitStop || !this.physics.world) return;
+    this._hitStop = true;
+    this.physics.world.pause(); this.anims.pauseAll();
+    setTimeout(() => {
+      this._hitStop = false;
+      if (!this.isGamePaused && !this.dialogOpen) { this.physics.world.resume(); this.anims.resumeAll(); }
+    }, ms);
+  },
+
+  /** True when the hero may not fight right now (talking, cut-scene, changing zone). */
+  combatLocked() {
+    return !!(this.dialogOpen || this._doorTransition || this._cutscene);
+  },
+
+  /** Aby's thrusts: a long, narrow strip in front of her. */
+  checkThrustHits(damage) {
+    const dir = this.facingDirection === 'left' ? -1 : 1;
+    let n = 0;
+    this.enemies.getChildren().forEach(enemy => {
+      if (!enemy.active || enemy.isDead) return;
+      const dx = (enemy.x - this.player.x) * dir, dy = Math.abs(enemy.y - this.player.y);
+      if (dx > -6 && dx < 96 && dy < 28) { this.damageEnemy(enemy, damage, this.player.x, this.player.y); n++; }
+    });
+    if (n) { sfx.fx('sword_hit', 0.7, { minGap: 60, rate: 1.2 }) || sfx.playHit(); this.cameras.main.shake(70, 0.003); }
+  },
+
+  /**
+   * ABY - DANZA DE FILOS: a three-part sword dance. She is untouchable while it lasts,
+   * steps forward with each cut and the last one hits everything around her.
+   */
+  performBladeDance() {
+    if (this.isDead || this.isSpinning || this.isDashing || this.isAttacking) return;
+    const now = this.time.now;
+    if (now - this.lastSpinTime < this.spinCooldown) return;
+    const cost = this.spinStaminaCost || 35;
+    if (this.stamina < cost) { this.showLowStaminaWarning('Danza'); return; }
+    this.stamina = Math.max(0, this.stamina - cost);
+    this.updateStaminaBar();
+    this.lastSpinTime = now;
+    this.isAttacking = true;
+    this.isInvulnerable = true;
+    const p = this.player, dir = this.facingDirection === 'left' ? -1 : 1;
+    p.play('swordsman_attack2');
+    sfx.fx('spin', 0.7, { rate: 1.2 });
+    const trail = this.time.addEvent({ delay: 70, repeat: 12, callback: () => {
+      if (!p.active || this.isDead) return;
+      const g = this.add.sprite(p.x, p.y, p.texture.key, p.frame.name).setFlipX(p.flipX).setScale(p.scaleX).setAlpha(0.45).setTint(0xfb7185).setDepth(p.depth - 1);
+      this.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => g.destroy() });
+    } });
+    [[200, 1, false], [470, 1, false], [800, 2, true]].forEach(([t, dmg, around]) => this.time.delayedCall(t, () => {
+      if (this.isDead) return;
+      p.setVelocity(dir * 150, 0);
+      this.time.delayedCall(90, () => { if (!this.isDashing) p.setVelocity(0, 0); });
+      sfx.fx(around ? 'sword_swing2' : 'sword_swing1', 0.7, { rate: 1.2 });
+      this.checkMeleeHits(around ? { reach: 0, radius: 74, damage: dmg } : { reach: 40, radius: 60, damage: dmg });
+      if (around) {
+        const ring = this.add.circle(p.x, p.y + 8, 12).setStrokeStyle(3, 0xfda4af, 0.9).setDepth(p.depth + 1);
+        this.tweens.add({ targets: ring, radius: 74, alpha: 0, duration: 260, onComplete: () => ring.destroy() });
+      }
+    }));
+    p.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      trail.remove();
+      this.isAttacking = false;
+      this.isInvulnerable = false;
+      if (!this.isDead) p.play('swordsman_idle');
+    });
   },
 
   /**
@@ -951,14 +1062,15 @@ Object.assign(MainGameScene.prototype, {
     if (enemy.isDead) return;
 
     enemy.hp -= amount;
-    if (enemy.hp > 0) sfx.fx(enemy.type === 'orc' ? 'orc_hurt' : 'knight_hurt', 0.65, { minGap: 90, rate: 0.92 + Math.random() * 0.2 });
+    const edef = enemy.def || ENEMY_TYPES.orc;
+    if (enemy.hp > 0) sfx.fx(edef.sfx[1], 0.65, { minGap: 90, rate: edef.sfx[3] * (0.92 + Math.random() * 0.2) });
 
     // Floating damage text
     this.createFloatingText(enemy.x, enemy.y - 20, `-${amount}`, 0xffdd44);
 
     // Knockback
     const angle = Phaser.Math.Angle.Between(sourceX, sourceY, enemy.x, enemy.y);
-    const knockbackForce = 160;
+    const knockbackForce = edef.boss ? 40 : edef.hp > 5 ? 90 : 160;
     enemy.body.setVelocity(Math.cos(angle) * knockbackForce, Math.sin(angle) * knockbackForce);
 
     // Red damage flash
@@ -972,12 +1084,15 @@ Object.assign(MainGameScene.prototype, {
       enemy.isDead = true;
       enemy.body.setVelocity(0, 0);
       enemy.body.checkCollision.none = true;
-      sfx.fx(enemy.type === 'orc' ? 'orc_death' : 'knight_death', 0.8, { minGap: 120, rate: 0.95 + Math.random() * 0.15 }) || sfx.playEnemyDeath();
+      sfx.fx(edef.sfx[2], 0.8, { minGap: 120, rate: edef.sfx[3] * (0.95 + Math.random() * 0.15) }) || sfx.playEnemyDeath();
+      if (enemy.hpBar) enemy.hpBar.clear();
+      if (enemy.nameTag) enemy.nameTag.setVisible(false);
 
       // Play death animation
       enemy.play(`${enemy.type}_death`);
       this.kills++;
-      this.score += 100;
+      this.score += 10 * edef.xp;
+      if (this.onEnemyDefeated) this.onEnemyDefeated(enemy, edef);
       this.updateHUD();
 
       // Chance to drop a heart (30% chance if player is missing health)
@@ -1001,7 +1116,9 @@ Object.assign(MainGameScene.prototype, {
         this.alertEnemy(enemy);
       }
 
-      // Play hurt animation
+      // Play hurt animation (bosses shrug most hits off so they cannot be stun-locked)
+      if (edef.boss && Math.random() < 0.7) return;
+      enemy.isAttacking = false;
       enemy.play(`${enemy.type}_hurt`);
       enemy.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
         if (!enemy.isDead && enemy.active) {

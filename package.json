@@ -9,7 +9,8 @@
     "patch:map": "node scripts/patch_map2.js",
     "check": "node scripts/check.js",
     "build:ruins": "python3 tools/mapgen/ruins/build.py",
-    "build:castle": "python3 tools/mapgen/castle/build.py"
+    "build:castle": "python3 tools/mapgen/castle/build.py",
+    "build:chars": "python3 tools/pack/pack_chars.py"
   },
   "keywords": [
     "phaser",

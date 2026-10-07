@@ -52,8 +52,8 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     // the gate: banners, braziers and two sentries at the foot of the drawbridge
     banner(road, GX - 84, 296); banner(road, GX + 84, 296);
     brazier(road, GX - 56, 298, 40); brazier(road, GX + 56, 298, 40);
-    person(road, 'soldier_idle', 'soldier_idle', GX - 34, 312, { scale: 1.2 });
-    person(road, 'soldier_idle', 'soldier_idle', GX + 34, 312, { scale: 1.2, flipX: true });
+    person(road, 'g_templar_idle', 'g_templar_idle', GX - 34, 312, { scale: 1.2 });
+    person(road, 'g_templar_idle', 'g_templar_idle', GX + 34, 312, { scale: 1.2, flipX: true });
     talker(road, GX, 316, ['¡Bajad el puente! Viene un viajero 🏰', 'Bienvenido al castillo del rey', 'Cruzad con cuidado, el foso es hondo'], 50);
     // a travellers' camp in the clearing by the pond
     road.items.push({ key: 'campfire_anim', anim: 'campfire_burn', x: 270, baseY: 676, scale: 1, shadow: 26, embers: [0, -20] });
@@ -110,13 +110,16 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     [98, 162, 280, 360, 478, 542].forEach(x => torch(yard, x, CW - 14));
     [196, 444].forEach(x => putc(yard, 'planter', x, CW + 22, { foot: 0.5 }));
     // guards at the hall door, lions along the avenue
-    person(yard, 'soldier_idle', 'soldier_idle', 284, 176, { scale: 1.2 });
-    person(yard, 'soldier_idle', 'soldier_idle', 356, 176, { scale: 1.2, flipX: true });
+    person(yard, 'g_knight_idle', 'g_knight_idle', 284, 176, { scale: 1.2 });
+    person(yard, 'g_knight_idle', 'g_knight_idle', 356, 176, { scale: 1.2, flipX: true });
     talker(yard, 320, 182, ['El rey os espera en el Gran Salón 👑', '¡Alto! ...Ah, sois vos. Pasad.', 'Mantened la espada envainada aquí ⚔️'], 46);
     // a guard walks his round about the fountain
-    yard.actors.push({ type: 'walker', key: 'soldier_idle', idle: 'soldier_idle', walk: 'soldier_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 24,
+    yard.actors.push({ type: 'walker', key: 'g_lancer_idle', idle: 'g_lancer_idle', walk: 'g_lancer_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 24,
       pts: [[196, 300, 1400], [444, 300, 600], [444, 458, 1400], [196, 458, 600]],
       lines: ['Todo en orden en el patio.', 'Linda tarde para una guardia 🌤️', 'No os acerquéis al foso de noche...'] });
+    // a mason hauls stone along the north side of the yard
+    yard.actors.push({ type: 'walker', key: 'npc10_villager', idle: 'npc10_idle', walk: 'npc10_walk', scale: 1.3, speed: 26,
+      pts: [[410, 302, 2600], [232, 302, 2600]], lines: ['Esta muralla no se arregla sola 🧱', 'Piedra va, piedra viene…', 'Dicen que hay que reforzar la puerta norte'] });
     putc(yard, 'lion', 266, 262, { foot: 0.22, footW: 0.8 });
     putc(yard, 'lion', 374, 262, { foot: 0.22, footW: 0.8, flipX: true });
     // middle: fountain, benches, braziers by the gate
@@ -154,7 +157,7 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     put(yard, 'weapon_rack', 584, 338, { scale: 1.1, foot: 0.2 });
     putc(yard, 'workbench', 474, 328, { foot: 0.5 });
     // a recruit drills between the dummies
-    yard.actors.push({ type: 'walker', key: 'soldier_idle', idle: 'soldier_idle', walk: 'soldier_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 30,
+    yard.actors.push({ type: 'walker', key: 'g_axeman_idle', idle: 'g_axeman_idle', walk: 'g_axeman_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 30,
       pts: [[520, 424, 2600], [566, 478, 2200], [520, 484, 1200]], lines: ['¡Uno, dos... estocada!', 'Algún día seré caballero 🛡️'] });
     place(yard, 'Crate_Medium_Closed', 468, 498, 14, 9);
     areas.courtyard = yard;
@@ -166,11 +169,11 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     fromData(walls, WM);
     [[36, 106], [156, 106], [406, 106], [554, 106], [804, 106], [924, 106]].forEach(([x, y]) => walls.items.push({ key: 'cs_banner_anim', anim: 'cs_banner_wave', x, baseY: y, scale: 1, shadow: 0 }));
     brazier(walls, 200, 244, 40); brazier(walls, 760, 244, 40); brazier(walls, 424, 150, 40); brazier(walls, 536, 150, 40);
-    person(walls, 'soldier_idle', 'soldier_idle', 480, 150, { scale: 1.2 });
+    person(walls, 'g_archer_idle', 'g_archer_idle', 480, 150, { scale: 1.2 });
     talker(walls, 480, 156, ['Desde aquí se domina todo el valle 🏞️', 'El puente se baja cuando alguien se acerca', 'Nada se mueve en el camino… por ahora'], 44);
-    walls.actors.push({ type: 'walker', key: 'soldier_idle', idle: 'soldier_idle', walk: 'soldier_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 22,
+    walls.actors.push({ type: 'walker', key: 'g_archer_idle', idle: 'g_archer_idle', walk: 'g_archer_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 22,
       pts: [[196, 204, 1600], [372, 204, 900], [372, 176, 400], [196, 176, 900]], lines: ['Sin novedad en el muro oeste.', 'El viento trae olor a lluvia 🌧️'] });
-    walls.actors.push({ type: 'walker', key: 'soldier_idle', idle: 'soldier_idle', walk: 'soldier_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 22,
+    walls.actors.push({ type: 'walker', key: 'g_templar_idle', idle: 'g_templar_idle', walk: 'g_templar_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 22,
       pts: [[588, 190, 1200], [772, 190, 1800], [772, 222, 400], [588, 222, 900]], lines: ['Muro este, todo en calma.', 'Desde la torre se ven las ruinas del norte…'] });
     talker(walls, 906, 238, ['🔭 Se ve la aldea, pequeña entre los árboles', '🔭 Hay humo gris sobre las ruinas del norte…'], 34);
     talker(walls, 480, 262, ['Una balista apuntando al camino'], 30);
@@ -195,8 +198,8 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     garden.items.push({ key: 'npc3_villager', anim: 'npc3_idle', x: 210, baseY: 228, scale: 1.3 });
     garden.colliders.push({ x: 203, y: 220, w: 14, h: 8 });
     talker(garden, 210, 224, ['Las rosas de la reina, mis favoritas 🌹', 'Cuido este jardín desde niño', 'No piséis los canteros, por favor 🙏']);
-    person(garden, 'soldier_idle', 'soldier_idle', 112, 316, { scale: 1.2 });
-    talker(garden, 112, 320, ['El Jardín Real. Disfrutad el paseo.', 'El rey toma el té en el templete 🫖'], 40);
+    person(garden, 'g_priest_idle', 'g_priest_idle', 112, 316, { scale: 1.2 });
+    talker(garden, 112, 320, ['Que la luz os guarde, viajero 🙏', 'Rezo por los que quedaron en Brumavieja', 'El rey toma el té en el templete 🫖'], 40);
     talker(garden, 400, 148, ['«A la Reina Elara, que plantó este jardín»'], 34);
     talker(garden, 180, 562, ['El reloj de sol marca la tarde ☀️'], 30);
     talker(garden, 610, 244, ['Un templete fresco junto al estanque'], 36);
@@ -213,13 +216,13 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     training.items.push({ key: 'cs_banner_blue_anim', anim: 'cs_banner_blue_wave', x: 492, baseY: 462, scale: 1, shadow: 10 });
     [172, 390, 455, 664].forEach(x => torch(training, x, 106));        // torches on the north wall
     // the master-at-arms by the racks, recruits drilling in the pen and in the ring, an archer at the line
-    person(training, 'soldier_idle', 'soldier_idle', 452, 168, { scale: 1.2 });
+    person(training, 'g_knight_idle', 'g_knight_idle', 452, 168, { scale: 1.2 });
     talker(training, 452, 172, ['¡Postura firme, recluta! 🛡️', 'Cien golpes al muñeco antes de comer', 'Las armas están en los armeros; cuidadlas'], 44);
-    training.actors.push({ type: 'walker', key: 'soldier_idle', idle: 'soldier_idle', walk: 'soldier_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 30,
+    training.actors.push({ type: 'walker', key: 'g_axeman_idle', idle: 'g_axeman_idle', walk: 'g_axeman_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 30,
       pts: [[112, 250, 2400], [150, 300, 2200], [112, 302, 1400]], lines: ['¡Uno, dos... estocada!', 'Este muñeco no se rinde 😅'] });
-    training.actors.push({ type: 'walker', key: 'soldier_idle', idle: 'soldier_idle', walk: 'soldier_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 26,
+    training.actors.push({ type: 'walker', key: 'g_templar_idle', idle: 'g_templar_idle', walk: 'g_templar_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 26,
       pts: [[270, 262, 1200], [314, 262, 1200], [292, 284, 1800]], lines: ['Entrad al círculo si os atrevéis ⚔️', 'Aquí se entrena cuerpo a cuerpo'] });
-    person(training, 'soldier_idle', 'soldier_idle', 616, 330, { scale: 1.2 });
+    person(training, 'g_archer_idle', 'g_archer_idle', 616, 330, { scale: 1.2 });
     talker(training, 616, 334, ['No crucéis la línea mientras disparan 🏹', 'A cincuenta pasos, siempre al centro'], 40);
     talker(training, 422, 118, ['La puerta de los barracones está cerrada'], 30);
     talker(training, 198, 118, ['Depósito de la intendencia. Cerrado.'], 26);
@@ -244,12 +247,20 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     putc(th, 'carpet', 240, 540, { floor: true });
     putc(th, 'throne', 240, 106, { scale: 1.35, foot: 0.3, footW: 0.8 });
     th.actors.push({ type: 'king', x: 240, y: 142 });
+    // the royal family stands by the throne
+    person(th, 'npc9_villager', 'npc9_idle', 200, 152, { scale: 2.0, oy: 1 });
+    person(th, 'npc8_villager', 'npc8_idle', 282, 154, { scale: 2.0, oy: 1, flipX: true });
+    talker(th, 200, 158, ['Reina Elara: Bienvenido a nuestra casa 👑', 'Reina Elara: El jardín ya no huele igual desde que llegó la niebla…'], 30);
+    talker(th, 282, 160, ['Princesa Lía: ¿Es cierto que viste las ruinas? 😮', 'Princesa Lía: ¡Yo también quiero aprender a usar la espada!'], 30);
+    // a lady of the court waits for her audience
+    person(th, 'npc5_villager', 'npc5_idle', 196, 318, { scale: 2.0, oy: 1 });
+    talker(th, 196, 322, ['Lady Mirena: Llevo horas esperando audiencia…', 'Lady Mirena: Mis tierras lindan con Brumavieja. Ya nadie quiere trabajarlas.'], 34);
     torch(th, 92); torch(th, 388);
     glass(th, 134, 10); glass(th, 346, -10);
     [186, 294].forEach(x => putc(th, 'banner', x, WALL - 4, { solid: false, scale: 1.1, sway: true }));
     candle(th, 188, 124); candle(th, 292, 124);
-    person(th, 'soldier_idle', 'soldier_idle', 182, 188, { scale: 1.75 });
-    person(th, 'soldier_idle', 'soldier_idle', 298, 188, { scale: 1.75, flipX: true });
+    person(th, 'g_templar_idle', 'g_templar_idle', 182, 188, { scale: 1.75 });
+    person(th, 'g_templar_idle', 'g_templar_idle', 298, 188, { scale: 1.75, flipX: true });
     putc(th, 'chest', 136, 96, { scale: 1.2 });
     putc(th, 'chest', 344, 96, { scale: 1.2 });
     // colonnade and side aisles: statues, trestle tables with benches, braziers
@@ -273,8 +284,8 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     });
     th.rects.push(R(SIDE + SF, SCR_Y + SCR_H, 190 - SIDE - SF, 4, 0x000000, 0.22), R(290, SCR_Y + SCR_H, 480 - SIDE - SF - 290, 4, 0x000000, 0.22));
     [70, 146, 334, 410].forEach(x => putc(th, 'shields', x, SCR_Y + SCR_H + 1, { solid: false, scale: 0.8, lift: 7 }));
-    person(th, 'soldier_idle', 'soldier_idle', 198, 500, { scale: 1.75 });
-    person(th, 'soldier_idle', 'soldier_idle', 282, 500, { scale: 1.75, flipX: true });
+    person(th, 'g_knight_idle', 'g_knight_idle', 198, 500, { scale: 1.75 });
+    person(th, 'g_knight_idle', 'g_knight_idle', 282, 500, { scale: 1.75, flipX: true });
     candle(th, 46, 536); candle(th, 434, 536);
     // a page crosses the hall with messages
     th.actors.push({ type: 'walker', key: 'npc4_villager', idle: 'npc4_idle', walk: 'npc4_walk', scale: 2.0, speed: 30,
