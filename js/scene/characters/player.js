@@ -455,7 +455,7 @@ Object.assign(MainGameScene.prototype, {
    */
   /** Animation key for the way the hero is facing: 'wizard_walk' -> 'wizard_walk_front' when he looks at the camera. */
   heroAnim(key) {
-    if (!this.facingV || !/^wizard_(idle|walk|attack1|attack2)$/.test(key)) return key;
+    if (!this.facingV || !/^(wizard|soldier|swordsman)_(idle|walk|attack1|attack2)$/.test(key)) return key;
     const k = key + '_' + this.facingV;
     return this.anims.exists(k) ? k : key;
   },
@@ -566,7 +566,9 @@ Object.assign(MainGameScene.prototype, {
    * - Game Over on 0 hearts
    */
   damagePlayer(amount) {
-    if (this.isInvulnerable || this.isDead || this.dialogOpen || this._doorTransition) return;
+    if (this.isInvulnerable || this.isDead || this.dialogOpen || this._doorTransition || this.studioOn) return;
+
+    if (this._gameMode === 'campaign' && this.tryParry && this.tryParry()) return;
 
     // Horos charging his thunder: an arcane guard soaks up the first hit of each charge
     const charging = this.thunderCharge;
@@ -584,7 +586,7 @@ Object.assign(MainGameScene.prototype, {
     this.health -= amount;
     if (this.health < 0) this.health = 0;
 
-    sfx.fx(HEROES[this.playerHero].hurt, 0.9) || sfx.playPlayerHurt();
+    sfx.fx((HEROES[this.playerHero] || HEROES.soldier).hurt, 0.9) || sfx.playPlayerHurt();
     this.cameras.main.shake(200, 0.012);
 
     // Screen flash red
@@ -598,7 +600,7 @@ Object.assign(MainGameScene.prototype, {
       this.isDead = true;
       this.player.setVelocity(0, 0);
       this.player.play(`${this.playerHero}_death`);
-      sfx.fx(HEROES[this.playerHero].death, 1);
+      sfx.fx((HEROES[this.playerHero] || HEROES.soldier).death, 1);
       sfx.playGameOver();
 
       this.time.delayedCall(1200, () => {
@@ -657,7 +659,7 @@ Object.assign(MainGameScene.prototype, {
     // Update HUD display
     this.updateHUD();
 
-    const heroDef = HEROES[newHero];
+    const heroDef = HEROES[newHero] || HEROES.soldier;
     this.createFloatingText(this.player.x, this.player.y - 44, `¡${heroDef.name} ACTIVADO!`, heroDef.color);
   }
 });

@@ -34,13 +34,13 @@ Object.assign(MainGameScene.prototype, {
     const portraitFrame = document.getElementById('hud-portrait-frame');
     const heroName = document.getElementById('hud-hero-name');
     if (portraitImg) {
-      portraitImg.src = HEROES[this.playerHero].portrait;
+      portraitImg.src = (HEROES[this.playerHero] || HEROES.soldier).portrait;
     }
     if (portraitFrame) {
-      portraitFrame.src = HEROES[this.playerHero].frame;
+      portraitFrame.src = (HEROES[this.playerHero] || HEROES.soldier).frame;
     }
     if (heroName) {
-      heroName.textContent = HEROES[this.playerHero].name;
+      heroName.textContent = (HEROES[this.playerHero] || HEROES.soldier).name;
     }
 
     // 2. Health Bar Fill & Pixel Hearts

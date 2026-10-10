@@ -25,6 +25,7 @@ Object.assign(MainGameScene.prototype, {
     }
 
     // Nobody is selected yet: both portraits show their calm pose
+    this.refreshLockedCard();
     this.selectHeroInModal(null);
     this.setBookPage(1, true);
 
@@ -48,8 +49,43 @@ Object.assign(MainGameScene.prototype, {
     }
   },
 
+  /** The fourth card: a padlock until chapter 1 is finished, then Gork the orc. */
+  refreshLockedCard() {
+    const card = document.getElementById('hero-card-locked');
+    if (!card) return;
+    const open = this.heroUnlocked();
+    card.classList.toggle('hero-card-locked', !open);
+    card.classList.toggle('hero-card-orc', open);
+    if (!open || card._opened) return;
+    card._opened = true;
+    card.querySelector('.hero-card-portrait').src = 'assets/UI/portraits/orc.png';
+    card.querySelector('.hero-card-portrait').classList.remove('hero-locked-shape');
+    card.querySelector('.hero-lock').style.display = 'none';
+    card.querySelector('.hero-card-name').textContent = 'Gork';
+    card.querySelector('.hero-card-class').textContent = 'Orco renegado · Rompefilas';
+    const vals = card.querySelectorAll('.stat-val'), labs = card.querySelectorAll('.stat-label');
+    ['Hacha a dos manos', 'Piel dura', 'Golpe de tierra'].forEach((t, i) => { vals[i].textContent = t; });
+    ['Combate:', 'Defensa:', 'Habilidad:'].forEach((t, i) => { labs[i].lastChild.textContent = ' ' + t; });
+    card.title = 'Gork, el orco renegado';
+  },
+
+  /** "Nueva partida": only offered in campaign when the chosen hero already has progress. */
+  refreshNewGameButton() {
+    const btn = document.getElementById('btn-hero-newgame');
+    if (!btn) return;
+    const hero = this.selectedHero, save = hero && this.heroSelectionTargetMode === 'campaign' ? this.loadSave()[hero] : null;
+    btn.style.setProperty('display', save ? 'flex' : 'none', 'important');
+    btn._armed = false;
+    if (save) btn.querySelector('span').textContent = 'NUEVA PARTIDA (nivel ' + save.level + ', paso ' + Math.min(save.step + 1, 8) + '/8)';
+    const txt = document.getElementById('hero-btn-confirm-text');
+    if (txt) txt.textContent = save ? '¡CONTINUAR AVENTURA!' : '¡INICIAR AVENTURA!';
+  },
+
   selectHeroInModal(hero) {
     this.selectedHero = hero;
+    const lockedCard = document.getElementById('hero-card-locked');
+    if (lockedCard) { lockedCard.classList.toggle('active', hero === 'orc'); }
+    this.refreshNewGameButton();
     const btnConfirm = document.getElementById('btn-hero-confirm');
     if (btnConfirm) {
       btnConfirm.disabled = !hero;
@@ -232,7 +268,9 @@ Object.assign(MainGameScene.prototype, {
     const cardLocked = document.getElementById('hero-card-locked');
     if (cardLocked) {
       cardLocked.onclick = () => {
-        sfx.init(); sfx.fx('book_clasp', 0.7, { rate: 1.4 });
+        sfx.init();
+        if (this.heroUnlocked()) { if (this.selectedHero !== 'orc') sfx.fx('orc_attack', 0.8); this.selectHeroInModal('orc'); return; }
+        sfx.fx('book_clasp', 0.7, { rate: 1.4 });
         cardLocked.classList.remove('shake'); void cardLocked.offsetWidth; cardLocked.classList.add('shake');
       };
     }
@@ -244,6 +282,17 @@ Object.assign(MainGameScene.prototype, {
         if (!this.selectedHero || this._bookLeaving) return;
         sfx.init();
         this.confirmHeroSelection();
+      };
+    }
+    const btnNew = document.getElementById('btn-hero-newgame');
+    if (btnNew) {
+      btnNew.onclick = () => {
+        if (!this.selectedHero) return;
+        sfx.init();
+        // two clicks: the first one only asks
+        if (!btnNew._armed) { btnNew._armed = true; btnNew.querySelector('span').textContent = '¿SEGURO? Se borra el progreso — clic otra vez'; return; }
+        this.deleteSave(this.selectedHero);
+        this.refreshNewGameButton();
       };
     }
     if (btnCancel) {

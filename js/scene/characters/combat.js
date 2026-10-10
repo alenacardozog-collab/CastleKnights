@@ -196,8 +196,8 @@ Object.assign(MainGameScene.prototype, {
     if (isWizard) {
       this.player.play('wizard_dash');
       sfx.fx('teleport', 0.8) || sfx.playMagic();
-    } else if (isAby) {
-      this.player.play('swordsman_walk');
+    } else if (isAby || this.playerHero === 'orc') {
+      this.player.play(`${this.playerHero}_walk`);
       sfx.fx('dash', 0.8, { rate: 1.25 }) || sfx.playDash();
     } else {
       this.player.play('soldier_dash');
@@ -205,7 +205,7 @@ Object.assign(MainGameScene.prototype, {
     }
 
     // Afterimage / ghost trail effect
-    const ghostKey = isWizard ? 'wizard_dash' : isAby ? 'swordsman_walk' : 'soldier_dash';
+    const ghostKey = isWizard ? 'wizard_dash' : isAby ? 'swordsman_walk' : this.playerHero === 'orc' ? 'orc_walk' : 'soldier_dash';
     const ghostTint = isWizard ? 0xc084fc : isAby ? 0xfb7185 : 0x38bdf8;
     const ghostTimer = this.time.addEvent({
       delay: 50,
@@ -958,8 +958,10 @@ Object.assign(MainGameScene.prototype, {
     const o = opt || {};
     const isLeft = this.facingDirection === 'left';
     const reach = o.reach === undefined ? 42 : o.reach;
-    const hitX = isLeft ? this.player.x - reach : this.player.x + reach;
-    const hitY = this.player.y + 6;
+    // heroes that can face the camera or away from it strike down / up
+    const v = this.facingV && this.anims.exists(`${this.playerHero}_attack1_${this.facingV}`) ? this.facingV : null;
+    const hitX = v ? this.player.x : isLeft ? this.player.x - reach : this.player.x + reach;
+    const hitY = this.player.y + 6 + (v === 'front' ? reach : v === 'back' ? -reach : 0);
     const hitRadius = o.radius || 50;
 
     let hitCount = 0;
@@ -993,7 +995,7 @@ Object.assign(MainGameScene.prototype, {
 
   /** True when the hero may not fight right now (talking, cut-scene, changing zone). */
   combatLocked() {
-    return !!(this.dialogOpen || this._doorTransition || this._cutscene);
+    return !!(this.dialogOpen || this._doorTransition || this._cutscene || this.studioOn);
   },
 
   /** Aby's thrusts: a long, narrow strip in front of her. */
@@ -1060,6 +1062,7 @@ Object.assign(MainGameScene.prototype, {
    */
   damageEnemy(enemy, amount, sourceX, sourceY) {
     if (enemy.isDead) return;
+    if (this._gameMode === 'campaign' && this.story && this.story.up) amount += this.story.up.atk;   // whetstones from the shop
 
     enemy.hp -= amount;
     const edef = enemy.def || ENEMY_TYPES.orc;

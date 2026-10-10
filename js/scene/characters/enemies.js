@@ -130,7 +130,8 @@ Object.assign(MainGameScene.prototype, {
     const free = (x, y) => x > 20 && y > 30 && x < area.w - 20 && y < area.h - 16 &&
       !solids.some(c => x > c.x - 12 && x < c.x + c.w + 12 && y > c.y - 10 && y < c.y + c.h + 10);
     const sp = area.spawn;
-    list.forEach(([type, x, y, r]) => {
+    list.forEach(([type, x, y, r, when]) => {
+      if (when === 'night' && !(this.isNight && this.isNight())) return;
       if (ENEMY_TYPES[type].boss && this.story && this.story.flags['boss_' + type]) return;
       let px = x, py = y, ok = free(x, y);
       for (let i = 0; i < 40 && !ok; i++) {
@@ -152,7 +153,7 @@ Object.assign(MainGameScene.prototype, {
   },
 
   /** A ranged enemy lets go of its arrow / spell towards the hero. */
-  enemyShoot(enemy) {
+  enemyShoot(enemy, spread) {
     const r = enemy.def.ranged;
     if (!this.enemyShots) {
       this.enemyShots = this.physics.add.group();
@@ -173,7 +174,8 @@ Object.assign(MainGameScene.prototype, {
     shot.body.setSize(10, 10);
     shot.setDepth(Math.max(10, Math.round(sy + 30)));
     if (r.frames > 1 && this.anims.exists(r.key + '_fly')) shot.play(r.key + '_fly');
-    const ang = Phaser.Math.Angle.Between(sx, sy, this.player.x, this.player.y + 6);
+    const ang = Phaser.Math.Angle.Between(sx, sy, this.player.x, this.player.y + 6) + (spread || 0);
+    if (spread) shot.homing = 0;
     shot.setVelocity(Math.cos(ang) * r.speed, Math.sin(ang) * r.speed);
     shot.setRotation(ang);
     this.time.delayedCall(r.homing ? 3200 : 1800, () => { if (shot.active) shot.destroy(); });
@@ -276,7 +278,7 @@ Object.assign(MainGameScene.prototype, {
       enemy.setDepth(Math.max(10, Math.round(enemy.body ? enemy.body.bottom : enemy.y + 24)));
 
       const dist = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y);
-      const def = enemy.def || ENEMY_TYPES.orc;
+      let def = enemy.def || ENEMY_TYPES.orc;
       if (enemy.hpBar) {
         const g = enemy.hpBar; g.clear();
         if (enemy.hp < enemy.maxHp || def.boss) {
@@ -285,6 +287,16 @@ Object.assign(MainGameScene.prototype, {
           g.fillStyle(def.boss ? 0xa855f7 : 0xdc2626, 1); g.fillRect(bx, by, w * Math.max(0, enemy.hp / enemy.maxHp), 3);
         }
         if (enemy.nameTag) enemy.nameTag.setPosition(enemy.x, enemy.y - 56);
+      }
+      // second phase at half life: faster casting, three bolts at once, more dead at its side
+      if (def.boss && !enemy.phase2 && enemy.hp <= enemy.maxHp / 2) {
+        enemy.phase2 = true;
+        enemy.def = def = Object.assign({}, def, { cd: Math.round(def.cd * 0.6), speed: def.speed * 1.5, summon: Object.assign({}, def.summon, { every: 6000, max: 6 }) });
+        enemy.nextSummon = now + 800;
+        enemy.setTint(0xd8b4fe); this.time.delayedCall(700, () => enemy.active && !enemy.isDead && enemy.clearTint());
+        this.cameras.main.flash(350, 150, 90, 220); this.cameras.main.shake(400, 0.008);
+        sfx.fx('necro_death', 0.7, { rate: 1.4 });
+        this.createFloatingText(enemy.x, enemy.y - 70, '¡LA NIEBLA SE CIERRA!', 0xd8b4fe);
       }
       // the boss raises the dead while it fights
       if (def.summon && enemy.state === 'chase' && now > enemy.nextSummon) {
@@ -409,12 +421,24 @@ Object.assign(MainGameScene.prototype, {
             enemy.isAttacking = true;
             enemy.attackCooldown = now + def.cd;
 
-            enemy.play(`${enemy.type}_attack1`);
+            // heavy hitters announce the blow: a red flash and a ring that closes in, then the swing
+            const heavy = def.dmg > 1 && !rng, warn = heavy ? 380 : 0;
+            if (heavy) {
+              enemy.setTint(0xff7070);
+              const ring = this.add.circle(enemy.x, enemy.y + 8, def.reach + 14).setStrokeStyle(2, 0xff4040, 0.9).setDepth(enemy.depth - 1);
+              this.tweens.add({ targets: ring, radius: 10, alpha: 0.2, duration: warn + def.hitAt, onComplete: () => ring.destroy() });
+              sfx.playAlert();
+              this.time.delayedCall(warn, () => { if (enemy.active && !enemy.isDead) { enemy.clearTint(); enemy.play(`${enemy.type}_attack1`); } });
+            } else enemy.play(`${enemy.type}_attack1`);
             sfx.fx(def.sfx[0], 0.55, { minGap: 150, rate: def.sfx[3] * (0.92 + Math.random() * 0.18) });
 
-            this.time.delayedCall(def.hitAt, () => {
+            this.time.delayedCall(def.hitAt + warn, () => {
               if (enemy.active && !enemy.isDead && !this.isDead) {
-                if (rng) { this.enemyShoot(enemy); return; }
+                if (rng) {
+                  this.enemyShoot(enemy);
+                  if (enemy.phase2) { this.enemyShoot(enemy, -0.45); this.enemyShoot(enemy, 0.45); }
+                  return;
+                }
                 const currentDist = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y);
                 if (currentDist <= def.reach + 8) {
                   this.damagePlayer(def.dmg);

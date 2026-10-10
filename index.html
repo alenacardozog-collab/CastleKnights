@@ -17,7 +17,7 @@
   <!-- Custom Styles (CastleKnight Theme) -->
   <link rel="stylesheet" href="styles.css?v=7.0">
   <!-- UI skin cut from assets/UI/fantasyUI.png (overrides only) -->
-  <link rel="stylesheet" href="ui-theme.css?v=3.0">
+  <link rel="stylesheet" href="ui-theme.css?v=3.3">
 </head>
 <body>
 
@@ -344,6 +344,9 @@
             <span class="btn-decor"><img src="assets/UI/pix/check.png" class="btn-menu-icon" alt=""></span>
             <span id="hero-btn-confirm-text">¡INICIAR AVENTURA!</span>
             <span class="btn-decor"><img src="assets/UI/pix/check.png" class="btn-menu-icon" alt=""></span>
+          </button>
+          <button id="btn-hero-newgame" class="start-menu-btn hero-btn-newgame" style="display:none" title="Borrar el progreso de este héroe y empezar de cero">
+            <span>NUEVA PARTIDA</span>
           </button>
           <button id="btn-hero-cancel" class="start-menu-btn hero-btn-cancel" title="Volver al Menú Principal">
             <span class="btn-decor"><img src="assets/UI/pix/close.png" class="btn-menu-icon" alt=""></span>
@@ -923,23 +926,26 @@
   <script src="js/map2_data.js"></script>
   <script src="js/map_assets_base64.js"></script>
   <script src="js/interior_assets.js?v=1.1"></script>
-  <script src="js/castle_assets.js?v=4.5"></script>
-  <script src="js/ruins_assets.js?v=1.2"></script>
+  <script src="js/castle_assets.js?v=4.6"></script>
+  <script src="js/ruins_assets.js?v=1.3"></script>
   <script src="js/hero_fx_assets.js?v=1.3"></script>
   <script src="js/hero_dir_assets.js?v=1.0"></script>
   <script src="js/king_assets.js?v=1.0"></script>
   <script src="js/chars_assets.js?v=1.0"></script>
+  <script src="js/hero_dir2_assets.js?v=1.1"></script>
 
   <!-- 2) Map data (positions of props and solid rectangles; editable by hand) -->
   <script src="js/maps/data/castle_maps.js?v=11.4"></script>
   <script src="js/maps/data/ruins_map.js?v=11.0"></script>
+  <script src="js/maps/data/studio_data.js?v=1.0"></script>
 
   <!-- 3) Core systems and constants -->
   <script src="js/core/audio.js?v=11.0"></script>
   <script src="js/core/keybinds.js?v=11.0"></script>
+  <script src="js/core/zone_music.js?v=1.0"></script>
   <script src="js/config/map_catalog.js?v=11.0"></script>
   <script src="js/config/world_constants.js?v=11.2"></script>
-  <script src="js/config/characters.js?v=12.0"></script>
+  <script src="js/config/characters.js?v=12.1"></script>
 
   <!-- 4) Map layouts (one file per building / map) -->
   <script src="js/maps/layout_kit.js?v=11.0"></script>
@@ -951,25 +957,36 @@
   <script src="js/maps/ruins.js?v=12.0"></script>
 
   <!-- 5) The scene: life cycle first, then one file per feature -->
-  <script src="js/scene/main_scene.js?v=12.0"></script>
+  <script src="js/scene/main_scene.js?v=12.1"></script>
   <script src="js/scene/assets_preload.js?v=12.0"></script>
   <script src="js/scene/world/village_map.js?v=11.0"></script>
   <script src="js/scene/world/collisions.js?v=11.0"></script>
   <script src="js/scene/world/areas.js?v=12.0"></script>
   <script src="js/scene/world/area_effects.js?v=11.0"></script>
   <script src="js/scene/characters/npcs.js?v=12.0"></script>
-  <script src="js/scene/characters/player.js?v=12.0"></script>
-  <script src="js/scene/characters/combat.js?v=12.0"></script>
-  <script src="js/scene/characters/enemies.js?v=12.0"></script>
-  <script src="js/scene/characters/roster.js?v=12.0"></script>
-  <script src="js/scene/systems/story.js?v=12.0"></script>
-  <script src="js/scene/ui/hud.js?v=12.0"></script>
-  <script src="js/scene/ui/hero_select.js?v=12.0"></script>
+  <script src="js/scene/characters/player.js?v=12.3"></script>
+  <script src="js/scene/characters/combat.js?v=12.4"></script>
+  <script src="js/scene/characters/enemies.js?v=12.1"></script>
+  <script src="js/scene/characters/roster.js?v=12.2"></script>
+  <script src="js/scene/systems/story.js?v=12.3"></script>
+  <script src="js/scene/systems/extras.js?v=1.2"></script>
+  <script src="js/scene/ui/hud.js?v=12.1"></script>
+  <script src="js/scene/ui/hero_select.js?v=12.2"></script>
   <script src="js/scene/editor/map_editor.js?v=11.0"></script>
   <script src="js/scene/editor/dev_mode.js?v=11.0"></script>
   <script src="js/scene/editor/dev_tools.js?v=11.0"></script>
+  <script src="js/scene/editor/studio.js?v=1.1"></script>
 
   <!-- 6) Bootstrap -->
+  <!-- Modo Dev apagado. Borrar esta línea lo vuelve a habilitar. -->
+  <script src="js/dev_off.js?v=1"></script>
+  <!-- Taller (D:\Editor): datos y cargador. Borrar este bloque deja el juego como estaba. -->
+  <script src="js/maps/data/editor_data.js?v=mv1iueni"></script>
+  <script src="js/maps/data/editor_assets.js?v=mv1iueni"></script>
+  <script src="js/core/ck_dialogo.js?v=mv1iueni"></script>
+  <script src="js/core/ck_fx.js?v=mv1iueni"></script>
+  <script src="js/editor_loader.js?v=mv1iueni"></script>
+  <!-- /Taller -->
   <script src="js/game.js?v=11.1"></script>
 </body>
 </html>

@@ -1248,16 +1248,105 @@ body {
 .ck-zone-sub { font-size: 15px; letter-spacing: 3px; color: #e9d7a8; text-shadow: 0 2px 0 #000, 0 0 12px #000; text-transform: uppercase; }
 @keyframes ckZone { 0% { opacity: 0; transform: translateY(10px); letter-spacing: 8px; } 18%, 78% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8px); } }
 #ck-dialog {
-  left: 50%; bottom: 22px; width: min(720px, 86%); transform: translate(-50%, 12px); padding: 16px 20px 22px; color: #3a2208; cursor: pointer;
-  background: linear-gradient(180deg, #f6e7bf 0%, #ead29a 70%, #d9bd7f 100%); border: 4px solid #6b4a1c;
-  box-shadow: 0 0 0 2px #1c0a06, 0 6px 0 rgba(0, 0, 0, 0.5), inset 0 0 26px rgba(120, 80, 20, 0.3); transition: opacity 0.18s, transform 0.18s;
+  left: 50%; bottom: 20px; width: min(980px, 92%); min-height: 168px; transform: translate(-50%, 12px); padding: 22px 26px 30px; color: #3a2208; cursor: pointer;
+  display: flex; gap: 22px; align-items: stretch; box-sizing: border-box;
+  background: linear-gradient(180deg, #f6e7bf 0%, #ead29a 70%, #d9bd7f 100%); border: 5px solid #6b4a1c;
+  box-shadow: 0 0 0 3px #1c0a06, 0 8px 0 rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(120, 80, 20, 0.3); transition: opacity 0.18s, transform 0.18s;
 }
 #ck-dialog.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-.ck-dlg-name { position: absolute; top: -17px; left: 16px; padding: 3px 14px; font-size: 14px; letter-spacing: 1px; color: #fde68a; background: #4a1c1a; border: 3px solid #6b4a1c; box-shadow: 0 0 0 2px #1c0a06; }
-.ck-dlg-text { min-height: 46px; font-size: 18px; line-height: 1.35; }
-.ck-dlg-next { position: absolute; right: 14px; bottom: 5px; font-size: 11px; letter-spacing: 1px; color: #7a5a24; animation: ckBlink 1s steps(2) infinite; }
+.ck-dlg-face { flex: 0 0 132px; height: 132px; align-self: center; border: 4px solid #6b4a1c; box-shadow: 0 0 0 2px #1c0a06, inset 0 0 0 2px #c9a55a; background: radial-gradient(circle at 50% 35%, #6a8a5a 0%, #2a3a2a 80%); overflow: hidden; }
+.ck-dlg-face.painted { background: radial-gradient(circle at 50% 30%, #5a2a26 0%, #1a0b0a 78%); }
+.ck-dlg-portrait { width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: block; }
+.ck-dlg-body { flex: 1 1 auto; min-width: 0; }
+.ck-dlg-name { display: inline-block; margin: -4px 0 10px; padding: 4px 16px; font-size: 18px; letter-spacing: 1px; color: #fde68a; background: #4a1c1a; border: 3px solid #6b4a1c; box-shadow: 0 0 0 2px #1c0a06; }
+.ck-dlg-text { min-height: 84px; font-size: 24px; line-height: 1.4; }
+.ck-dlg-next { position: absolute; right: 18px; bottom: 8px; font-size: 13px; letter-spacing: 1px; color: #7a5a24; animation: ckBlink 1s steps(2) infinite; }
 @keyframes ckBlink { 50% { opacity: 0.25; } }
-#ck-prompt { left: 50%; bottom: 96px; transform: translateX(-50%); padding: 5px 14px; font-size: 13px; color: #fde68a; background: rgba(20, 10, 4, 0.88); border: 2px solid #6b4a1c; box-shadow: 0 0 0 2px #120803; transition: opacity 0.15s; white-space: nowrap; }
+#ck-prompt { left: 50%; bottom: 84px; transform: translateX(-50%); padding: 5px 14px; font-size: 13px; color: #fde68a; background: rgba(20, 10, 4, 0.88); border: 2px solid #6b4a1c; box-shadow: 0 0 0 2px #120803; transition: opacity 0.15s; white-space: nowrap; }
 #ck-prompt.on { opacity: 1; }
 /* soft dark edges over the play field: gathers the eye on the hero */
 #ck-vignette { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, transparent 58%, rgba(8, 6, 14, 0.42) 100%); }
+
+/* =====================================================================
+   DEV STUDIO (campaign, F2)
+   ===================================================================== */
+#ck-studio { position: absolute; inset: 0; z-index: 60; pointer-events: none; display: none; font-family: var(--ui-font); color: #f3e8c8; }
+#ck-studio.on { display: block; }
+#ck-studio button, #ck-studio select, #ck-studio input, #ck-studio textarea { font-family: inherit; }
+.st-bar { position: absolute; left: 10px; top: 96px; width: 84px; padding: 6px; display: flex; flex-direction: column; gap: 4px; pointer-events: auto;
+  background: rgba(22, 14, 8, 0.94); border: 3px solid #6b4a1c; box-shadow: 0 0 0 2px #120803; max-height: calc(100% - 150px); overflow-y: auto; }
+.st-title { font-size: 10px; letter-spacing: 1px; color: #fde68a; text-align: center; padding: 2px 0 4px; border-bottom: 1px solid #6b4a1c; word-break: break-all; }
+.st-title span { display: block; color: #c8b890; font-size: 9px; }
+.st-tool, .st-act { cursor: pointer; color: #f3e8c8; background: #3a2414; border: 2px solid #6b4a1c; padding: 4px 2px; font-size: 10px; line-height: 1.1; }
+.st-tool b { display: block; font-size: 20px; line-height: 1; font-weight: normal; }
+.st-tool:hover, .st-act:hover { filter: brightness(1.25); }
+.st-tool.active { background: #c9952c; color: #1c0a06; border-color: #ffe59a; }
+.st-act.st-main { background: #2f6b3a; border-color: #7fd08a; }
+.st-sep { height: 1px; background: #6b4a1c; margin: 3px 0; }
+.st-panel { position: absolute; right: 10px; top: 96px; width: 250px; max-height: calc(100% - 150px); overflow-y: auto; padding: 10px 12px; pointer-events: auto; box-sizing: border-box;
+  background: rgba(22, 14, 8, 0.94); border: 3px solid #6b4a1c; box-shadow: 0 0 0 2px #120803; font-size: 12px; }
+.st-panel h4 { margin: 0 0 8px; font-size: 13px; color: #fde68a; letter-spacing: 1px; word-break: break-all; }
+.st-panel h4 small { color: #c8b890; font-size: 10px; }
+.st-panel p { margin: 4px 0; line-height: 1.3; }
+.st-panel .st-dim { color: #b9a67c; font-size: 11px; }
+.st-panel label { display: block; margin: 7px 0 0; color: #e9d7a8; font-size: 11px; }
+.st-panel input[type=text], .st-panel input:not([type]), .st-panel input[type=number], .st-panel select, .st-panel textarea {
+  width: 100%; box-sizing: border-box; margin-top: 3px; padding: 4px 6px; font-size: 12px; color: #2a1806; background: #f3e8c8; border: 2px solid #6b4a1c; resize: vertical; }
+.st-panel input[type=range] { width: 62%; vertical-align: middle; }
+.st-panel button { cursor: pointer; margin-top: 7px; padding: 4px 8px; font-size: 11px; color: #f3e8c8; background: #3a2414; border: 2px solid #6b4a1c; }
+.st-panel button:hover { filter: brightness(1.25); }
+.st-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-end; }
+.st-row > label { flex: 1 1 0; }
+.st-color { width: 26px; height: 26px; padding: 0 !important; margin-top: 0 !important; border: 2px solid #120803 !important; }
+.st-color.active { outline: 3px solid #fde68a; }
+.st-help { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); max-width: 70%; padding: 5px 14px; font-size: 12px; text-align: center;
+  background: rgba(22, 14, 8, 0.92); border: 2px solid #6b4a1c; box-shadow: 0 0 0 2px #120803; }
+
+/* =====================================================================
+   CAMPAIGN EXTRAS: quick bar, shop, journal, unlocked hero, new game
+   ===================================================================== */
+#ck-quick { position: absolute; left: 14px; bottom: 14px; z-index: 40; display: none; gap: 6px; font-family: var(--ui-font); pointer-events: none; }
+#ck-quick.on { display: flex; }
+.ck-slot { position: relative; width: 46px; height: 46px; background: rgba(22, 14, 8, 0.9); border: 3px solid #6b4a1c; box-shadow: 0 0 0 2px #120803; }
+.ck-slot i { position: absolute; left: 13px; top: 9px; width: 14px; height: 20px; border-radius: 3px 3px 6px 6px; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.35), 0 -4px 0 -1px #cbd5e1; }
+.ck-slot i.shield { background: #93c5fd; border-radius: 3px 3px 9px 9px; box-shadow: inset 0 0 0 2px #1e3a8a; }
+.ck-slot b { position: absolute; left: 3px; top: 1px; font-size: 10px; color: #fde68a; }
+.ck-slot span { position: absolute; right: 3px; bottom: 0; font-size: 13px; color: #fff; text-shadow: 0 1px 0 #000; }
+.ck-slot.wait { opacity: 0.4; }
+#ck-shop, #ck-journal { position: absolute; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; background: rgba(6, 4, 10, 0.72); font-family: var(--ui-font); }
+#ck-shop.on, #ck-journal.on { display: flex; }
+.ck-win { width: min(560px, 92%); max-height: 88%; overflow-y: auto; padding: 18px 22px; color: #3a2208; box-sizing: border-box;
+  background: linear-gradient(180deg, #f6e7bf 0%, #ead29a 70%, #d9bd7f 100%); border: 5px solid #6b4a1c; box-shadow: 0 0 0 3px #1c0a06, 0 10px 0 rgba(0, 0, 0, 0.5); }
+.ck-win-wide { width: min(980px, 94%); }
+.ck-win h3 { margin: 0 0 10px; font-family: 'Pirata One', 'MedievalSharp', serif; font-size: 30px; letter-spacing: 2px; color: #4a1c1a; text-align: center; }
+.ck-win h4 { margin: 12px 0 4px; font-size: 14px; letter-spacing: 1px; color: #6b2a1a; border-bottom: 2px solid rgba(107, 74, 28, 0.4); }
+.ck-win p { margin: 3px 0; font-size: 14px; line-height: 1.3; }
+.ck-win p.done { color: #5d6b3a; } .ck-win p.now { font-weight: bold; color: #7a1c14; } .ck-win p.todo { color: #9a8458; }
+.ck-close { display: block; margin: 14px auto 0; padding: 7px 18px; cursor: pointer; font-family: inherit; font-size: 13px; color: #fde68a; background: #4a1c1a; border: 3px solid #6b4a1c; box-shadow: 0 0 0 2px #1c0a06; }
+.ck-shop-purse { text-align: center; font-size: 16px; margin-bottom: 8px; }
+.ck-item { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-top: 2px solid rgba(107, 74, 28, 0.35); }
+.ck-item > div { flex: 1; } .ck-item b { display: block; font-size: 16px; } .ck-item span { font-size: 12px; color: #6b4a1c; } .ck-item em { font-style: normal; font-size: 12px; color: #6b4a1c; white-space: nowrap; }
+.ck-item button { min-width: 84px; padding: 6px 8px; cursor: pointer; font-family: inherit; font-size: 14px; color: #fff3cf; background: #2f6b3a; border: 3px solid #1c3a20; }
+.ck-item button:disabled { background: #7a715c; border-color: #5a523f; cursor: not-allowed; opacity: 0.8; }
+.ck-jr-cols { display: flex; gap: 18px; flex-wrap: wrap; }
+.ck-jr-map { position: relative; flex: 1 1 380px; min-height: 340px; background: repeating-linear-gradient(0deg, rgba(110, 80, 30, 0.07) 0 19px, rgba(110, 80, 30, 0.16) 19px 20px), #e6d3a0; border: 3px solid #8a6a30; box-shadow: inset 0 0 40px rgba(120, 80, 20, 0.35); }
+.ck-jr-map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ck-place { position: absolute; box-sizing: border-box; padding: 6px; text-align: center; font-size: 12px; background: rgba(120, 150, 90, 0.5); border: 2px solid #4d5d2e; }
+.ck-place.danger { background: rgba(150, 110, 110, 0.5); border-color: #6b2a1a; }
+.ck-place.here { box-shadow: 0 0 0 3px #fde68a, 0 0 14px 4px rgba(255, 220, 120, 0.8); }
+.ck-place b { display: block; font-size: 14px; } .ck-place span { display: block; color: #1c3a20; } .ck-place em { display: block; font-style: normal; font-weight: bold; color: #a01c14; animation: ckBlink 1s steps(2) infinite; }
+.ck-jr-side { flex: 1 1 320px; }
+.hero-btn-newgame { flex: 1 1 100% !important; order: 3; font-size: 12px !important; padding: 6px !important; filter: saturate(0.6) brightness(0.85); }
+/* Gork, once unlocked: scarred green hide and iron */
+#hero-card-locked.hero-card-orc { cursor: pointer !important; background: linear-gradient(180deg, #24401f 0%, #172a15 55%, #0c160b 100%) !important; border-color: #8a7a52 !important; filter: brightness(0.8) saturate(0.85) !important; }
+#hero-card-locked.hero-card-orc:hover { filter: brightness(1) !important; }
+#hero-card-locked.hero-card-orc.active { filter: none !important; transform: translateY(-4px) scale(1.03) !important; box-shadow: 0 0 0 2px #0c160b, 0 0 0 5px #d9f99d, 0 0 30px rgba(120, 220, 90, 0.7) !important; }
+#hero-card-locked.hero-card-orc .hero-card-frame-wrapper { border-color: #9a8a5e !important; background: radial-gradient(circle at 50% 30%, #3f6a35 0%, #0c160b 78%) !important; }
+#hero-card-locked.hero-card-orc .hero-card-name { color: #d9f99d !important; -webkit-text-fill-color: #d9f99d; text-shadow: 0 3px 0 #0c160b, 0 0 14px rgba(120, 220, 90, 0.5) !important; }
+#hero-card-locked.hero-card-orc .hero-card-class { color: #bbd9a0 !important; }
+#hero-card-locked.hero-card-orc .hero-card-portrait { opacity: 1 !important; }
+.hero-modal-actions { flex-wrap: wrap !important; }
+.st-bar { width: 132px; flex-direction: row; flex-wrap: wrap; align-content: flex-start; }
+.st-bar .st-title, .st-bar .st-sep { flex: 1 1 100%; }
+.st-bar .st-tool { flex: 1 1 44%; }
+.st-bar .st-act { flex: 1 1 100%; padding: 3px 2px; }

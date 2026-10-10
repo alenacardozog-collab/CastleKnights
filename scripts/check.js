@@ -21,7 +21,9 @@ scripts.forEach(s => { if (!exists(s)) err(`index.html loads ${s} but the file d
 const dupTags = scripts.filter((s, i) => scripts.indexOf(s) !== i);
 dupTags.forEach(s => err(`index.html loads ${s} twice`));
 const walk = d => fs.readdirSync(ROOT + d, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(d + '/' + e.name) : e.name.endsWith('.js') ? [d + '/' + e.name] : []);
-walk('js').forEach(f => { if (!scripts.includes(f)) err(`${f} is not loaded by index.html (add its <script> or delete the file)`); });
+// optional data files that a loaded script injects itself with document.write('<script src="...">') (the Taller loader does this)
+const dynamic = scripts.filter(exists).flatMap(s => [...read(s).matchAll(/document\.write\(\s*['"]<script src="([^"?]+)/g)].map(m => m[1]));
+walk('js').forEach(f => { if (!scripts.includes(f) && !dynamic.includes(f)) err(`${f} is not loaded by index.html (add its <script> or delete the file)`); });
 const order = (a, b, why) => { const i = scripts.findIndex(s => a.test(s)), j = scripts.findIndex(s => b.test(s)); if (i > -1 && j > -1 && i > j) err(`script order: ${why}`); };
 order(/maps\/data\//, /config\/world_constants/, 'js/maps/data/* must load before js/config/world_constants.js');
 order(/maps\/layout_kit/, /maps\/(interiors\/|castle|ruins)/, 'js/maps/layout_kit.js must load before the layouts');
@@ -29,7 +31,7 @@ order(/scene\/main_scene/, /scene\/(world|characters|ui|editor|assets_preload)/,
 if (scripts[scripts.length - 1] !== 'js/game.js') err('js/game.js (bootstrap) must be the last script');
 
 // ---- 2. syntax
-const code = scripts.filter(s => exists(s));
+const code = scripts.concat(dynamic.filter(d => !scripts.includes(d))).filter(s => exists(s));
 code.forEach(s => { const r = cp.spawnSync(process.execPath, ['--check', ROOT + s], { encoding: 'utf8' }); if (r.status !== 0) err(`syntax error in ${s}:\n${r.stderr.split('\n').slice(0, 4).join('\n')}`); });
 
 // ---- 3. duplicated globals and scene methods

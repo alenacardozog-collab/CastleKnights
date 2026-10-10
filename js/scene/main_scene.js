@@ -709,6 +709,8 @@ class MainGameScene extends Phaser.Scene {
     }
     if (this.keyInteract && Phaser.Input.Keyboard.JustDown(this.keyInteract)) this.interact();
     this.updateStory(dt);
+    this.updateStudioNPCs(dt);
+    if (this.studioOn) this.updateStudio();
 
     // Hotkey attacks
     if (Phaser.Input.Keyboard.JustDown(this.keyAttack)) {
@@ -737,8 +739,8 @@ class MainGameScene extends Phaser.Scene {
     this.updateFootsteps();
     this.updateThunderCharge();
 
-    // Update Enemy AI & Chasing
-    this.updateEnemies();
+    // Update Enemy AI & Chasing (frozen while the dev Studio is open)
+    if (!this.studioOn) this.updateEnemies();
 
     // Animate doors based on player proximity
     this.checkDoorProximity();

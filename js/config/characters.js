@@ -7,6 +7,7 @@
 const HEROES = {
   soldier:   { name: 'LANCENT', short: 'SOLDADO',  portrait: 'assets/UI/portraits/knight.png',    frame: 'assets/UI/icons/card_frame_soldier.png', color: 0xfbbf24, hurt: 'knight_hurt', death: 'knight_death' },
   wizard:    { name: 'HOROS',   short: 'MAGO',     portrait: 'assets/UI/portraits/wizard.png',    frame: 'assets/UI/icons/card_frame_wizard.png',  color: 0xc084fc, hurt: 'wizard_hurt', death: 'wizard_death' },
+  orc:       { name: 'GORK',    short: 'ORCO',     portrait: 'assets/UI/portraits/orc.png',       frame: 'assets/UI/icons/card_frame_soldier.png', color: 0x86efac, hurt: 'orc_hurt',    death: 'orc_death' },
   swordsman: { name: 'ABY',     short: 'ESPADA',   portrait: 'assets/UI/portraits/swordsman.png', frame: 'assets/UI/icons/card_frame_soldier.png', color: 0xfb7185, hurt: 'aby_hurt',    death: 'aby_death',
                frames: { idle: 6, walk: 8, attack1: 7, attack2: 15, attack3: 12, hurt: 5, death: 4 } }
 };
@@ -47,6 +48,7 @@ const PRACTICE_WAVES = [
 /**
  * Enemies of each campaign zone ("<building>.<area>"). Each entry: [type, x, y, radius]
  * (area-local pixels; the enemy appears on a free spot inside that circle).
+ * A fifth value 'night' makes that enemy appear only at night.
  * They come back when the hero leaves the zone and returns, except bosses already beaten.
  */
 const ZONE_ENEMIES = {
@@ -54,7 +56,8 @@ const ZONE_ENEMIES = {
   'castle.road': [
     ['slime', 180, 560, 50], ['slime', 250, 600, 50], ['slime', 760, 620, 60],
     ['bat', 120, 420, 60], ['bat', 880, 520, 60],
-    ['werewolf', 820, 640, 50], ['werebear', 880, 250, 60]
+    ['werewolf', 820, 640, 50], ['werebear', 880, 250, 60],
+    ['werewolf', 300, 480, 60, 'night'], ['bat', 500, 560, 80, 'night'], ['bat', 700, 480, 80, 'night']
   ],
   // the ruined village: the dead walk here
   'ruins.village': [
@@ -63,7 +66,8 @@ const ZONE_ENEMIES = {
     ['skeleton_armored', 230, 470, 50], ['skeleton_armored', 690, 300, 40],
     ['bat', 170, 300, 60], ['bat', 900, 300, 60], ['bat', 420, 180, 50],
     ['slime', 860, 600, 60], ['slime', 930, 520, 50], ['slime', 800, 700, 40],
-    ['skeleton_great', 760, 230, 40]
+    ['skeleton_great', 760, 230, 40],
+    ['skeleton_armored', 520, 620, 60, 'night'], ['skeleton_archer', 620, 560, 50, 'night'], ['bat', 560, 700, 80, 'night']
     // (the Necromancer comes out of the chapel during the quest: see js/scene/systems/story.js)
   ]
 };

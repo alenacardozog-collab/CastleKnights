@@ -8,8 +8,8 @@
     "generate:map": "node scripts/generate_campaign_map.js",
     "patch:map": "node scripts/patch_map2.js",
     "check": "node scripts/check.js",
-    "build:ruins": "python3 tools/mapgen/ruins/build.py",
-    "build:castle": "python3 tools/mapgen/castle/build.py",
+    "build:ruins": "python3 tools/mapgen/ruins/build.py && python3 tools/pack/unify_style.py ruins",
+    "build:castle": "python3 tools/mapgen/castle/build.py && python3 tools/pack/unify_style.py castle",
     "build:chars": "python3 tools/pack/pack_chars.py"
   },
   "keywords": [

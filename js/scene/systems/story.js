@@ -20,7 +20,7 @@ const QUESTS = [
 
 /** People with something to say. zone = "<map>.<area>" ("village" for the village); x / y in area pixels. */
 const STORY_NPCS = [
-  { id: 'king', zone: 'castle.throne', x: 240, y: 142, r: 74, name: 'Rey Aldric',
+  { id: 'king', zone: 'castle.throne', x: 240, y: 142, r: 74, name: 'Rey Aldric', face: 'king_idle',
     lines: (s, hero) => s.step === 0 ? [
       `Así que vos sos ${hero}. Llegás en buena hora.`,
       'Una niebla baja del norte. Donde toca, las tumbas se abren y las bestias pierden el miedo.',
@@ -32,7 +32,7 @@ const STORY_NPCS = [
       'Pero no guardes la espada: lo que lo despertó sigue más al norte.'
     ] : s.step >= 8 ? ['El reino recuerda tu nombre. Descansá, que pronto habrá más trabajo.'] :
       ['El Capitán Bruno te espera. Que la corona te proteja.'] },
-  { id: 'captain', zone: 'castle.training', x: 452, y: 168, r: 54, name: 'Capitán Bruno',
+  { id: 'captain', zone: 'castle.training', x: 452, y: 168, r: 54, name: 'Capitán Bruno', face: 'g_knight_idle',
     lines: (s) => s.step === 1 ? [
       'El Rey me avisó que vendrías. Antes de mandarte al norte quiero verte pelear.',
       'Las bestias del bosque se animaron a salir al camino del castillo.',
@@ -43,7 +43,7 @@ const STORY_NPCS = [
       'Ahora sí: andá a Brumavieja, las ruinas del norte. Dicen que un aldeano no quiso irse. Encontralo.'
     ] : s.step < 1 ? ['Primero presentate ante el Rey, forastero.'] :
       ['Postura firme y ojos abiertos. La niebla no perdona.'] },
-  { id: 'hermit', zone: 'ruins.village', x: 440, y: 388, r: 50, name: 'Tobías, el último aldeano',
+  { id: 'hermit', zone: 'ruins.village', x: 440, y: 388, r: 50, name: 'Tobías, el último aldeano', face: 'npc2_villager',
     lines: (s) => s.step === 4 ? [
       '¿Una persona viva? Creí que ya no quedaba nadie…',
       'Un encapuchado se encerró en la capilla la noche de la niebla. Desde entonces los muertos caminan.',
@@ -85,12 +85,20 @@ Object.assign(MainGameScene.prototype, {
     this.health = this.maxHealth;
     this.dialogOpen = false;
     this.ensureStoryUI();
+    this.initExtras();
     this.updateObjective();
     this.updateHUD();
     this.showZoneTitle('Aldea del Roble', saved ? 'Partida recuperada' : 'Capítulo 1 · La niebla del norte');
+    this.studioOn = false;
+    this.time.delayedCall(50, () => this.studioOnZoneShown());
   },
 
   endStory() {
+    if (this.studioOn) this.toggleStudio();
+    (this.devNpcs || []).forEach(n => { n.sprite.destroy(); if (n.tag) n.tag.destroy(); });
+    this.devNpcs = [];
+    if (this._overlay) this.closeOverlay();
+    this.endExtras();
     this.story = null;
     this.dialogOpen = false;
     this.maxHealth = 3;
@@ -109,7 +117,7 @@ Object.assign(MainGameScene.prototype, {
     mk('ck-objective', '<div class="ck-obj-head"><img src="assets/UI/pix/flag.png" class="px-ico" alt=""> OBJETIVO</div><div class="ck-obj-text"></div><div class="ck-obj-purse"></div>');
     mk('ck-zone', '<div class="ck-zone-name"></div><div class="ck-zone-sub"></div>');
     mk('ck-prompt', '');
-    const dlg = mk('ck-dialog', '<div class="ck-dlg-name"></div><div class="ck-dlg-text"></div><div class="ck-dlg-next">T / ENTER / clic ▸</div>');
+    const dlg = mk('ck-dialog', '<div class="ck-dlg-face"><img class="ck-dlg-portrait" alt=""></div><div class="ck-dlg-body"><div class="ck-dlg-name"></div><div class="ck-dlg-text"></div></div><div class="ck-dlg-next">T / ENTER / clic ▸</div>');
     if (!dlg._bound) { dlg._bound = true; dlg.addEventListener('click', () => this.advanceDialog()); }
   },
 
@@ -123,6 +131,7 @@ Object.assign(MainGameScene.prototype, {
     box.querySelector('.ck-obj-purse').innerHTML =
       `<span><img src="assets/UI/pix/coin.png" class="px-ico" alt=""> ${this.story.coins}</span>` +
       `<span>EXP ${this.story.xp}/${need}</span>` +
+      `<span>${this.isNight() ? '☾ Noche' : '☀ Día'}</span>` +
       (this.story.flags.key && this.story.step < 7 ? '<span><img src="assets/UI/pix/unlock.png" class="px-ico" alt=""> Llave</span>' : '');
     const lvl = document.querySelector('.hud-hero-level');
     if (lvl) lvl.textContent = 'NIV. ' + this.story.level;
@@ -141,9 +150,45 @@ Object.assign(MainGameScene.prototype, {
   },
 
   // ---------------------------------------------------------------- dialogue
-  openDialog(name, lines, onEnd) {
+  /**
+   * Face of a character for the dialogue box. Heroes use their painted portrait; everybody else gets
+   * a close-up cut from their own sprite (so any new NPC has a portrait without drawing one).
+   */
+  portraitFor(texKey) {
+    this._faces = this._faces || {};
+    if (this._faces[texKey] !== undefined) return this._faces[texKey];
+    let url = null;
+    try {
+      const tex = this.textures.get(texKey), fr = tex.get(0), src = tex.getSourceImage();
+      const w = fr.cutWidth, h = fr.cutHeight;
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d'); x.drawImage(src, fr.cutX, fr.cutY, w, h, 0, 0, w, h);
+      const px = x.getImageData(0, 0, w, h).data;
+      let top = h, bot = 0;
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (px[(j * w + i) * 4 + 3] > 200) { if (j < top) top = j; if (j > bot) bot = j; }
+      const size = Math.max(10, Math.round((bot - top + 1) * 0.66));
+      let sum = 0, n = 0;                                   // centre on the head, not on the weapon
+      for (let j = top; j < top + size * 0.6; j++) for (let i = 0; i < w; i++) if (px[(j * w + i) * 4 + 3] > 200) { sum += i; n++; }
+      const cx = n ? sum / n : w / 2;
+      const out = document.createElement('canvas'); out.width = out.height = 96;
+      const o = out.getContext('2d'); o.imageSmoothingEnabled = false;
+      o.drawImage(c, Math.round(cx - size / 2), top - 1, size, size, 0, 0, 96, 96);
+      url = out.toDataURL();
+    } catch (e) { url = null; }
+    this._faces[texKey] = url;
+    return url;
+  },
+
+  openDialog(name, lines, onEnd, face) {
     this.ensureStoryUI();
     this.dialogOpen = true;
+    const faceBox = document.querySelector('#ck-dialog .ck-dlg-face');
+    if (faceBox) {
+      const url = face ? (/\.png$|^data:/.test(face) ? face : this.portraitFor(face)) : null;
+      faceBox.style.display = url ? '' : 'none';
+      faceBox.classList.toggle('painted', !!face && /\.png$/.test(face));
+      if (url) faceBox.querySelector('img').src = url;
+    }
     this._dlg = { name, lines: lines.slice(), i: 0, onEnd, shown: 0, at: performance.now() };
     if (this.player && this.player.body) this.player.setVelocity(0, 0);
     document.getElementById('ck-dialog').classList.add('on');
@@ -196,25 +241,66 @@ Object.assign(MainGameScene.prototype, {
   },
   /** The T / ENTER key: talk to whoever is in front of the hero. */
   interact() {
+    if (this._overlay) { this.closeOverlay(); return; }
     if (this._gameMode !== 'campaign' || this.isDead || this._doorTransition) return;
     if (this.dialogOpen) { this.advanceDialog(); return; }
     const hit = this.nearbyStoryNPC();
-    if (hit) {
-      const n = hit.npc, hero = HEROES[this.playerHero].name.charAt(0) + HEROES[this.playerHero].name.slice(1).toLowerCase();
-      this.openDialog(n.name, n.lines(this.story, hero), () => this.onTalked(n.id));
+    // somebody with a name standing closer than the story character speaks first (the queen next to the king)
+    let closer = false;
+    if (hit && this.currentInterior) {
+      const b = this.player.body, dh = Phaser.Math.Distance.Between(b.center.x, b.center.y, hit.x, hit.y);
+      closer = (this.currentInterior.area.talkers || []).some(t => /^[^:]{2,24}: /.test(t.lines[0]) && Phaser.Math.Distance.Between(b.center.x, b.center.y, t.x, t.y) < Math.min(t.r, dh));
+    }
+    if (hit && !closer) {
+      const n = hit.npc, hero = (HEROES[this.playerHero] || HEROES.soldier).name.charAt(0) + (HEROES[this.playerHero] || HEROES.soldier).name.slice(1).toLowerCase();
+      this.openDialog(n.name, n.lines(this.story, hero), () => this.onTalked(n.id), n.face);
       return;
     }
+    // NPCs placed in the dev Studio
+    const dn = this.nearbyStudioNPC && this.nearbyStudioNPC();
+    if (dn) {
+      const ls = dn.data.lines && dn.data.lines.length ? dn.data.lines : ['…'];
+      this.openDialog(dn.data.name || dn.look.label, ls, null, dn.look.tex);
+      return;
+    }
+    // people of the castle and the other maps (walkers, the smith, standing characters with something to say)
+    if (this.currentInterior) {
+      const a = this.currentInterior.area, b = this.player.body, fx = b.center.x, fy = b.center.y;
+      const clean = t => t.replace(/[^\wáéíóúñüÁÉÍÓÚÑ¡!¿?,.:;…«»'\- ]/g, '').trim();
+      const act = (a.actors || []).find(v => v.lines && v.sprite && v.sprite.active && Phaser.Math.Distance.Between(fx, fy, v.sprite.x, v.sprite.y) < 48);
+      if (act) { this.openDialog(this.nameForTexture(act.sprite.texture.key), act.lines.map(clean), null, act.sprite.texture.key); return; }
+      const tk = (a.talkers || []).find(t => Phaser.Math.Distance.Between(fx, fy, t.x, t.y) < t.r);
+      if (tk) {
+        // whoever is drawn at that spot lends the face; "Name: text" lines carry the name
+        const who = (a.objs || []).find(o => o && o.active && o.texture && /^(npc\d+_villager|g_\w+_idle|king_idle)$/.test(o.texture.key) && Phaser.Math.Distance.Between(o.x, o.y, tk.x, tk.y) < 26);
+        const m = /^([^:]{2,24}): /.exec(tk.lines[0]);
+        const name = m ? m[1] : who ? this.nameForTexture(who.texture.key) : '';
+        this.openDialog(name || '· · ·', tk.lines.map(l => clean(l.replace(/^[^:]{2,24}: /, ''))), null, who ? who.texture.key : null);
+        return;
+      }
+    }
+    if (this.currentZoneKey().indexOf('tienda.') === 0) { this.openShop(); return; }
     // villagers of the village: a proper line in the dialogue box instead of the floating greeting
     if (!this.currentInterior && this.campaignNPCs) {
       const p = this.player;
-      const v = this.campaignNPCs.find(n => n.sprite && n.sprite.active && Phaser.Math.Distance.Between(n.sprite.x, n.sprite.y, p.x, p.y + 20) < 48);
+      const dOf = n => Phaser.Math.Distance.Between(n.sprite.x, n.sprite.y, p.x, p.y + 20);
+      const v = this.campaignNPCs.filter(n => n.sprite && n.sprite.active && dOf(n) < 48).sort((a, b) => dOf(a) - dOf(b))[0];
+      if (v && v.id === 'npc2') { this.openShop(); return; }
       if (v) {
         const hint = this.story.step === 0 ? 'Dicen que el Rey busca gente de armas. El castillo queda por el camino del sur.' :
           this.story.step < 4 ? 'De noche se ve una luz fría hacia el norte. Nadie quiere ir a mirar.' :
           this.story.step < 7 ? 'Brumavieja era una aldea como esta… Tené cuidado allá arriba.' : '¡La niebla se fue del camino! Gracias a vos dormimos tranquilos.';
-        this.openDialog(v.name, [Phaser.Utils.Array.GetRandom(v.greetings).replace(/[^\wáéíóúñÁÉÍÓÚÑ¡!¿?,.… ]/g, '').trim(), hint]);
+        this.openDialog(v.name, [Phaser.Utils.Array.GetRandom(v.greetings).replace(/[^\wáéíóúñÁÉÍÓÚÑ¡!¿?,.… ]/g, '').trim(), hint], null, v.textureKey);
       }
     }
+  },
+
+  /** Generic name for a character known only by its sheet. */
+  nameForTexture(key) {
+    const m = /^g_(\w+)_idle$/.exec(key);
+    if (m) return { knight: 'Caballero de la guardia', templar: 'Templario', lancer: 'Lancero', axeman: 'Recluta', archer: 'Arquero', priest: 'Hermano Anselmo' }[m[1]] || 'Guardia';
+    return { npc1_villager: 'Aldeano', npc2_villager: 'Campesino', npc3_villager: 'Cocinero', npc4_villager: 'Paje', npc5_villager: 'Dama', npc6_villager: 'Anciano', npc7_villager: 'Anciana',
+      npc8_villager: 'Princesa Lía', npc9_villager: 'Reina Elara', npc10_villager: 'Albañil', king_idle: 'Rey Aldric' }[key] || 'Habitante';
   },
 
   onTalked(id) {
@@ -234,6 +320,7 @@ Object.assign(MainGameScene.prototype, {
       this.gainXP(120);
       this.advanceQuest();
       this.showZoneTitle('Capítulo 1 completo', 'La niebla del norte');
+      if (!this.heroUnlocked()) this.time.delayedCall(3800, () => this.unlockHero());
     }
   },
 
@@ -327,16 +414,19 @@ Object.assign(MainGameScene.prototype, {
     }
     const danger = !!ZONE_ENEMIES[area.key];
     if (area.title) this.showZoneTitle(area.title, danger ? '⚔ Zona peligrosa' : '');
+    if (this.studioOnZoneShown) this.studioOnZoneShown();
   },
   onVillageShown() {
     if (this._gameMode !== 'campaign') return;
     if (this.clearZoneEnemies) this.clearZoneEnemies();
     this.showZoneTitle('Aldea del Roble', 'Zona segura');
+    if (this.studioOnZoneShown) this.studioOnZoneShown();
   },
 
   /** Per-frame: typewriter, "talk" prompt, quest marker, chapel door. */
   updateStory(dt) {
     if (this._gameMode !== 'campaign' || !this.story) return;
+    this.updateExtras(dt);
     const d = this._dlg;
     if (d && d.shown < d.lines[d.i].length) {
       d.acc = (d.acc || 0) + dt;

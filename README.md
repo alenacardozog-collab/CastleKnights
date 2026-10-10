@@ -30,7 +30,8 @@ El código está separado por funcionalidad en `js/core`, `js/config`, `js/maps`
 ## 🎮 Modos de Juego
 
 1. **Modo Práctica (Tutorial):**
-   - Mapa de práctica interactivo con orcos y muñecos de entrenamiento.
+   - Campo de entrenamiento: plaza de tierra, carpas, arquería, herrería, fogón y una casa con humo en la chimenea y puerta que se abre al acercarse.
+   - Oleadas de orcos para practicar.
    - Ideal para probar controles, combos de ataque y esquivas.
 2. **Modo Campaña ("The Kingdom's Outpost"):**
    - Mapa extendido de 80×60 tiles (1280×960 px) creado con 18 tilesets de alta calidad.

@@ -116,3 +116,40 @@ Si agrega métodos a la escena, usá el mismo `Object.assign(MainGameScene.proto
 - IA y aparición de enemigos: `js/scene/characters/enemies.js`.
 - Guardado: `localStorage`, clave `castleknight_save_v1`, un progreso por héroe.
 - Hablar: tecla **T** o **Enter** (campaña). Aby en Práctica: tecla **3**.
+
+## Extras de campaña y Estudio
+
+- Tienda, inventario, diario (Tab), parada (C), día/noche, música por zona y héroe desbloqueable: `js/scene/systems/extras.js` (precios en `SHOP_ITEMS`, mapa del diario en `WORLD_MAP`).
+- Música por zona: copiar `castle.mp3`, `ruins.mp3` y `boss.mp3` en `assets/Music/`. Si un archivo falta suena la canción de la aldea.
+- Enemigos solo de noche: quinto valor `'night'` en `ZONE_ENEMIES`.
+- Estudio (F2 en campaña): `js/scene/editor/studio.js`; lo marcado se guarda en `js/maps/data/studio_data.js` al exportar.
+- Música sintetizada de castillo, ruinas y jefe: `js/core/zone_music.js` (`ZONE_TUNES`: notas, tempo y timbre). Un mp3 con el mismo nombre en `assets/Music/` la reemplaza.
+- Lancent y Aby de frente y de espalda: `js/hero_dir2_assets.js` (hojas en `assets/characters/<héroe>/<idle|walk>_<front|back>.png`).
+- Estilo único: `tools/pack/unify_style.py` acerca los colores del castillo y las ruinas a la paleta de la aldea y endurece bordes borrosos. Se ejecuta solo al final de `npm run build:castle` y `build:ruins`.
+
+## Taller (editor AcePixelStudio, `D:\Editor`)
+
+Todo lo que agrega el editor está en archivos propios: borrarlos deja el juego como era. `npm run check` reconoce
+los archivos que el cargador inyecta solo (con `document.write`), así que no hace falta sumarlos a `index.html`.
+
+| Archivo | Para qué |
+|---|---|
+| `js/editor_loader.js` | El **cargador**: mapas, NPC, misiones y efectos exportados por el editor; paseantes de la aldea; escenario del modo práctica. Envuelve métodos de `MainGameScene` sin tocar sus archivos. Copia en `D:\Editor\juego\`. |
+| `js/core/ck_dialogo.js`, `js/core/ck_fx.js` | Charla por temas de los NPC y simulador de partículas (copias del editor). |
+| `js/maps/data/editor_data.js`, `editor_assets.js` | Lo que escribe "Exportar al juego". |
+| `js/maps/data/editor_prueba.js` | Panadero y herrero caminando por la aldea (4 direcciones + respirar). Solo se ven en la aldea. |
+| `js/maps/data/editor_practica.js` | **Campo de entrenamiento** del modo práctica: suelo de la aldea (pasto + caminos con bordes), 67 objetos con colisión y la casa animada (humo en bucle, puerta que se abre al acercarse). Sin este archivo, Práctica vuelve a la pradera. |
+| `js/dev_off.js` | Apaga el modo dev (borrar su línea en `index.html` lo vuelve a encender). |
+| `assets/taller/` | Fuentes de lo anterior: `props/prop_###.png` (objetos separados y limpios, con sombra pareja), `casa.png`, `casa_humo.png` (12 cuadros de 40×56), `casa_puerta.png` (6 cuadros de 31×43), `casa_con_base.png` y vistas previas. |
+| `assets/characters/panadero/`, `assets/characters/herrero/` | Hojas de los dos NPC nuevos: `walk_<sur|norte|este>.png` (8 cuadros) e `idle_<…>.png` (4 cuadros) con su `.json`. El oeste es el este espejado. |
+
+**Escala:** el arte del Taller se dibuja a 1 píxel por píxel y se pone a escala **0,6667** en el mundo: con el zoom 1,5 de la
+aldea y de Práctica queda exactamente 1 píxel de dibujo por píxel de pantalla (otras escalas se comen filas de píxeles).
+
+**Retocar una animación del juego:** en el editor, Animar → pestaña **Juego** → "Leer del juego" → "Traer y editar".
+Se retoca cuadro a cuadro en Pixel art y "Devolver al juego" reemplaza la imagen embebida en su `.js` (y el PNG si existe),
+con respaldo en `D:\Editor\trabajo\<proyecto>\respaldo\`.
+
+**Imágenes embebidas optimizadas (octubre):** las imágenes de los `*_assets.js`, `assets_data.js` y `map_assets_base64.js`
+se recomprimieron sin pérdida (cada imagen verificada píxel a píxel): 7,6 MB → 5,9 MB. Si se regeneran con `npm run build:*`
+vuelven al tamaño anterior; no rompe nada.

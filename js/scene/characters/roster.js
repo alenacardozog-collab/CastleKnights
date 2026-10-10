@@ -10,6 +10,11 @@ Object.assign(MainGameScene.prototype, {
       if (id === 'orc') return;                                   // the orc sheets are loaded with the first heroes
       Object.keys(ENEMY_TYPES[id].frames).forEach(a => sheet(`${id}_${a}`, `assets/enemies/${id}/${a === 'attack1' ? 'attack' : a}.png`, 100));
     });
+    // Lancent and Aby seen from the front and from behind (js/hero_dir2_assets.js)
+    ['soldier', 'swordsman'].forEach(h => ['idle', 'walk', 'attack1'].forEach(a => ['front', 'back'].forEach(v => {
+      const key = `${h}_${a}_${v}`;
+      if (window.GAME_ASSETS_BASE64 && window.GAME_ASSETS_BASE64[key]) sheet(key, key, 100);
+    })));
     sheet('bone_arrow', 'assets/enemies/bone_arrow.png', 100);
     sheet('necro_bolt', 'assets/enemies/necro_bolt.png', 100);
     GUARD_TYPES.forEach(id => ['idle', 'walk'].forEach(a => sheet(`g_${id}_${a}`, `assets/characters/guards/${id}/${a}.png`, 100)));
@@ -31,6 +36,9 @@ Object.assign(MainGameScene.prototype, {
       const fr = ENEMY_TYPES[id].frames;
       Object.keys(fr).forEach(a => make(`${id}_${a}`, fr[a], a === 'attack2' ? 12 : RATE[a][0], RATE[a][1]));
     });
+    ['soldier', 'swordsman'].forEach(h => ['front', 'back'].forEach(v => { make(`${h}_idle_${v}`, 6, 7, -1); make(`${h}_walk_${v}`, 4, 7, -1); make(`${h}_attack1_${v}`, 5, 14, 0); }));
+    // Lancent's second swing reuses the same front / back sheet
+    ['front', 'back'].forEach(v => { const k = `soldier_attack1_${v}`; if (this.textures.exists(k) && !this.anims.exists(`soldier_attack2_${v}`)) this.anims.create({ key: `soldier_attack2_${v}`, frames: this.anims.generateFrameNumbers(k, { start: 0, end: 4 }), frameRate: 14, repeat: 0 }); });
     make('necro_bolt', 6, 12, -1);
     if (this.anims.exists('necro_bolt') && !this.anims.exists('necro_bolt_fly')) {
       this.anims.create({ key: 'necro_bolt_fly', frames: this.anims.generateFrameNumbers('necro_bolt', { start: 0, end: 5 }), frameRate: 12, repeat: -1 });
