@@ -11,7 +11,8 @@
     "build:ruins": "python3 tools/mapgen/ruins/build.py && python3 tools/pack/unify_style.py ruins",
     "build:castle": "python3 tools/mapgen/castle/build.py && python3 tools/pack/unify_style.py castle",
     "build:chars": "python3 tools/pack/pack_chars.py",
-    "build:extra": "node tools/pack/pack_extra.js"
+    "build:extra": "node tools/pack/pack_extra.js",
+    "build:salas": "node tools/pack/pack_salas.js"
   },
   "keywords": [
     "phaser",
