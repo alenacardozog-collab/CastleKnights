@@ -497,6 +497,7 @@ Object.assign(MainGameScene.prototype, {
       const speed = isSlowed ? baseSpeed * 0.5 : baseSpeed;
       const mag = Math.hypot(vx, vy);
       this.player.setVelocity((vx / mag) * speed, (vy / mag) * speed);
+      this.cornerSlide(vx, vy, speed);
 
       // Facing direction
       if (vx < 0) {
@@ -526,6 +527,81 @@ Object.assign(MainGameScene.prototype, {
       // Play idle animation
       const idleAnim = `${this.playerHero}_idle`;
       if (this.anims.exists(idleAnim)) this.player.play(idleAnim, true);
+    }
+  },
+
+  /**
+   * Corner correction: the editor maps build walls out of 8-16 px pieces, with small notches where the feet
+   * got caught while sliding along a wall. When the hero is blocked on one axis but a shift of a few pixels on
+   * the other axis would clear the edge, he is slid that way instead of stopping dead.
+   */
+  cornerSlide(vx, vy, speed) {
+    const b = this.player.body;
+    if (!b) return;
+    const MAX = 10;
+    const terrain = [this.obstacles, this.waterObstacles, this.lowObstacles, this.interiorObstacles].filter(Boolean);
+    // inset half a pixel: resting against a wall (edges touching) is not an overlap
+    // (strict = edges touching count, used to decide that the hero is fully out of a pocket)
+    const free = (x, y, strict) => !this.physics.overlapRect(x + (strict ? 0 : 0.5), y + (strict ? 0 : 0.5), b.width - (strict ? 0 : 1), b.height - (strict ? 0 : 1), false, true)
+      .some(s => s.enable && s.gameObject && terrain.some(g => g.contains(s.gameObject)));
+    const sx = Math.sign(vx), sy = Math.sign(vy), now = this.time.now;
+    const blockedX = sx > 0 ? b.blocked.right : sx < 0 ? b.blocked.left : false;
+    const blockedY = sy > 0 ? b.blocked.down : sy < 0 ? b.blocked.up : false;
+    // diagonal against a wall: slide along it at full speed on the free axis. Arcade resolves the corners of
+    // small wall pieces badly when the push goes into them diagonally; the wall is remembered for a moment
+    // because "blocked" clears on the frames the hero is not pressing into it.
+    if (blockedX) this._wallX = { s: sx, until: now + 150 };
+    if (blockedY) this._wallY = { s: sy, until: now + 150 };
+    if (sx && sy) {
+      // already stepping out of a pocket: keep going until the way ahead is clear, then slide along the wall
+      const esc = this._pocketEscape;
+      if (esc && esc.sx === sx && esc.sy === sy && now < esc.until) {
+        const clear = esc.axis === 'x' ? free(b.x, b.y + sy * 2, true) : free(b.x + sx * 2, b.y, true);
+        if (clear) {
+          this._pocketEscape = null;
+          if (esc.axis === 'x') this.player.setVelocity(0, sy * speed);
+          else this.player.setVelocity(sx * speed, 0);
+        } else if (esc.axis === 'x') this.player.setVelocity(-sx * speed, 0);
+        else this.player.setVelocity(0, -sy * speed);
+        return;
+      }
+      this._pocketEscape = null;
+      const wx = this._wallX && this._wallX.s === sx && now < this._wallX.until;
+      const wy = this._wallY && this._wallY.s === sy && now < this._wallY.until;
+      if (wx && !wy) this.player.setVelocity(0, sy * speed);
+      else if (wy && !wx) this.player.setVelocity(sx * speed, 0);
+      else if (wx && wy) {
+        // caught in a shallow pocket (wall on one side, a ledge in front): step back out of it, away from the wall,
+        // if that clears the way within a few pixels; a real room corner gives no way out and the hero stays put
+        if (free(b.x, b.y + sy * 2)) { this.player.setVelocity(0, sy * speed); return; }
+        if (free(b.x + sx * 2, b.y)) { this.player.setVelocity(sx * speed, 0); return; }
+        for (let d = 1; d <= MAX; d++) {
+          for (const axis of ['x', 'y']) {
+            const ok = axis === 'x'
+              ? free(b.x - sx * d, b.y) && free(b.x - sx * d, b.y + sy * 2)
+              : free(b.x, b.y - sy * d) && free(b.x + sx * 2, b.y - sy * d);
+            if (!ok) continue;
+            this._pocketEscape = { axis, sx, sy, until: now + 250 };
+            if (axis === 'x') this.player.setVelocity(-sx * speed, 0);
+            else this.player.setVelocity(0, -sy * speed);
+            return;
+          }
+        }
+      }
+      return;
+    }
+    // straight push against the very edge of a piece: shift sideways to clear it (corner correction)
+    const sideways = !!sy, dir = sy || sx;
+    if (!(sideways ? blockedY : blockedX)) return;
+    for (let d = 1; d <= MAX; d++) {
+      for (const s of [1, -1]) {
+        const ox = sideways ? s * d : dir * 2, oy = sideways ? dir * 2 : s * d;
+        if (free(b.x + (sideways ? s * d : 0), b.y + (sideways ? 0 : s * d)) && free(b.x + ox, b.y + oy)) {
+          if (sideways) this.player.setVelocity(s * speed, b.velocity.y);
+          else this.player.setVelocity(b.velocity.x, s * speed);
+          return;
+        }
+      }
     }
   },
 

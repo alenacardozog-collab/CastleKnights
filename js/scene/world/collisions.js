@@ -418,13 +418,13 @@ Object.assign(MainGameScene.prototype, {
     // 3. Enemies <-> Solid Obstacles, Water Obstacles & Low Obstacles
     if (this.enemies) {
       if (!colliders.some(c => c.object1 === this.enemies && c.object2 === this.obstacles)) {
-        this.physics.add.collider(this.enemies, this.obstacles);
+        this.physics.add.collider(this.enemies, this.obstacles, null, this.enemyHitsTerrain, this);
       }
       if (this.waterObstacles && !colliders.some(c => c.object1 === this.enemies && c.object2 === this.waterObstacles)) {
-        this.physics.add.collider(this.enemies, this.waterObstacles);
+        this.physics.add.collider(this.enemies, this.waterObstacles, null, this.enemyHitsTerrain, this);
       }
       if (this.lowObstacles && !colliders.some(c => c.object1 === this.enemies && c.object2 === this.lowObstacles)) {
-        this.physics.add.collider(this.enemies, this.lowObstacles);
+        this.physics.add.collider(this.enemies, this.lowObstacles, null, this.enemyHitsTerrain, this);
       }
     }
 
@@ -489,8 +489,15 @@ Object.assign(MainGameScene.prototype, {
   /**
    * Handle character touching a hazard zone (fire, spikes, lava)
    */
+  /** A fire hazard only burns while its fire is lit (rain puts the village campfire out, see ck_clima.js). */
+  hazardIsLit(hazardZone) {
+    const b = hazardZone && hazardZone.body;
+    if (!b || !window.CK_CLIMA || !window.CK_CLIMA.atenuar) return true;
+    return window.CK_CLIMA.atenuar(b.center.x, b.center.y) > 0.3;
+  },
+
   handlePlayerHazardTouch(player, hazardZone) {
-    if (this.isDead || this.isInvulnerable) return;
+    if (this.isDead || this.isInvulnerable || !this.hazardIsLit(hazardZone)) return;
     const now = this.time.now;
     if (this._lastHazardHit && now - this._lastHazardHit < 800) return;
     this._lastHazardHit = now;
@@ -499,20 +506,15 @@ Object.assign(MainGameScene.prototype, {
   },
 
   handleEnemyHazardTouch(enemy, hazardZone) {
-    if (!enemy || !enemy.active || enemy.isDead) return;
+    if (!enemy || !enemy.active || enemy.isDead || !this.hazardIsLit(hazardZone)) return;
     const now = this.time.now;
     if (enemy._lastHazardHit && now - enemy._lastHazardHit < 800) return;
     enemy._lastHazardHit = now;
-    enemy.hp = Math.max(0, enemy.hp - 1);
     this.createFloatingText(enemy.x, enemy.y - 25, '¡TRAMPA! -1', 0xf59e0b);
-    if (enemy.hp <= 0) {
-      this.killEnemy(enemy);
-    } else {
-      enemy.setTint(0xff4444);
-      this.time.delayedCall(160, () => {
-        if (enemy && enemy.active && !enemy.isDead) enemy.clearTint();
-      });
-    }
+    // damageEnemy handles the flash, knockback and death (there was a call to a missing killEnemy here,
+    // whose error stopped the whole game loop)
+    const b = hazardZone.body;
+    this.damageEnemy(enemy, 1, b ? b.center.x : enemy.x, b ? b.center.y : enemy.y);
   },
 
   /**
@@ -566,6 +568,19 @@ Object.assign(MainGameScene.prototype, {
   drawCharacterHitboxesDebug() {
     this.characterDebugGfx.clear();
     if (!this.showCollisionDebug || !this.player || !this.player.body) return;
+
+    // Walls of the castle, ruins and editor maps (magenta): they change with the zone, so they are drawn every frame
+    if (this.interiorObstacles && this.currentInterior) {
+      const v = this.cameras.main.worldView;
+      this.characterDebugGfx.lineStyle(1, 0xd946ef, 0.95);
+      this.characterDebugGfx.fillStyle(0xd946ef, 0.25);
+      this.interiorObstacles.getChildren().forEach(z => {
+        const b = z.body;
+        if (!b || !b.enable || b.right < v.x || b.x > v.right || b.bottom < v.y || b.y > v.bottom) return;
+        this.characterDebugGfx.fillRect(b.x, b.y, b.width, b.height);
+        this.characterDebugGfx.strokeRect(b.x, b.y, b.width, b.height);
+      });
+    }
 
     // Player feet hitbox (cyan)
     const pb = this.player.body;

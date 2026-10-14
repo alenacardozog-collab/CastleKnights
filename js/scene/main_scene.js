@@ -154,7 +154,7 @@ class MainGameScene extends Phaser.Scene {
     // 8. Collisions and Physics Interactions
     // Solid obstacles block Player, Enemies, and Projectiles
     this.physics.add.collider(this.player, this.obstacles);
-    this.physics.add.collider(this.enemies, this.obstacles);
+    this.physics.add.collider(this.enemies, this.obstacles, null, this.enemyHitsTerrain, this);
     this.physics.add.collider(this.player, this.enemies);
     this.physics.add.collider(this.enemies, this.enemies);
     this.physics.add.collider(this.projectiles, this.obstacles, (arrow) => {
@@ -164,12 +164,12 @@ class MainGameScene extends Phaser.Scene {
     // Water obstacles block Player and Enemies, but projectiles fly through freely!
     if (this.waterObstacles) {
       this.physics.add.collider(this.player, this.waterObstacles);
-      this.physics.add.collider(this.enemies, this.waterObstacles);
+      this.physics.add.collider(this.enemies, this.waterObstacles, null, this.enemyHitsTerrain, this);
     }
 
     // Low obstacles block Player and Enemies, but projectiles fly through freely!
     this.physics.add.collider(this.player, this.lowObstacles);
-    this.physics.add.collider(this.enemies, this.lowObstacles);
+    this.physics.add.collider(this.enemies, this.lowObstacles, null, this.enemyHitsTerrain, this);
 
     // Hazard zones damage Player and Enemies
     this.physics.add.overlap(this.player, this.hazardZones, this.handlePlayerHazardTouch, null, this);
