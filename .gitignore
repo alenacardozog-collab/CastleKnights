@@ -59,3 +59,6 @@ assets/sfx_*.mp3
 TRASPASO.md
 TRASPASO_historial.md
 CAMBIOS_PENDIENTES.md
+
+# Imagenes originales de las salas (Google Flow): el juego usa la version integrada en js/maps/data/salas_castillo_assets.js
+assets/fuentes/

@@ -10,6 +10,25 @@
   const P = MainGameScene.prototype,
     D = window.EDITOR_DATA;
   if (!D || !D.mapas) return;
+  // arte integrado desde la imagen original (tools/pack/integrar_sala.js → js/maps/data/salas_castillo_assets.js): el piso
+  // trae los muebles (el del editor los tenía borrados, con manchas) y cada mueble está recortado del mismo original en su
+  // lugar exacto, más las barandas como capa delantera. Si el mapa cambió en el editor, se respeta el del editor.
+  const ARTE = window.CK_SALAS_ARTE || {}, AS = window.EDITOR_ASSETS;
+  Object.keys(ARTE).forEach(id => {
+    const s = ARTE[id], m = D.mapas[id], g0 = AS && AS['ed_suelo_' + id];
+    if (!m || !g0) return;
+    if (s.base !== g0.length + ':' + g0.slice(-40)) {
+      console.warn('[salas] ' + id + ' cambió en el editor: se usa su dibujo (para integrarlo de nuevo: tools/pack/integrar_sala.js)');
+      return;
+    }
+    AS['ed_suelo_' + id] = s.suelo;
+    s.piezas.forEach(p => {
+      AS[p.key] = p.img;
+      const it = (m.items || []).find(i => i[0] === p.key);
+      if (it) { it[1] = p.x; it[2] = p.y; }
+    });
+    s.capas.forEach(c => { AS[c.key] = c.img; (m.items = m.items || []).push([c.key, c.x, c.y]); });
+  });
   const hay = id => !!(D.mapas[id] && !D.mapas[id].origen);
   const TRONO = 'salon_del_trono_3';
   // sala vieja -> mapa nuevo, y dónde aparece uno en el Gran Salón al volver (frente a su arco)

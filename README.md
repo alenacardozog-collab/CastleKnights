@@ -111,6 +111,7 @@ npm start          # http://localhost:3000
 - `npm run generate:map`: Regenera el mapa de campaña `assets/map2/campaign_map.json`.
 - `npm run patch:map`: Parchea y sincroniza definiciones de tilesets en `assets/map2/mapa1.json`.
 - `npm run build:extra`: Vuelve a generar `js/chars_extra_assets.js` (el resto del pack de personajes: ataques, bloqueos, invocaciones, el orco jinete y cuatro aldeanos) desde el pack original, que queda solo en la PC (`assets/characters/nuevos/`, ignorado por git).
+- `npm run build:salas`: Vuelve a generar `js/maps/data/salas_castillo_assets.js` (salas del castillo integradas desde su imagen original). La integración se hace con `tools/pack/integrar_sala.js` dentro del juego, a partir de la imagen guardada en `assets/fuentes/salas/` (solo en la PC).
 
 ---
 
