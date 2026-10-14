@@ -1,9 +1,11 @@
 'use strict';
-/* Aposentos del Rey y Biblioteca nuevos (mapas del Taller hechos desde imágenes de Google Flow):
-   - los arcos del Gran Salón (Salón del Trono 3) llevan a estos mapas en vez de a las salas viejas del castillo;
-   - su salida de abajo vuelve al Gran Salón, frente al arco por el que se entró;
-   - el Maestre Eloy pasa a la biblioteca nueva, al lado de su escritorio;
-   - luz de sala, eco de madera y sonido de ambiente como las salas viejas.
+/* Lugares nuevos del castillo (mapas del Taller hechos desde imágenes de Google Flow):
+   - Aposentos del Rey y Biblioteca: los arcos del Gran Salón (Salón del Trono 3) llevan a estos mapas en vez de a las salas
+     viejas; su salida de abajo vuelve al Gran Salón, frente al arco por el que se entró;
+   - Herrería (en lugar de la Armería vieja) y Jardín Real: se entra desde el patio (la puerta de la Armería y la salida del
+     este) y se vuelve al patio, frente a su puerta;
+   - el Maestre Eloy pasa a la biblioteca nueva; el herrero, el jardinero, el sacerdote y el noble, a sus lugares nuevos;
+   - luz de sala, eco y sonido de ambiente como los lugares viejos; zonas en el minimapa.
    Va fuera del bloque del Taller en index.html. Si un mapa no está, todo queda como antes. Borrar su línea en index.html lo apaga. */
 (function () {
   if (typeof MainGameScene === 'undefined') return;
@@ -32,12 +34,15 @@
   const hay = id => !!(D.mapas[id] && !D.mapas[id].origen);
   const TRONO = 'salon_del_trono_3';
   // sala vieja -> mapa nuevo, y dónde aparece uno en el Gran Salón al volver (frente a su arco)
+  // desde: 'castle' = el patio del castillo viejo (vuelve a patio: x, y), si no el Gran Salón (vuelve a vuelta: x, y)
   const SALAS = {
     kingroom: { id: 'aposentos_del_rey', vuelta: { x: 64, y: 86 }, sala: [196, 184, 170], sonido: [['amb_fire', 0.5]] },
-    library: { id: 'biblioteca', vuelta: { x: 416, y: 86 }, sala: [192, 182, 170], sonido: [['amb_hall', 0.35]] }
+    library: { id: 'biblioteca', vuelta: { x: 416, y: 86 }, sala: [192, 182, 170], sonido: [['amb_hall', 0.35]] },
+    armory: { id: 'herreria', desde: 'castle', patio: { x: 510, y: 182 }, sala: [200, 192, 182], eco: 'piedra', sonido: [['amb_fire', 0.45]] },
+    garden: { id: 'jardin_real', desde: 'castle', patio: { x: 606, y: 226 }, afuera: true, eco: 'patio', sonido: [['amb_courtyard', 0.3], ['amb_forest', 0.3]] }
   };
-  const activas = Object.keys(SALAS).filter(k => hay(SALAS[k].id));
-  if (!activas.length || !hay(TRONO)) return;
+  const activas = Object.keys(SALAS).filter(k => hay(SALAS[k].id) && (SALAS[k].desde === 'castle' || hay(TRONO)));
+  if (!activas.length) return;
   const kind = k => 'ed_' + SALAS[k].id;
   const deKind = kd => activas.find(k => kind(k) === kd);
   window.CK_SALAS_CASTILLO = { SALAS, activas };
@@ -46,50 +51,78 @@
   activas.forEach(k => {
     const s = SALAS[k], m = D.mapas[s.id], zona = kind(k) + '.main';
     if (!(m.sonido && m.sonido.length)) m.sonido = s.sonido;
-    window.CK_SALA_ED = Object.assign(window.CK_SALA_ED || {}, { [kind(k)]: 'madera' });
+    window.CK_SALA_ED = Object.assign(window.CK_SALA_ED || {}, { [kind(k)]: s.eco || 'madera' });
     const L = window.CK_LUZ;
-    if (L && L.INTERIORES) L.INTERIORES.add(zona);
-    if (L && L.AMB_SALA) L.AMB_SALA[zona] = s.sala;
+    if (!s.afuera && L && L.INTERIORES) L.INTERIORES.add(zona);
+    if (!s.afuera && L && L.AMB_SALA) L.AMB_SALA[zona] = s.sala;
   });
+  // el jardín, con bichos como el viejo (los peces y las ranas necesitan el dibujo del minimapa, que todavía no tiene)
+  if (activas.includes('garden') && window.CK_FAUNA && window.CK_FAUNA.FAUNA)
+    window.CK_FAUNA.FAUNA[kind('garden') + '.main'] = { aves: 1, mariposas: 9, luciernagas: 12 };
 
-  // minimapa: las dos zonas nuevas (sin dibujo propio: se ve el retrato del mapa o el fondo) y los arcos del salón hacia ellas
+  // minimapa: las zonas nuevas (sin dibujo propio: se ve el retrato del mapa o el fondo) y las salidas hacia ellas
   const MM = window.CK_MINIMAPA;
   if (MM && MM.Z && MM.L) {
-    const SALON = 'ed_' + TRONO + '.main';
+    const SALON = 'ed_' + TRONO + '.main', PATIO = 'castle.courtyard';
     const DATOS = {
-      kingroom: { n: 'Aposentos del Rey', lugares: [{ n: 'Hogar', x: 352, y: 250, ic: 'fuego' }, { n: 'Volver al salón', x: 201, y: 368, ic: 'flecha', d: 's', va: SALON }] },
-      library: { n: 'Biblioteca', lugares: [{ n: 'Maestre Eloy', x: 262, y: 150, ic: 'libro' }, { n: 'Volver al salón', x: 200, y: 396, ic: 'flecha', d: 's', va: SALON }] }
+      kingroom: { n: 'Aposentos del Rey', vuelve: SALON, lugares: [{ n: 'Hogar', x: 352, y: 250, ic: 'fuego' }, { n: 'Volver al salón', x: 201, y: 368, ic: 'flecha', d: 's', va: SALON }] },
+      library: { n: 'Biblioteca', vuelve: SALON, lugares: [{ n: 'Maestre Eloy', x: 262, y: 150, ic: 'libro' }, { n: 'Volver al salón', x: 200, y: 396, ic: 'flecha', d: 's', va: SALON }] },
+      armory: { n: 'Herrería', vuelve: PATIO, lugares: [{ n: 'Fragua', x: 90, y: 150, ic: 'fuego' }, { n: 'Salida al patio', x: 204, y: 366, ic: 'flecha', d: 's', va: PATIO }] },
+      garden: { n: 'Jardín Real', vuelve: PATIO, ext: 1, lugares: [{ n: 'Fuente', x: 472, y: 250, ic: 'fuente' }, { n: 'Templete', x: 757, y: 170, ic: 'estrella' }, { n: 'Volver al patio', x: 6, y: 262, ic: 'flecha', d: 'o', va: PATIO }] }
     };
     activas.forEach(k => {
-      const zona = kind(k) + '.main', m = D.mapas[SALAS[k].id];
-      if (!MM.Z[zona]) MM.Z[zona] = { img: SALAS[k].id, esc: 2, w: m.w, h: m.h, n: DATOS[k].n, g: 'Castillo' };
-      if (!MM.L[zona]) MM.L[zona] = DATOS[k].lugares;
-      (MM.L[SALON] || []).forEach(l => {
-        if (l.va === 'castle.' + k) l.va = zona;
+      const zona = kind(k) + '.main', m = D.mapas[SALAS[k].id], d = DATOS[k];
+      if (!MM.Z[zona]) MM.Z[zona] = Object.assign({ img: SALAS[k].id, esc: d.ext ? 4 : 2, w: m.w, h: m.h, n: d.n, g: 'Castillo' }, d.ext ? { ext: 1 } : {});
+      if (!MM.L[zona]) MM.L[zona] = d.lugares;
+      (MM.L[d.vuelve] || []).forEach(l => {
+        if (l.va !== 'castle.' + k) return;
+        l.va = zona;
+        if (k === 'armory') l.n = 'Herrería';
       });
     });
     // la misión también: los pasos que llevaban a la sala vieja (hablar con Eloy, el Códice, el epílogo) van a la nueva,
     // al pie de la escalera del escritorio, que es desde donde se le habla
-    const PUNTO = { kingroom: [201, 300], library: [236, 168] };
+    const PUNTO = { kingroom: [201, 300], library: [236, 168], armory: [204, 330], garden: [300, 262] };
     [MM.META_PASO, MM.META_PARTE].forEach(tabla => tabla && Object.values(tabla).forEach(m => {
       const k = activas.find(k => m[0] === 'castle.' + k);
       if (k) { m[0] = kind(k) + '.main'; m[1] = PUNTO[k][0]; m[2] = PUNTO[k][1]; }
     }));
   }
 
-  // del Gran Salón a la sala nueva
+  // volver a una zona vieja del castillo (como irAlCastillo de ck_mapas_nuevos.js)
+  const irAlCastillo = (S, nombre, llegada) => {
+    S.fadeTransition(() => {
+      S.setInteriorVisible(null);
+      const b = S.buildInterior({ _houseName: 'Castle', _interiorIndex: 5, _interiorKind: 'castle' }),
+        area = b.areas[nombre];
+      S.currentInterior = { building: b, areaName: nombre, area };
+      S._areaSwitchHold = true;
+      const at = llegada ? { x: area.x + llegada.x, y: area.y + llegada.y } : area.spawn;
+      S.showInteriorArea(area, at);
+      if (area.title) S.createFloatingText(at.x, at.y - 46, area.title, 0xfde68a);
+    });
+  };
+
+  // entrar: del Gran Salón (arcos) o del patio (puerta de la Armería, salida del este al jardín) al lugar nuevo
   const cambiar0 = P.switchInteriorArea;
   P.switchInteriorArea = function (nombre) {
     const c = this.currentInterior;
-    if (c && !this._doorTransition && this._gameMode === 'campaign' && c.building.kind === 'ed_' + TRONO && activas.includes(nombre))
-      if (this.ckEntrar(SALAS[nombre].id, 'Entrada')) return;
+    if (c && !this._doorTransition && this._gameMode === 'campaign' && activas.includes(nombre)) {
+      const s = SALAS[nombre];
+      const vale = s.desde === 'castle' ? c.building.kind === 'castle' && c.areaName === 'courtyard' : c.building.kind === 'ed_' + TRONO;
+      if (vale && this.ckEntrar(s.id, 'Entrada')) return;
+    }
     return cambiar0.apply(this, arguments);
   };
-  // de la sala nueva al Gran Salón (la puerta de abajo)
+  // salir: la puerta del lugar nuevo vuelve a donde se entró
   const salir0 = P.exitInterior;
   P.exitInterior = function () {
     const c = this.currentInterior, k = c && deKind(c.building.kind);
-    if (k && !this._doorTransition && this.ckEntrar(TRONO, SALAS[k].vuelta)) return;
+    if (k && !this._doorTransition) {
+      const s = SALAS[k];
+      if (s.patio) return irAlCastillo(this, 'courtyard', s.patio);
+      if (this.ckEntrar(TRONO, s.vuelta)) return;
+    }
     return salir0.apply(this, arguments);
   };
 
@@ -119,13 +152,58 @@
     const eloy = STORY_NPCS.find(n => n.id === 'eloy');
     if (eloy) Object.assign(eloy, { zone: kind('library') + '.main', x: 262, y: 150, r: 58, marca: 34 });
   }
-  activas.forEach(k =>
-    envolver(k, k === 'library' && typeof STORY_NPCS !== 'undefined' ? a => {
+  // dónde va cada uno (píxeles del mapa del Taller)
+  const HERRERO = { x: 98, y: 268, hx: 130, hy: 236 };
+  const JARDIN = {
+    jardinero: [300, 252],
+    cura: [586, 262],
+    noble: [[530, 412, 2600], [630, 412, 1800], [620, 330, 3200], [556, 322, 2200]],
+    carteles: [[446, 196, 34, '«A la Reina Elara, que plantó este jardín»'], [592, 336, 30, 'El reloj de sol marca la tarde ☀️'],
+      [757, 176, 36, 'Un templete fresco junto al estanque']],
+    fx: [{ type: 'fountain', x: 472, y: 210 }, { type: 'glints', x: 590, y: 100, w: 100, h: 60, n: 6 }, { type: 'glints', x: 650, y: 190, w: 160, h: 50, n: 8 },
+      { type: 'petals', x: 245, y: 90, w: 320, h: 120 }, { type: 'petals', x: 255, y: 285, w: 175, h: 65 }, { type: 'butterflies', x: 250, y: 90, w: 600, h: 360, n: 8 }]
+  };
+  // los faroles del jardín (luces del editor, que siempre brillan) casi apagados de día y prendidos al caer la tarde
+  const update0 = P.update;
+  P.update = function () {
+    const r = update0.apply(this, arguments);
+    const c = this.currentInterior, k = c && deKind(c.building.kind), ED = window.CK_EDITOR;
+    if (k && SALAS[k].afuera && ED && ED.lucesVivas && this.dayPhase) {
+      const p = this.dayPhase(),
+        n = p < 0.5 ? 0 : p < 0.62 ? (p - 0.5) / 0.12 : p < 0.9 ? 1 : p < 0.97 ? 1 - (p - 0.9) / 0.07 : 0;
+      ED.lucesVivas.forEach(v => v.im && v.im.active && v.im.setAlpha(v.im.alpha * (0.06 + 0.94 * n)));
+    }
+    return r;
+  };
+
+  // gente de los lugares nuevos, a la escala de Eloy (con la de los lugares viejos se veían como niños)
+  const GENTE = {
+    library: typeof STORY_NPCS !== 'undefined' ? a => {
       // mirando hacia el escritorio
       a.items.push({ key: 'npc6_villager', anim: 'npc6_idle', x: 262, baseY: 150, scale: 1.85, oy: 1, ox: 0.5, flipX: true });
       a.colliders.push({ x: 253, y: 142, w: 18, h: 9 });
-    } : null)
-  );
+    } : null,
+    // el herrero golpeando el yunque (chispas y sonido, como en la Armería vieja)
+    armory: a => {
+      a.actors.push({ type: 'smith', key: 'npc1_villager', idle: 'npc1_idle', scale: 1.85, x: HERRERO.x, y: HERRERO.y, hitX: HERRERO.hx, hitY: HERRERO.hy,
+        lines: ['El acero del rey no se templa solo 🔨', '¿Una espada nueva? Volved mañana.', 'Cuidado, que quema 🔥'] });
+      a.fx.push({ type: 'dust', x: 40, y: 120, w: 300, h: 200 });
+    },
+    // el jardinero, el hermano Anselmo (cura al que llega herido), un noble paseando y los carteles del jardín viejo
+    garden: a => {
+      const G = JARDIN;
+      a.items.push({ key: 'npc3_villager', anim: 'npc3_idle', x: G.jardinero[0], baseY: G.jardinero[1], scale: 1.85, oy: 1, ox: 0.5 });
+      a.colliders.push({ x: G.jardinero[0] - 8, y: G.jardinero[1] - 8, w: 16, h: 8 });
+      a.talkers.push({ x: G.jardinero[0], y: G.jardinero[1] - 4, r: 40, lines: ['Las rosas de la reina, mis favoritas 🌹', 'Cuido este jardín desde niño', 'No piséis los canteros, por favor 🙏'] });
+      a.actors.push({ type: 'walker', key: 'g_priest_idle', idle: 'g_priest_idle', walk: 'g_priest_walk', scale: 1.75, ox: 0.5, oy: 0.61, speed: 22, pts: [[G.cura[0], G.cura[1], 1e12]] });
+      a.talkers.push({ x: G.cura[0], y: G.cura[1] + 4, r: 40, lines: ['Que la luz os guarde, viajero 🙏', 'Rezo por los que quedaron en Brumavieja', 'El rey toma el té en el templete 🫖'] });
+      a.actors.push({ type: 'walker', key: 'npc11_villager', idle: 'npc11_idle', walk: 'npc11_walk', scale: 1.85, speed: 20, pts: G.noble,
+        lines: ['Las rosas de la reina huelen a gloria', 'Un caballero nunca corre… salvo de un oso', '¿Habéis visto el templete? Exquisito'] });
+      G.carteles.forEach(([x, y, r, t]) => a.talkers.push({ x, y, r, lines: [t] }));
+      G.fx.forEach(f => a.fx.push(f));
+    }
+  };
+  activas.forEach(k => envolver(k, GENTE[k] || null));
 
   // ------------------------------------------------------------------ objetos con los que se interactúa (T)
   // x, y = dónde se para el héroe para usarlo (pie), r = cuán cerca. accion: 'texto' (lineas), 'cofre', 'descansar',
@@ -255,14 +333,14 @@
       const noche = S.isNight && S.isNight();
       S.openDialog('La cama del Rey', ['Te tirás un rato sobre la cama del Rey… solo un ratito.', 'Si alguien pregunta, estabas revisando que no hubiera arañas.'], () => {
         const cam = S.cameras.main;
-        S.dialogOpen = true;
+        S._doorTransition = true;            // quieto y a salvo mientras duerme (como al cruzar una puerta)
         cam.fadeOut(600, 0, 0, 0);
         cam.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
           S.health = S.maxHealth;
           if (noche) S.dayClock = Math.floor((S.dayClock || 0) / 300000 + 1) * 300000 + 0.03 * 300000;   // al amanecer
           S.updateHUD(); S.updateObjective(); S.saveStory();
           cam.fadeIn(700, 0, 0, 0);
-          S.dialogOpen = false;
+          S._doorTransition = false;
           S.showZoneTitle(noche ? 'Amanece' : 'Descansaste', 'Vida completa · partida guardada');
         });
       }, null);

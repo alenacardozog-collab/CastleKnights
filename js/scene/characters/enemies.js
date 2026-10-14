@@ -562,8 +562,10 @@ Object.assign(MainGameScene.prototype, {
    * Raises the shield (or the weapon) against a blow that comes from the front: no damage. Only the ones whose
    * sheet has a block and a chance in ENEMY_TYPES (block), while they are aware of the hero and not swinging.
    */
-  enemyTryBlock(enemy, sx, sy) {
+  enemyTryBlock(enemy, sx, sy, amount) {
     const def = enemy.def || {}, key = enemy.type + '_block', now = this.time.now;
+    // the sweeping blows of the game itself (the boss falls and takes its dead with it) cannot be blocked
+    if (amount >= 10) return false;
     if (!def.block || !this.anims.exists(key) || enemy.isAttacking || now < (enemy._blockCd || 0)) return false;
     if (enemy.state !== 'chase' && enemy.state !== 'alerting') return false;
     if ((sx < enemy.x) !== enemy.flipX || Math.random() >= def.block) return false;   // only what it is facing

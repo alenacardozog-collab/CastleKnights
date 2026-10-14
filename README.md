@@ -45,11 +45,21 @@ El código está separado por funcionalidad en `js/core`, `js/config`, `js/maps`
 
 | Acción | Tecla / Control |
 | :--- | :--- |
-| **Moverse** | `W`, `A`, `S`, `D` o Flechas de dirección |
-| **Ataque Básico / Combo** | Clic Izquierdo o Barra Espaciadora |
-| **Dash / Esquiva** | Shift Izquierdo |
-| **Habilidades Especiales** | Teclas `1`, `2`, `3`, `4` |
-| **Pausa / Menú** | `ESC` |
+| **Moverse** | `W`, `A`, `S`, `D` o flechas de dirección |
+| **Correr** | Mantener `Shift` |
+| **Ataque / combo** | `J` o clic izquierdo |
+| **Ataque especial** (arco, bola de fuego, estocadas) | `K` o clic derecho |
+| **Dash / esquiva** | `Espacio` |
+| **Giro / trueno en área** | `E` |
+| **Habilidad** (lluvia de flechas, trueno cargado) | `Q` (el trueno se mantiene apretado para cargarlo) |
+| **Poción / elixir / parada** | `Z` / `X` / `C` |
+| **Hablar, abrir, usar** | `T` o `Enter` |
+| **Mapa grande / diario** | `M` / `Tab` |
+| **Cambiar de héroe** (modo práctica) | `1`, `2`, `3` |
+| **Pausa** | `Esc` |
+| **Pantalla completa / ver colisiones** | `F` / `P` |
+
+Los controles de movimiento y combate se pueden cambiar en Opciones.
 
 ---
 

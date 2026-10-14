@@ -70,7 +70,8 @@
     const ret = s._interiorReturn; // casas por dentro: volvés frente a la puerta
     return ret ? { zona: 'village', x: Math.round(ret.x), y: Math.round(ret.y) } : null;
   };
-  const guardar = (s, conHistoria) => {
+  // sinLugar: guardar la historia sin tocar el lugar (al continuar, el héroe todavía no llegó adonde había quedado)
+  const guardar = (s, conHistoria, sinLugar) => {
     if (activa === null || s._gameMode !== 'campaign' || !s.story) return;
     const r = leer();
     let slot = r[activa];
@@ -82,7 +83,7 @@
     if (conHistoria || !slot.story) slot.story = Object.assign({}, s.story, { savedAt: Date.now() });
     slot.heroe = s.playerHero;
     slot.fecha = Date.now();
-    const l = lugarActual(s);
+    const l = sinLugar ? null : lugarActual(s);
     if (l) slot.lugar = l;
     slot.tiempo = Math.round((slot.tiempo || 0) + (s._ckJugado || 0));
     s._ckJugado = 0;
@@ -112,7 +113,7 @@
     const lugar = this._ckIrA;
     this._ckIrA = null;
     const esNueva = !!nueva;
-    guardar(this, true);
+    guardar(this, true, !!lugar);
     const slot = leer()[activa];
     if (slot) this.time.delayedCall(1600, () => this.story && this.showZoneTitle(esNueva ? 'Capítulo 1 · La niebla del norte' : 'Partida recuperada', '«' + slot.nombre + '»'));
     if (lugar && lugar.zona !== 'village' && lugar.zona) this.time.delayedCall(500, () => irA(this, lugar, 0));

@@ -989,7 +989,9 @@ Object.assign(MainGameScene.prototype, {
     this.physics.world.pause(); this.anims.pauseAll();
     setTimeout(() => {
       this._hitStop = false;
-      if (!this.isGamePaused && !this.dialogOpen) { this.physics.world.resume(); this.anims.resumeAll(); }
+      // dialogues do not pause the world: only the pause menu and the shop / journal keep it stopped (before, a blow that
+      // landed as a dialogue opened left physics and animations frozen for good)
+      if (!this.isGamePaused && !this._overlay) { this.physics.world.resume(); this.anims.resumeAll(); }
     }, ms);
   },
 
@@ -1026,6 +1028,16 @@ Object.assign(MainGameScene.prototype, {
     this.isAttacking = true;
     this.isInvulnerable = true;
     const p = this.player, dir = this.facingDirection === 'left' ? -1 : 1;
+    // this dance, and no other: a dialogue or a door can cut it short, and its pending blows must not go on
+    const token = this._bladeDance = now;
+    const sigue = () => this._bladeDance === token && !this.isDead && !this.dialogOpen && !this._doorTransition;
+    const fin = () => {
+      if (this._bladeDance !== token) return;
+      this._bladeDance = null;
+      trail.remove();
+      this.isAttacking = false;
+      this.isInvulnerable = false;
+    };
     p.play('swordsman_attack2');
     sfx.fx('spin', 0.7, { rate: 1.2 });
     const trail = this.time.addEvent({ delay: 70, repeat: 12, callback: () => {
@@ -1034,7 +1046,7 @@ Object.assign(MainGameScene.prototype, {
       this.tweens.add({ targets: g, alpha: 0, duration: 220, onComplete: () => g.destroy() });
     } });
     [[200, 1, false], [470, 1, false], [800, 2, true]].forEach(([t, dmg, around]) => this.time.delayedCall(t, () => {
-      if (this.isDead) return;
+      if (!sigue()) return;
       p.setVelocity(dir * 150, 0);
       this.time.delayedCall(90, () => { if (!this.isDashing) p.setVelocity(0, 0); });
       sfx.fx(around ? 'sword_swing2' : 'sword_swing1', 0.7, { rate: 1.2 });
@@ -1045,11 +1057,12 @@ Object.assign(MainGameScene.prototype, {
       }
     }));
     p.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-      trail.remove();
-      this.isAttacking = false;
-      this.isInvulnerable = false;
-      if (!this.isDead) p.play('swordsman_idle');
+      const mia = this._bladeDance === token;
+      fin();
+      if (mia && !this.isDead) p.play('swordsman_idle');
     });
+    // safety net, like the spin: if the animation was cut short the hero must not stay invulnerable for ever
+    this.time.delayedCall(1500, fin);
   },
 
   /**
@@ -1062,7 +1075,7 @@ Object.assign(MainGameScene.prototype, {
    */
   damageEnemy(enemy, amount, sourceX, sourceY) {
     if (enemy.isDead) return;
-    if (this.enemyTryBlock && this.enemyTryBlock(enemy, sourceX, sourceY)) return;   // shield up: no damage
+    if (this.enemyTryBlock && this.enemyTryBlock(enemy, sourceX, sourceY, amount)) return;   // shield up: no damage
     if (enemy.state === 'dormant') enemy._wake = true;
     if (this._gameMode === 'campaign' && this.story && this.story.up) amount += this.story.up.atk;   // whetstones from the shop
 

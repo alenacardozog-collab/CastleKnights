@@ -221,15 +221,15 @@
   const CONEXIONES = [
     ['ed_camino_al_castillo.main', 'puerta', 'courtyard', 'castle.courtyard', 320, 530],
     ['castle.courtyard', 'salida', 'training', 'castle.training', 440, 446],     // ojo: portón oeste -> portón sur (así está dibujado)
-    ['castle.courtyard', 'salida', 'garden', 'castle.garden', 45, 352],
+    ['castle.courtyard', 'salida', 'garden', 'ed_jardin_real.main', 26, 270],   // Jardín Real nuevo (ck_salas_castillo.js)
     ['castle.courtyard', 'salida', 'road', 'ed_camino_al_castillo.main', 1189, 452],
     ['castle.courtyard', 'puerta', 'kitchen', 'castle.kitchen', 202, 287],
-    ['castle.courtyard', 'puerta', 'armory', 'castle.armory', 202, 287],
+    ['castle.courtyard', 'puerta', 'armory', 'ed_herreria.main', 204, 340],    // Herrería nueva, en lugar de la Armería
     ['castle.courtyard', 'puerta', 'throne', 'ed_salon_del_trono_3.main', 240, 565],
     ['castle.training', 'salida', 'courtyard', 'castle.courtyard', 29, 312],
-    ['castle.garden', 'salida', 'courtyard', 'castle.courtyard', 605, 236],
+    ['ed_jardin_real.main', 'salida', 'outside', 'castle.courtyard', 606, 226],
     ['castle.kitchen', 'salida', 'courtyard', 'castle.courtyard', 125, 188],
-    ['castle.armory', 'salida', 'courtyard', 'castle.courtyard', 505, 188],
+    ['ed_herreria.main', 'salida', 'outside', 'castle.courtyard', 510, 182],
     ['ed_salon_del_trono_3.main', 'salida', 'outside', 'castle.courtyard', 320, 192],
     ['ed_salon_del_trono_3.main', 'puerta', 'kingroom', 'ed_aposentos_del_rey.main', 200, 352],
     ['ed_salon_del_trono_3.main', 'puerta', 'library', 'ed_biblioteca.main', 200, 386]
