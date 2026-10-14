@@ -210,7 +210,9 @@ Object.assign(MainGameScene.prototype, {
     const night = this.isNight();
     if (night !== this._wasNight) {
       this._wasNight = night;
-      if (this.story) this.showZoneTitle(night ? 'Cae la noche' : 'Amanece', night ? 'Las bestias salen de sus guaridas' : '');
+      // the big title only outdoors (rooms of the editor maps come marked "outdoor": CK_AFUERA knows better)
+      const afuera = window.CK_AFUERA ? window.CK_AFUERA(this) : outdoors;
+      if (this.story && afuera) this.showZoneTitle(night ? 'Cae la noche' : 'Amanece', night ? 'Las bestias salen de sus guaridas' : '');
       this.updateObjective();
     }
   },
