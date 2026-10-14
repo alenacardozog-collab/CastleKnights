@@ -31,7 +31,8 @@ js/
       village_map.js    aldea y mapa de práctica (Tiled, capas, sombras)
       collisions.js     colisiones y obstáculos
       areas.js          motor de zonas: puertas, entrar/salir, construir y actualizar una zona, puente levadizo
-      area_effects.js   llamas, clima, partículas, cuervos, actores del castillo
+      area_effects.js   llamas, clima, partículas, cuervos, actores del castillo (rondas, guardias que pelean, civiles que huyen)
+      navigation.js     grilla de lo que se puede pisar en la zona y caminos A* (la usan enemigos, guardias y aldeanos)
     characters/
       player.js         héroes: animaciones, controles, movimiento, daño
       combat.js         ataques y habilidades

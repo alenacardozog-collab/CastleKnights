@@ -224,6 +224,58 @@
   const TERRENOS = BASE.concat(BASE.map(([n, c]) => [n, c.map(v => Math.round(v * 0.82))]), BASE.map(([n, c]) => [n, c.map(v => Math.min(255, Math.round(v * 1.12 + 6)))]));
   Object.keys(IMGS).forEach(k => { const i = new Image(); i.src = IMGS[k]; img[k] = i; });
 
+  // ------------------------------------------------------------------ retrato del mapa real
+  // La primera vez que el héroe está en una zona se dibuja el mapa de verdad (suelo, casas, árboles, objetos) a media
+  // resolución, sin personajes, animales, clima ni luces. Así el minimapa muestra la zona tal como es ahora, también si
+  // se edita. Las zonas que todavía no se retrataron en esta sesión usan el dibujo plano de siempre.
+  const retratos = {};
+  const NO_RETRATO = /^(ck_gota|ck_onda|ck_salpica|ck_copo|ck_humo|ck_niebla|ck_luz|ck_quemado|ck_charquito|ck_nieve|ck_apagado|ckd_|ckf_|ckh_|ck_aldea_humo|ck_aldea_brillo|fx_|heart_pickup|necro_bolt|bone_arrow)|villager|^npc\d|^g_[a-z]+_(idle|walk)|king|soldier|wizard|swordsman|^orc|skeleton|slime|^bat_|were|necromancer|prueba_|_anda_|_quieto_/;
+  const retratar = (S, zona) => {
+    if (retratos[zona] || !S.make || !S.make.renderTexture) return;
+    const d = Z[zona], c = S.currentInterior, ox = c ? c.area.x : 0, oy = c ? c.area.y : 0, k = 0.5;
+    const quien = new Set([S.player].concat((S.campaignNPCs || []).map(n => n.sprite)));
+    (c && c.area.actors || []).forEach(a => a.sprite && quien.add(a.sprite));
+    const objs = S.children.list.filter(o => o.visible && o.active && o.depth < 27000 && o.texture && !quien.has(o) && o.blendMode === 0 &&
+      (o.type === 'Image' || o.type === 'Sprite' || o.type === 'TileSprite') && !(S.enemies && S.enemies.contains(o)) && !NO_RETRATO.test(o.texture.key));
+    const rt = S.make.renderTexture({ x: 0, y: 0, width: Math.ceil(d.w * k), height: Math.ceil(d.h * k) }, false);
+    try {
+      rt.fill(v_fondo(zona));
+      rt.camera.setZoom(k);
+      rt.camera.centerOn(ox + d.w / 2, oy + d.h / 2);
+      rt.draw(objs);
+      retratos[zona] = { listo: false, k };
+      rt.snapshot(im => { retratos[zona] = { listo: true, im, k }; rt.destroy(); });
+    } catch (e) { rt.destroy(); retratos[zona] = { listo: false, fallo: true }; }
+  };
+  // color de fondo de cada zona (donde el mapa no dibuja nada)
+  const v_fondo = zona => (/^(castle\.(kitchen|armory|kingroom|library)|ed_(taberna|salon)|tienda|casa|granero)/.test(zona) ? 0x1a120c : 0x2a3a1e);
+
+  /**
+   * Las salidas y portones de la leyenda se acomodan a donde están de verdad en el mapa (si alguien mueve una puerta
+   * en el editor, el minimapa la sigue). Se hace una vez por zona, con el área ya armada.
+   */
+  const ajustadas = {};
+  const destinoDe = (zona, to) => {
+    if (!to) return null;
+    if (to === 'outside') return zona === CAMINO || zona === RUINAS || /^ed_taberna|^(tienda|casa|granero)\./.test(zona) ? ALDEA : null;
+    if (to === 'throne') return SALON;
+    return zonaDe('castle.' + to);
+  };
+  const ajustarSalidas = (S, zona) => {
+    if (ajustadas[zona] || !S.currentInterior) return;
+    ajustadas[zona] = true;
+    const ar = S.currentInterior.area, reales = [];
+    (ar.exits || []).forEach(e => reales.push({ va: destinoDe(zona, e.to), x: e.x - ar.x + e.w / 2, y: e.y - ar.y + e.h / 2 }));
+    (ar.portals || []).forEach(p => reales.push({ va: destinoDe(zona, p.to), x: p.x - ar.x, y: p.y - ar.y }));
+    (L[zona] || []).forEach(l => {
+      if (!l.va) return;
+      let mejor = null, md = 90;
+      reales.forEach(r => { if (r.va === l.va) { const dd = Math.hypot(r.x - l.x, r.y - l.y); if (dd < md) { md = dd; mejor = r; } } });
+      if (mejor) { l.x = Math.round(Math.max(4, Math.min(Z[zona].w - 4, mejor.x))); l.y = Math.round(Math.max(4, Math.min(Z[zona].h - 4, mejor.y))); }
+    });
+  };
+  const RUMBO = { n: 'al norte', s: 'al sur', e: 'al este', o: 'al oeste' };
+
   // ------------------------------------------------------------------ niebla (una celda = 16 px, bits en story.mapa)
   const est = { story: null, z: {} };
   const enc = u => { let s = ''; for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); };
@@ -305,7 +357,14 @@
     const aP = (x, y) => [Math.round(ox + x * s), Math.round(oy + y * s)];
     const mw = Math.round(d.w / d.esc) * v.n, mh = Math.round(d.h / d.esc) * v.n;
     if (v.tipo !== 'hud') { g.fillStyle = 'rgba(40,24,10,0.35)'; g.fillRect(ox + 4, oy + 5, mw, mh); }
-    if (im && im.complete) g.drawImage(im, ox, oy, im.width * v.n, im.height * v.n);
+    const rp = retratos[v.zona];
+    if (rp && rp.listo) {
+      // el mapa real; suavizado solo al achicarlo de más (si no, se ve granulado)
+      g.imageSmoothingEnabled = s < rp.k;
+      g.drawImage(rp.im, ox, oy, d.w * s, d.h * s);
+      g.imageSmoothingEnabled = false;
+      if (v.tipo !== 'hud') { g.fillStyle = 'rgba(216,192,138,0.10)'; g.fillRect(ox, oy, d.w * s, d.h * s); }   // tono de pergamino
+    } else if (im && im.complete) g.drawImage(im, ox, oy, im.width * v.n, im.height * v.n);
     const nb = niebla(S.story, v.zona);
     if (d.ext && nb) g.drawImage(capaNiebla(nb, v.tipo), ox, oy, nb.cols * CELDA * s, nb.rows * CELDA * s);
     if (v.tipo !== 'hud') { g.strokeStyle = TINTA; g.lineWidth = 2; g.strokeRect(ox - 1, oy - 1, mw + 2, mh + 2); }
@@ -324,7 +383,7 @@
         g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.stroke();
       }
       pon(icono(l.ic, p, l.d, l === sig ? '#ffd23a' : null), x, y);
-      if (v.etiquetas) etiquetas.push([l.n, x, y + 7 * p + 4, l === sig]);
+      if (v.etiquetas) etiquetas.push({ t: l.n, x, y, r: 5 * p + 2, oro: l === sig, d: l.d, salida: !!l.va });
     });
     // enemigos cerca (solo en la zona donde está el héroe)
     if (v.aqui && S.enemies && S.enemies.getChildren) {
@@ -369,12 +428,32 @@
         g.restore();
       }
     }
-    // nombres (mapa grande)
+    // nombres (mapa grande): cada uno en su placa, del lado al que apunta la salida (o abajo del ícono), sin taparse
+    // entre ellos ni salirse del cuadro; si no entra en ningún lado se omite (salvo el camino a la misión)
     if (etiquetas.length) {
-      g.font = '11px ' + fuente(); g.textAlign = 'center'; g.textBaseline = 'top'; g.lineJoin = 'round';
-      etiquetas.forEach(([t, x, y, oro]) => {
-        g.lineWidth = 3; g.strokeStyle = '#1a0f08'; g.strokeText(t, x, y);
-        g.fillStyle = oro ? '#ffd23a' : '#fff1cf'; g.fillText(t, x, y);
+      g.font = '11px ' + fuente(); g.textBaseline = 'middle'; g.textAlign = 'left';
+      const puestas = [], H = 15, M = 4;
+      const choca = r => r.x < M || r.y < M || r.x + r.w > v.W - M || r.y + r.h > v.H - M || puestas.some(q => r.x < q.x + q.w + 2 && r.x + r.w + 2 > q.x && r.y < q.y + q.h + 2 && r.y + r.h + 2 > q.y);
+      etiquetas.sort((a, b) => (b.oro - a.oro) || (b.salida - a.salida)).forEach(e => {
+        const txt = e.t + (e.salida && e.d ? { n: ' ▲', s: ' ▼', e: ' ▶', o: ' ◀' }[e.d] : '');
+        const w = Math.ceil(g.measureText(txt).width) + 10;
+        const B = [-w / 2, e.r + 2], A = [-w / 2, -e.r - H - 2], D = [e.r + 3, -H / 2], I = [-e.r - w - 3, -H / 2];
+        // las salidas están en el borde: su nombre va hacia adentro del mapa (salida al norte, nombre abajo; al este, a la izquierda)
+        const lados = { x: [B, A, D, I], n: [B, D, I, A], s: [A, D, I, B], e: [I, A, B, D], o: [D, A, B, I] };
+        let r = null;
+        for (const [dx, dy] of lados[e.salida && e.d ? e.d : 'x']) {
+          const c = { x: Math.round(e.x + dx), y: Math.round(e.y + dy), w, h: H };
+          if (!choca(c)) { r = c; break; }
+        }
+        if (!r && e.oro) r = { x: Math.round(Math.max(M, Math.min(v.W - w - M, e.x - w / 2))), y: Math.round(Math.max(M, Math.min(v.H - H - M, e.y + e.r + 2))), w, h: H };
+        if (!r) return;
+        puestas.push(r);
+        g.fillStyle = e.oro ? 'rgba(74,28,10,0.92)' : 'rgba(26,15,8,0.82)';
+        g.fillRect(r.x, r.y, r.w, r.h);
+        g.strokeStyle = e.oro ? '#ffd23a' : '#8a6a30'; g.lineWidth = 1;
+        g.strokeRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1);
+        g.fillStyle = e.oro ? '#ffd23a' : '#fff1cf';
+        g.fillText(txt, r.x + 5, r.y + H / 2 + 1);
       });
     }
     // rosa de los vientos chiquita
@@ -411,7 +490,7 @@
 #ck-minimapa .ckm-bot button:hover,#ck-mapa .ckm-herr button:hover{filter:brightness(1.3)}
 #ck-mapa{position:absolute;inset:0;z-index:70;display:none;align-items:center;justify-content:center;background:rgba(6,4,10,.74);font-family:var(--ui-font,monospace)}
 #ck-mapa.on{display:flex}
-#ck-mapa .ck-win{width:min(1000px,95%);max-height:94%;display:flex;flex-direction:column;padding:14px 18px 14px;overflow:hidden}
+#ck-mapa .ck-win{width:min(1000px,95%);height:94%;box-sizing:border-box;display:flex;flex-direction:column;padding:14px 18px 14px;overflow:hidden}
 #ck-mapa h3{margin:0 0 6px}
 .ckm-zonas{display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:center;margin-bottom:8px;font-size:12px}
 .ckm-grupo{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
@@ -421,27 +500,28 @@
 .ckm-zonas button.aqui::before{content:'◉ ';color:#c0392b}
 .ckm-zonas button.sel.aqui::before{color:#ffd23a}
 .ckm-zonas button.meta::after{content:' !';color:#a01c14;font-weight:bold}
-.ckm-cuerpo{display:flex;gap:14px;min-height:0;flex:1 1 auto}
-.ckm-lienzo{position:relative;flex:1 1 auto;min-width:0;height:min(430px,58vh);border:3px solid #6b4a1c;box-shadow:0 0 0 2px #1c0a06,inset 0 0 30px rgba(120,80,20,.35);cursor:grab;line-height:0}
+.ckm-cuerpo{display:flex;gap:14px;min-height:0;flex:1 1 auto;overflow:hidden}
+.ckm-lienzo{position:relative;flex:1 1 auto;min-width:0;min-height:150px;border:3px solid #6b4a1c;box-shadow:0 0 0 2px #1c0a06,inset 0 0 30px rgba(120,80,20,.35);cursor:grab;line-height:0}
 .ckm-lienzo.mueve{cursor:grabbing}
 .ckm-lienzo canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
 .ckm-herr{position:absolute;left:8px;bottom:8px;display:flex;gap:4px;line-height:1}
 #ck-mapa .ckm-herr button{min-width:28px;height:28px;font-size:16px;padding:0 6px}
 #ck-mapa .ckm-herr span{align-self:center;font-size:11px;color:#fff1cf;text-shadow:0 1px 0 #000,0 0 4px #000;margin-left:4px}
-.ckm-ley{flex:0 0 230px;overflow-y:auto;max-height:min(430px,58vh);font-size:12px}
+.ckm-ley{flex:0 0 240px;overflow-y:auto;overflow-x:hidden;min-height:0;font-size:12px}
 .ckm-ley h4{margin:2px 0 6px !important}
 .ckm-ley ul{list-style:none;margin:0 0 6px;padding:0}
 .ckm-ley li{display:flex;align-items:center;gap:6px;padding:3px 4px;cursor:pointer;border-bottom:1px dashed rgba(107,74,28,.3)}
 .ckm-ley li:hover{background:rgba(255,240,190,.6)}
 .ckm-ley li canvas{flex:0 0 auto;image-rendering:pixelated}
-.ckm-ley li em{font-style:normal;color:#8a6a30;font-size:10px;margin-left:auto;white-space:nowrap}
+.ckm-ley li em{font-style:normal;color:#8a6a30;font-size:10px;margin-left:auto;text-align:right;flex:0 1 auto}
 .ckm-ley li.ruta{color:#7a1c14;font-weight:bold}
 .ckm-ley .falta{color:#9a8458;font-size:11px;margin:4px 0 10px}
 .ckm-ley .sim{display:grid;grid-template-columns:auto 1fr;gap:3px 6px;align-items:center;font-size:11px;color:#5a3a14}
-.ckm-pie{display:flex;align-items:center;gap:12px;margin-top:10px;font-size:12px}
+.ckm-pie{display:flex;align-items:center;gap:12px;margin-top:10px;font-size:12px;flex:0 0 auto}
 .ckm-pie .ckm-obj{flex:1;color:#4a1c1a}
 .ckm-pie .ckm-obj b{color:#7a1c14}
 .ckm-pie .ck-close{margin:0}
+@media (max-width:760px){.ckm-cuerpo{flex-direction:column;gap:8px}.ckm-lienzo{flex:1 1 60%}.ckm-ley{flex:0 1 40%}.ckm-ley li em{white-space:normal;text-align:right}}
 `;
   const piezas = () => {
     const host = document.getElementById('game-wrapper') || document.body;
@@ -588,7 +668,7 @@
       cc.width = ic.width; cc.height = ic.height; cc.getContext('2d').drawImage(ic, 0, 0);
       li.appendChild(cc);
       li.appendChild(document.createTextNode(l.n));
-      if (l.va && Z[l.va]) { const em = document.createElement('em'); em.textContent = '→ ' + Z[l.va].n; li.appendChild(em); }
+      if (l.va && Z[l.va]) { const em = document.createElement('em'); em.textContent = (l.d ? 'salida ' + RUMBO[l.d] + ' → ' : '→ ') + Z[l.va].n; li.appendChild(em); }
       li.onclick = () => { grande.cx = l.x; grande.cy = l.y; grande.n = Math.min(8, Math.max(grande.n, Z[z].esc === 4 ? 3 : 2)); };
       ul.appendChild(li);
     });
@@ -625,7 +705,7 @@
       const d = Z[grande.zona], s = grande.n / d.esc, aq = ahora(S);
       grande.cx = Math.max(0, Math.min(d.w, grande.cx)); grande.cy = Math.max(0, Math.min(d.h, grande.cy));
       dibujar(cv.getContext('2d'), { zona: grande.zona, cx: grande.cx, cy: grande.cy, n: grande.n, W: cv.width, H: cv.height, tipo: 'grande',
-        aqui: aq && aq.zona === grande.zona ? aq : null, ang: mini.ang, meta: meta(S.story), t: performance.now(), etiquetas: s >= 0.5 }, S);
+        aqui: aq && aq.zona === grande.zona ? aq : null, ang: mini.ang, meta: meta(S.story), t: performance.now(), etiquetas: true }, S);
       grande.raf = requestAnimationFrame(bucle);
     };
     bucle();
@@ -702,9 +782,14 @@
       const dx = a.x - mini.prev.x, dy = a.y - mini.prev.y;
       if (dx * dx + dy * dy > 0.4) mini.ang = Math.atan2(dy, dx);
     }
-    if (!mini.prev || mini.prev.zona !== a.zona) { mini.libre = null; mini.n = null; }
+    if (!mini.prev || mini.prev.zona !== a.zona) { mini.libre = null; mini.n = null; mini.llegada = performance.now(); }
     mini.prev = a; mini.zona = a.zona;
-    if (!this._doorTransition) explorar(this, a);
+    if (!this._doorTransition) {
+      explorar(this, a);
+      ajustarSalidas(this, a.zona);
+      // el retrato de la zona, cuando ya terminó de armarse (un rato después de llegar)
+      if (!retratos[a.zona] && performance.now() - (mini.llegada || 0) > 900) retratar(this, a.zona);
+    }
     est.guardaEn = (est.guardaEn || 0) - (delta || 16);
     if (est.sucio && est.guardaEn <= 0 && !this._doorTransition) { est.sucio = false; est.guardaEn = 3000; this.saveStory(); }
     if (h.classList.contains('on') !== ver) h.classList.toggle('on', ver);

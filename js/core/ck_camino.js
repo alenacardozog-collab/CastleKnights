@@ -94,7 +94,7 @@
     const ox = area.x,
       oy = area.y,
       objs = (s._ckCamino = []);
-    ['talkers', 'portals'].forEach(k => (area[k] = (area[k] || []).filter(o => !o.ck)));
+    ['talkers', 'portals', 'actors'].forEach(k => (area[k] = (area[k] || []).filter(o => !o.ck)));
     const solido = (x, y, w, h) => {
       if (!s.interiorObstacles) return null;
       const z = s.add.zone(ox + x + w / 2, oy + y + h / 2, w, h);
@@ -113,7 +113,13 @@
         .setDepth(oy + y);
       if (s.anims.exists(an)) sp.play(an);
       objs.push(sp);
-      solido(x - 8, y - 8, 16, 8);
+      const pie = solido(x - 8, y - 8, 16, 8);
+      if (pie) pie._navSkip = true;
+      // they stand at their post, but react to beasts like the castle people (guards fight, Ruy runs away)
+      if (s.actorRole)
+        area.actors.push({ type: 'walker', ck: true, sprite: sp, pts: [[ox + x, oy + y, 1e12]], i: 0, wait: 1e12, speed: 30, solid: pie,
+          idle: an, walk: an.replace(/_idle$/, '_walk'),
+          lines: null, talkAt: 0, moving: false, role: s.actorRole(key), hp: 5, maxHp: 5 });
     });
     GENTE.charlas.forEach(([x, y, lines, r]) => area.talkers.push({ x: ox + x, y: oy + y, lines, r, talkAt: 0, ck: true }));
     // el portón: ARRIBA para pasar al patio

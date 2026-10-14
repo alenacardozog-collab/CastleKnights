@@ -136,7 +136,8 @@
     for (let i = pasajeras.length - 1; i >= 0; i--) {
       const l = pasajeras[i], e = (t - l.t0) / l.ms;
       if (e >= 1 || (l.sigue && !l.sigue.active)) { pasajeras.splice(i, 1); continue; }
-      let k = l.curva === 'rayo' ? (e < 0.2 ? 1 : Math.pow(1 - e, 0.7) * (0.7 + 0.3 * Math.random())) : 1 - e * e;
+      // 'crece': a warning that gets brighter until it goes off (the Necromancer's spell mark)
+      let k = l.curva === 'rayo' ? (e < 0.2 ? 1 : Math.pow(1 - e, 0.7) * (0.7 + 0.3 * Math.random())) : l.curva === 'crece' ? 0.35 + 0.65 * e : 1 - e * e;
       if (l.sigue) { l.x = l.sigue.x; l.y = l.sigue.y; }
       out.push({ x: l.x, y: l.y, r: l.r * (l.curva === 'rayo' ? 1 : 0.8 + 0.2 * (1 - e)), c: l.c, f: l.f * k });
     }

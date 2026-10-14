@@ -147,10 +147,26 @@ Object.assign(MainGameScene.prototype, {
     });
   },
 
-  /** People of the castle: walkers follow their round, the smith hammers; all of them speak when the hero is near. */
+  /**
+   * People of the castle: walkers follow their round (around walls and furniture, see navigation.js), the smith
+   * hammers; all of them speak when the hero is near. When a beast comes close, guards go and fight it and
+   * everybody else runs away from it (updateActorDanger).
+   */
   updateCastleActor(a, dt, fx, fy) {
     const sp = a.sprite;
     if (!sp || !sp.active) return;
+    if (a.solid && a.solid.body && (a.solid.x !== sp.x || a.solid.y !== sp.y - 4)) { a.solid.setPosition(sp.x, sp.y - 4); a.solid.body.updateFromGameObject(); }
+    if (a.type !== 'smith') {
+      const busy = this.updateActorDanger(a, dt);
+      if (busy) { if (!a.post) a.post = [sp.x, sp.y]; sp.setDepth(sp.y); return; }
+      // the danger is over: first back to where they were, then the round goes on
+      if (a.post) {
+        const r = this.navFollow(a.nav || (a.nav = {}), sp, a.post[0], a.post[1], a.speed * 1.4, dt);
+        if (r === 'walking') { if (!a.moving) { a.moving = true; if (this.anims.exists(a.walk)) sp.play(a.walk, true); } sp.setDepth(sp.y); return; }
+        a.post = null; a.nav = {};
+        if (a.moving) { a.moving = false; if (this.anims.exists(a.idle)) sp.play(a.idle, true); }
+      }
+    }
     const dist = Phaser.Math.Distance.Between(fx, fy, sp.x, sp.y);
     if (a.lines && dist < 42 && this.time.now - a.talkAt > 7000) {
       a.talkAt = this.time.now;
@@ -182,19 +198,318 @@ Object.assign(MainGameScene.prototype, {
       if (!stopToTalk) a.wait -= dt;
       if (a.moving) { a.moving = false; if (this.anims.exists(a.idle)) sp.play(a.idle, true); }
       if (stopToTalk) sp.setFlipX(fx < sp.x);
+      // waiting at a point of the round: those whose sheet has a job to do (the worker hammers) do it now and then
+      else if (this.time.now > (a.workAt || 0)) {
+        const base = this.actorBase(a), job = [base + '_work', base + '_action'].find(k => this.anims.exists(k));
+        a.workAt = this.time.now + 2600 + Math.random() * 2400;
+        if (job && a.wait > 900) this.actorPlayOnce(a, job, this.anims.get(job).duration + 50);
+      }
       return;
     }
-    const t = a.pts[a.i], dx = t[0] - sp.x, dy = t[1] - sp.y, d = Math.hypot(dx, dy), step = a.speed * dt / 1000;
-    if (d <= step) {
-      sp.setPosition(t[0], t[1]);
-      a.wait = t[2];
-      a.i = (a.i + 1) % a.pts.length;
-    } else {
-      sp.x += dx / d * step; sp.y += dy / d * step;
-      if (Math.abs(dx) > 0.5) sp.setFlipX(dx < 0);
+    // the round: from point to point along a path that goes around what is in the way
+    const t = a.pts[a.i], r = this.navFollow(a.nav || (a.nav = {}), sp, t[0], t[1], a.speed, dt);
+    if (r === 'walking') {
       if (!a.moving) { a.moving = true; if (this.anims.exists(a.walk)) sp.play(a.walk, true); }
+    } else {
+      // arrived (or that point cannot be reached from here: skip it instead of freezing)
+      a.wait = r === 'arrived' ? t[2] : 600;
+      a.i = (a.i + 1) % a.pts.length;
+      if (a.moving) { a.moving = false; if (this.anims.exists(a.idle)) sp.play(a.idle, true); }
     }
     sp.setDepth(sp.y);
+  },
+
+  /** Guard, archer or civilian, from the sheet of a castle person. */
+  actorRole(key) {
+    if (!/^g_/.test(key || '')) return 'civil';
+    if (/^g_archer/.test(key)) return 'archer';
+    if (/^g_priest/.test(key)) return 'priest';           // runs from beasts like a civilian, heals when it is safe
+    return 'guard';
+  },
+
+  /**
+   * Beasts in the zone. Guards: shout, run to the closest beast and fight it (archers shoot from a distance),
+   * then go back to their round. Civilians: scream and run away from it, wait somewhere safe and come back
+   * when it is gone. A guard that takes too many blows is knocked out for a while.
+   * Returns true while this takes over the person (the round is paused).
+   */
+  updateActorDanger(a, dt) {
+    if (!a.role || !this.enemies) return false;
+    const sp = a.sprite, now = this.time.now, base = this.actorBase(a);
+    if (a.down) {
+      if (now < a.downUntil) return true;
+      // back on their feet: the fall played backwards
+      a.down = false; a.hp = a.maxHp || 5;
+      sp.clearTint(); sp.setAlpha(1);
+      this.createFloatingText(sp.x, sp.y - 46, '¡Todavía puedo pelear!', 0xfde68a);
+      a.busyUntil = now + 600;
+      this.actorPlayOnce(a, base + '_rise', 600);
+      return true;
+    }
+    if (now < (a.busyUntil || 0)) return true;            // in the middle of a blow, a fright, a blessing…
+    const fighter = a.role === 'guard' || a.role === 'archer';
+    const sees = (e, r) => {
+      if (!e.active || e.isDead || !e.body || e.state === 'dormant') return false;
+      const d = Phaser.Math.Distance.Between(sp.x, sp.y, e.body.center.x, e.body.bottom);
+      return d < r && (d < 60 || (e.def && e.def.flying) || this.navSightFree(sp.x, sp.y - 2, e.body.center.x, e.body.bottom - 2));
+    };
+    let threat = null, best = 1e9;
+    this.enemies.getChildren().forEach(e => {
+      if (!sees(e, fighter ? 170 : 130)) return;
+      const d = Phaser.Math.Distance.Between(sp.x, sp.y, e.body.center.x, e.body.bottom);
+      if (d < best) { best = d; threat = e; }
+    });
+    const walkAnim = run => {
+      // guards charging use their second walk (lance down) when the sheet has it
+      const k = run && this.anims.exists(base + '_walk2') ? base + '_walk2' : a.walk;
+      if (!a.moving || a.moveKey !== k) { a.moving = true; a.moveKey = k; if (this.anims.exists(k)) sp.play(k, true); }
+    };
+    const idleAnim = () => { if (a.moving) { a.moving = false; a.moveKey = null; if (this.anims.exists(a.idle)) sp.play(a.idle, true); } };
+    a.nav = a.nav || {};
+
+    if (fighter) {
+      if (threat && (!a.fight || !a.fight.enemy.active || a.fight.enemy.isDead)) {
+        if (!a.fight) {
+          this.createFloatingText(sp.x, sp.y - 46, Phaser.Utils.Array.GetRandom(['¡Alto ahí, bestia!', '¡A las armas!', '¡Por el rey!', '¡Guardia, conmigo!']), 0xfca5a5);
+          a.hitAt = now + 350;
+        }
+        a.fight = { enemy: threat };
+      }
+      if (!a.fight) return false;
+      const e = a.fight.enemy;
+      if (!e.active || e.isDead || Phaser.Math.Distance.Between(sp.x, sp.y, e.body.center.x, e.body.bottom) > (a.fight.called ? 420 : 260)) {
+        a.fight = null; a.nav = {};
+        idleAnim();
+        return false;                            // back to the round
+      }
+      // the beast fights back against whoever is hurting it, unless the hero is right there
+      if (!e._target && Phaser.Math.Distance.Between(e.x, e.y, this.player.x, this.player.y) > 130) e._target = a;
+      const ex = e.body.center.x, ey = e.body.bottom, d = Phaser.Math.Distance.Between(sp.x, sp.y, ex, ey);
+      sp.setFlipX(ex < sp.x);
+      if (a.role === 'archer') {
+        if (d > 150 || !this.navSightFree(sp.x, sp.y - 2, ex, ey - 2)) { this.navFollow(a.nav, sp, ex, ey, a.speed * 2, dt); walkAnim(true); return true; }
+        idleAnim();
+        if (now > (a.hitAt || 0)) { a.hitAt = now + 1700; this.actorShoot(a, e); }
+        return true;
+      }
+      if (d > 24) { this.navFollow(a.nav, sp, ex, ey, a.speed * 2.3, dt); walkAnim(true); return true; }
+      idleAnim();
+      if (now > (a.hitAt || 0)) { a.hitAt = now + 1100; this.actorStrike(a, e); }
+      return true;
+    }
+
+    // civilians (and the priest) run away
+    if (threat) {
+      if (!a.flee) {
+        this.createFloatingText(sp.x, sp.y - 46, Phaser.Utils.Array.GetRandom(['¡Auxilio!', '¡Una bestia!', '¡Guardias!', '¡Socorro!']), 0xfca5a5);
+        // a start of fright before running (villager sheets have it)
+        if (this.anims.exists(base + '_hurt')) { a.busyUntil = now + 380; a.moving = false; this.actorPlayOnce(a, base + '_hurt', 380); }
+        // the scream brings the guards of the zone that are close enough, even if they cannot see the beast
+        const actors = this.currentInterior && this.currentInterior.area.actors;
+        (actors || []).forEach(g => {
+          if ((g.role !== 'guard' && g.role !== 'archer') || g.down || g.fight || !g.sprite || !g.sprite.active) return;
+          if (Phaser.Math.Distance.Between(g.sprite.x, g.sprite.y, sp.x, sp.y) > 320) return;
+          g.fight = { enemy: threat, called: true };
+          g.hitAt = this.time.now + 350;
+          this.createFloatingText(g.sprite.x, g.sprite.y - 46, Phaser.Utils.Array.GetRandom(['¡Voy!', '¡Ya llego!', '¡Aguantá!']), 0xfde68a);
+        });
+      }
+      a.flee = Object.assign(a.flee || {}, { enemy: threat, until: now + 2500 });
+      if (now < (a.busyUntil || 0)) return true;
+    }
+    if (!a.flee) return a.role === 'priest' ? this.updatePriest(a, dt) : false;
+    if (now > a.flee.until) {
+      a.flee = null; a.nav = {};
+      this.createFloatingText(sp.x, sp.y - 46, Phaser.Utils.Array.GetRandom(['Uf, ya pasó…', '¿Se fue?', 'Qué susto…', '¡Gracias, guardias!']), 0xfde68a);
+      // relief: a little jump of joy (villager sheets)
+      if (this.anims.exists(base + '_jump')) { a.busyUntil = now + 500; a.moving = false; this.actorPlayOnce(a, base + '_jump', 500); return true; }
+      idleAnim();
+      return false;
+    }
+    const e = a.flee.enemy;
+    if (e.active && !e.isDead && (!a.flee.goal || now > (a.flee.next || 0))) {
+      a.flee.next = now + 800;
+      // somewhere free, away from the beast
+      const away = Math.atan2(sp.y - e.body.bottom, sp.x - e.body.center.x);
+      a.flee.goal = null;
+      for (const off of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8]) {
+        const gx = sp.x + Math.cos(away + off) * 110, gy = sp.y + Math.sin(away + off) * 110;
+        if (this.navIsFree(gx, gy) && this.navPath(sp.x, sp.y, gx, gy, 3000)) { a.flee.goal = [gx, gy]; break; }
+      }
+    }
+    if (a.flee.goal && this.navFollow(a.nav, sp, a.flee.goal[0], a.flee.goal[1], a.speed * 2.4, dt) === 'walking') walkAnim(false);
+    else { idleAnim(); if (e.active) sp.setFlipX(e.x < sp.x); }
+    return true;
+  },
+
+  /** Sheet prefix of a castle person ('g_templar', 'npc10'...), from its idle animation. */
+  actorBase(a) {
+    return a._base || (a._base = String(a.idle || '').replace(/_idle$/, ''));
+  },
+
+  /** Play a one-shot animation and go back to idle afterwards (if nothing else took over meanwhile). */
+  actorPlayOnce(a, key, maxMs) {
+    const sp = a.sprite;
+    if (!this.anims.exists(key)) return false;
+    sp.play(key, true);
+    const token = a._once = (a._once || 0) + 1;
+    this.time.delayedCall(maxMs || 800, () => {
+      if (a._once !== token || !sp.active || a.down || a.moving) return;
+      if (this.anims.exists(a.idle)) sp.play(a.idle, true);
+    });
+    return true;
+  },
+
+  /**
+   * Brother Anselmo: goes to a hurt or fallen guard of the zone and heals him; blesses the hero who comes to him
+   * hurt (+1 heart, once in a while) when no beast is chasing anybody. Returns true while busy.
+   */
+  updatePriest(a, dt) {
+    const sp = a.sprite, now = this.time.now, base = this.actorBase(a);
+    const actors = (this.currentInterior && this.currentInterior.area.actors) || [];
+    const patient = actors.filter(g => g !== a && (g.role === 'guard' || g.role === 'archer') && g.sprite && g.sprite.active && (g.down || (g.hp !== undefined && g.hp < (g.maxHp || 5))) && !g.fight)
+      .sort((p, q) => Phaser.Math.Distance.Between(sp.x, sp.y, p.sprite.x, p.sprite.y) - Phaser.Math.Distance.Between(sp.x, sp.y, q.sprite.x, q.sprite.y))[0];
+    if (patient && Phaser.Math.Distance.Between(sp.x, sp.y, patient.sprite.x, patient.sprite.y) < 320) {
+      const d = Phaser.Math.Distance.Between(sp.x, sp.y, patient.sprite.x, patient.sprite.y);
+      if (d > 26) {
+        this.navFollow(a.nav || (a.nav = {}), sp, patient.sprite.x + (sp.x < patient.sprite.x ? -20 : 20), patient.sprite.y, a.speed * 2, dt);
+        if (!a.moving) { a.moving = true; if (this.anims.exists(a.walk)) sp.play(a.walk, true); }
+        return true;
+      }
+      a.moving = false;
+      sp.setFlipX(patient.sprite.x < sp.x);
+      this.actorHeal(a, patient.sprite.x, patient.sprite.y, () => {
+        patient.hp = patient.maxHp || 5;
+        if (patient.down) patient.downUntil = 0;              // gets up right away
+        else this.createFloatingText(patient.sprite.x, patient.sprite.y - 46, 'Gracias, hermano', 0xfde68a);
+      });
+      return true;
+    }
+    // the hero, hurt, next to him, with no beast after anybody
+    const pb = this.player.body, dh = Phaser.Math.Distance.Between(sp.x, sp.y, pb.center.x, pb.bottom);
+    const calm = !this.enemies.getChildren().some(e => e.active && !e.isDead && e.state === 'chase');
+    if (this.health < this.maxHealth && dh < 70 && calm && now > (a.healHeroAt || 0) && !this.dialogOpen) {
+      a.healHeroAt = now + 40000;
+      sp.setFlipX(pb.center.x < sp.x);
+      this.actorHeal(a, pb.center.x, pb.bottom, () => {
+        this.health = Math.min(this.maxHealth, this.health + 1);
+        this.updateHUD();
+        this.createFloatingText(this.player.x, this.player.y - 40, '+1 VIDA', 0x22c55e);
+        this.createFloatingText(sp.x, sp.y - 50, 'Que la luz te guarde', 0xfde68a);
+      });
+      return true;
+    }
+    // back to his spot after a healing walk
+    const home = a.pts[0];
+    if (Math.hypot(sp.x - home[0], sp.y - home[1]) > 4) {
+      if (this.navFollow(a.nav || (a.nav = {}), sp, home[0], home[1], a.speed, dt) === 'walking') {
+        if (!a.moving) { a.moving = true; if (this.anims.exists(a.walk)) sp.play(a.walk, true); }
+        return true;
+      }
+      if (a.moving) { a.moving = false; if (this.anims.exists(a.idle)) sp.play(a.idle, true); }
+    }
+    return false;
+  },
+
+  /** The priest raises his staff: healing light on the patient, and then the effect (done) happens. */
+  actorHeal(a, x, y, done) {
+    const sp = a.sprite, base = this.actorBase(a);
+    a.busyUntil = this.time.now + 900;
+    if (!this.actorPlayOnce(a, base + '_heal', 900)) this.tweens.add({ targets: sp, y: sp.y - 3, duration: 200, yoyo: true });
+    sfx.fx('heal', 0.5, { minGap: 300 }) || sfx.fx('ice_cast', 0.45, { rate: 1.4 });
+    this.time.delayedCall(350, () => {
+      if (this.anims.exists('priest_heal_fx')) {
+        const fx = this.add.sprite(x, y - 14, 'priest_heal_fx').setDepth(y + 60).setBlendMode(Phaser.BlendModes.ADD);
+        fx.play('priest_heal_fx');
+        fx.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => fx.destroy());
+      }
+      if (window.CK_LUZ && window.CK_LUZ.agregar) window.CK_LUZ.agregar({ x, y: y - 10, c: [255, 240, 170], r: 60, f: 0.8, ms: 600 });
+      done();
+    });
+  },
+
+  /** A guard's blow: one of the attacks of its sheet (a lunge and a slash if it has none) and 1 damage to the beast. */
+  actorStrike(a, e) {
+    const sp = a.sprite, dir = e.x < sp.x ? -1 : 1, base = this.actorBase(a);
+    const opts = [1, 2, 3].filter(n => this.anims.exists(`${base}_attack${n}`));
+    let hitMs = 110;
+    if (opts.length) {
+      const key = `${base}_attack${Phaser.Utils.Array.GetRandom(opts)}`, an = this.anims.get(key);
+      hitMs = Math.round(an.duration * 0.55);
+      a.busyUntil = this.time.now + an.duration;
+      a.moving = false;
+      this.actorPlayOnce(a, key, an.duration);
+    } else {
+      const x0 = sp.x;
+      this.tweens.add({ targets: sp, x: x0 + dir * 5, duration: 90, yoyo: true, onComplete: () => { if (sp.active) sp.x = x0; } });
+      const arc = this.add.graphics().setDepth(sp.y + 5);
+      arc.lineStyle(3, 0xf8fafc, 0.9);
+      arc.beginPath(); arc.arc(sp.x + dir * 12, sp.y - 16, 14, dir > 0 ? -1.2 : Math.PI - 0.6, dir > 0 ? 0.6 : Math.PI + 1.2); arc.strokePath();
+      this.tweens.add({ targets: arc, alpha: 0, duration: 180, onComplete: () => arc.destroy() });
+    }
+    sfx.fx('sword_swing1', 0.4, { minGap: 120, rate: 1.1 });
+    this.time.delayedCall(hitMs, () => { if (e.active && !e.isDead && sp.active && !a.down) this.damageEnemy(e, 1, sp.x, sp.y); });
+  },
+
+  /** An archer draws (attack animation) and lets the arrow go: it flies to the beast and does 1 damage if it is still there. */
+  actorShoot(a, e) {
+    const sp = a.sprite, base = this.actorBase(a), key = base + '_attack1';
+    let releaseMs = 0;
+    if (this.anims.exists(key)) {
+      const an = this.anims.get(key);
+      releaseMs = Math.round(an.duration * 0.7);
+      a.busyUntil = this.time.now + an.duration;
+      a.moving = false;
+      this.actorPlayOnce(a, key, an.duration);
+    }
+    this.time.delayedCall(releaseMs, () => {
+      if (!sp.active || a.down || !e.active || e.isDead) return;
+      const x0 = sp.x + (e.x < sp.x ? -10 : 10), y0 = sp.y - 22, x1 = e.x, y1 = e.y + 4, ang = Math.atan2(y1 - y0, x1 - x0);
+      const arrow = this.textures.exists('g_arrow')
+        ? this.add.image(x0, y0, 'g_arrow').setScale(0.9).setRotation(ang).setDepth(y0 + 40)
+        : this.add.rectangle(x0, y0, 10, 2, 0xe7d3a8).setDepth(y0 + 40).setRotation(ang);
+      sfx.fx('bow_shot', 0.35, { minGap: 150 }) || sfx.fx('sword_swing2', 0.3, { rate: 1.6 });
+      this.tweens.add({
+        targets: arrow, x: x1, y: y1, duration: Math.max(120, Phaser.Math.Distance.Between(x0, y0, x1, y1) / 0.32),
+        onComplete: () => { arrow.destroy(); if (e.active && !e.isDead) this.damageEnemy(e, 1, x0, y0); }
+      });
+    });
+  },
+
+  /**
+   * A beast hits a guard: knights and templars may block it with the shield; otherwise flash, the hurt animation and
+   * a step back. With no strength left the guard falls (death animation) and is out of the fight for a while.
+   */
+  npcTakeHit(a, dmg, enemy) {
+    if (!a || a.down || !a.sprite || !a.sprite.active) return;
+    const sp = a.sprite, base = this.actorBase(a), now = this.time.now;
+    sp.setFlipX(enemy.x < sp.x);
+    if (this.anims.exists(base + '_block') && Math.random() < 0.35) {
+      a.busyUntil = now + 320;
+      a.moving = false;
+      this.actorPlayOnce(a, base + '_block', 320);
+      this.createFloatingText(sp.x, sp.y - 40, '¡BLOQUEO!', 0xcbd5e1);
+      sfx.fx('shield_block', 0.5, { minGap: 100 }) || sfx.fx('sword_hit', 0.5, { minGap: 100, rate: 1.6 });
+      return;
+    }
+    a.hp = (a.hp === undefined ? (a.maxHp || 5) : a.hp) - dmg;
+    sp.setTint(0xff5555);
+    this.time.delayedCall(140, () => { if (sp.active && !a.down) sp.clearTint(); });
+    this.createFloatingText(sp.x, sp.y - 40, '-' + dmg, 0xfca5a5);
+    sfx.fx('sword_hit', 0.45, { minGap: 80 });
+    const ang = Math.atan2(sp.y - enemy.y, sp.x - enemy.x), bx = sp.x + Math.cos(ang) * 8, by = sp.y + Math.sin(ang) * 8;
+    if (this.navIsFree(bx, by)) sp.setPosition(bx, by);
+    if (a.hp <= 0) {
+      a.down = true; a.downUntil = now + 12000; a.fight = null; a.moving = false;
+      sp.setTint(0xb8bcc6);
+      if (this.anims.exists(base + '_death')) { a._once = (a._once || 0) + 1; sp.play(base + '_death', true); }   // stays on the floor
+      else { sp.setTint(0x6b7280).setAlpha(0.85); if (this.anims.exists(a.idle)) sp.play(a.idle, true); }
+      this.createFloatingText(sp.x, sp.y - 46, '¡Estoy herido!', 0xfca5a5);
+    } else if (this.anims.exists(base + '_hurt')) {
+      a.busyUntil = now + 300;
+      a.moving = false;
+      this.actorPlayOnce(a, base + '_hurt', 300);
+    }
   },
 
   /** Small generated textures for lighting: a banded (pixel-art) glow and a room vignette. */

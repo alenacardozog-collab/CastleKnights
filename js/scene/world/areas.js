@@ -607,7 +607,8 @@ Object.assign(MainGameScene.prototype, {
             .setScale(a.scale || 1).setDepth(oy + p0[1]);
           if (this.anims.exists(a.idle)) sp.play(a.idle);
           actors.push({ type: 'walker', sprite: sp, pts: a.pts.map(p => [ox + p[0], oy + p[1], p[2] || 0]), i: 1 % a.pts.length, wait: p0[2] || 0,
-            speed: a.speed || 24, idle: a.idle, walk: a.walk, lines: a.lines, talkAt: 0, moving: false });
+            speed: a.speed || 24, idle: a.idle, walk: a.walk, lines: a.lines, talkAt: 0, moving: false,
+            role: this.actorRole(a.key), hp: 5, maxHp: 5 });
           objects.push(sp);
         }
         if (a.type === 'smith' && this.textures.exists(a.key)) {
