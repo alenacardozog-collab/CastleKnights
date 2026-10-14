@@ -82,6 +82,8 @@ Object.assign(MainGameScene.prototype, {
     this._overlay = null;
     this.isGamePaused = false;
     this.physics.world.resume();
+    // a hit-stop that ended while the window was open left the animations paused
+    if (this.anims.paused) this.anims.resumeAll();
     this.updateQuickBar();
   },
 

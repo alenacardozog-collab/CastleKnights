@@ -189,6 +189,7 @@ Object.assign(MainGameScene.prototype, {
       faceBox.classList.toggle('painted', !!face && /\.png$/.test(face));
       if (url) faceBox.querySelector('img').src = url;
     }
+    this._dlgSeq = (this._dlgSeq || 0) + 1;
     this._dlg = { name, lines: lines.slice(), i: 0, onEnd, shown: 0, at: performance.now() };
     if (this.player && this.player.body) this.player.setVelocity(0, 0);
     document.getElementById('ck-dialog').classList.add('on');
@@ -213,7 +214,9 @@ Object.assign(MainGameScene.prototype, {
       document.getElementById('ck-dialog').classList.remove('on');
       this._dlg = null;
       // keep the hero frozen for a blink so the closing key press does not swing the sword
-      setTimeout(() => { this.dialogOpen = false; }, 120);
+      // (unless another dialogue opened in that blink: then it stays open)
+      const seq = this._dlgSeq;
+      setTimeout(() => { if (this._dlgSeq === seq && !this._dlg) this.dialogOpen = false; }, 120);
       if (d.onEnd) d.onEnd();
       return;
     }

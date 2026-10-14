@@ -461,6 +461,16 @@ Object.assign(MainGameScene.prototype, {
   },
 
   handlePlayerMovement() {
+    // Attack watchdog: attacks end when their animation completes. If something replaced it halfway with a looping one
+    // (a dialogue or a door forces idle), that never happened and the hero stayed "attacking" forever: frozen, unable to
+    // move or attack. Thunder and arrow rain keep their own timers.
+    if (this.isAttacking && !this.isCastingThunder && !this.isCastingRain && !this.thunderCharge) {
+      const an = this.player.anims, k = an.currentAnim ? an.currentAnim.key : '';
+      const swinging = an.isPlaying && /attack|arrowrain|thunder/.test(k);
+      this._atkLoose = swinging ? 0 : (this._atkLoose || 0) + (this.game.loop.delta || 16);
+      if (this._atkLoose > 200) { this.isAttacking = false; this._atkLoose = 0; }
+    }
+    this.unstickPlayer();
     // Frozen while fading in/out of a building
     if (this._doorTransition || this.dialogOpen) {
       this.player.setVelocity(0, 0);
@@ -528,6 +538,28 @@ Object.assign(MainGameScene.prototype, {
       const idleAnim = `${this.playerHero}_idle`;
       if (this.anims.exists(idleAnim)) this.player.play(idleAnim, true);
     }
+  },
+
+  /**
+   * Safety net: Arcade only pushes a body out of a wall while it moves into it. If the hero ever ends up embedded in a
+   * solid (a thin wall, a push, a respawn point next to a wall), he could stay stuck sliding along it. After a few checks
+   * in a row inside something solid, he is moved to the nearest free spot.
+   */
+  unstickPlayer() {
+    const b = this.player && this.player.body;
+    if (!b || this._doorTransition) return;
+    if ((this._unstickTick = (this._unstickTick || 0) + 1) % 4) return;
+    const terrain = [this.obstacles, this.waterObstacles, this.lowObstacles, this.interiorObstacles].filter(Boolean);
+    const solid = (x, y, inset) => this.physics.overlapRect(x + inset, y + inset, b.width - inset * 2, b.height - inset * 2, false, true)
+      .some(s => s.enable && s.gameObject && !s.gameObject._navSkip && terrain.some(g => g.contains(s.gameObject)));
+    if (!solid(b.x, b.y, 1.5)) { this._stuckChecks = 0; return; }
+    if (++this._stuckChecks < 3) return;
+    this._stuckChecks = 0;
+    for (let r = 2; r <= 32; r += 2)
+      for (let k = 0; k < 16; k++) {
+        const a = k / 16 * Math.PI * 2, dx = Math.round(Math.cos(a) * r), dy = Math.round(Math.sin(a) * r);
+        if (!solid(b.x + dx, b.y + dy, 0.5)) { this.player.x += dx; this.player.y += dy; return; }
+      }
   },
 
   /**
