@@ -9,7 +9,8 @@
   const prueba = (nombre, fn) => lista.push({ nombre, fn });
   const esperar = ms => new Promise(r => setTimeout(r, ms));
   const ok = (c, m) => { if (!c) throw new Error(m || 'no se cumplió'); };
-  window.addEventListener('error', e => errores.push(e.message));
+  let actual = '';   // la prueba que está corriendo: cada error dice en cuál pasó
+  window.addEventListener('error', e => errores.push((actual ? '[' + actual.slice(0, 40) + '] ' : '') + e.message));
   const escena = () => game.scene.scenes.find(s => s.startCampaign);
   const S = () => window.CK_SONIDO || {};
   const hasta = async (cond, ms = 4000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (cond()) return true; await esperar(80); } return false; };
@@ -130,12 +131,137 @@
     ok(d[3] === 0, 'el foco no debería iluminar detrás');
     ED.lucesVivas.forEach(v => v.im.destroy()); ED.lucesVivas = []; delete ED.luces._prueba;
   });
+  // ------------------------------------------------------------------ campaña y conexiones
+  // Estas dos pruebas juegan la campaña de verdad (guardan partida): copian todo lo guardado antes y lo restauran después.
+  const conGuardadoIntacto = async fn => {
+    const copia = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); copia[k] = localStorage.getItem(k); }
+    try { await fn(); } finally {
+      Object.keys(localStorage).forEach(k => { if (!(k in copia)) localStorage.removeItem(k); });
+      Object.keys(copia).forEach(k => localStorage.setItem(k, copia[k]));
+    }
+  };
+  /** Lleva al héroe a una zona como lo hace el juego (mapas del editor, castillo, ruinas). */
+  const irZona = async (s, zona) => {
+    if (s.currentZoneKey() === zona) return;
+    let m = /^ed_(.+)\.main$/.exec(zona);
+    if (m) { ok(s.ckEntrar(m[1]), 'no pude entrar a ' + zona); }
+    else {
+      m = /^(castle|ruins)\.(\w+)$/.exec(zona);
+      ok(m, 'zona desconocida ' + zona);
+      const b = s.buildInterior(m[1] === 'castle' ? { _houseName: 'Castle', _interiorIndex: 5, _interiorKind: 'castle', _ck: true } : { _houseName: 'Ruins', _interiorIndex: 7, _interiorKind: 'ruins' });
+      const a = b.areas[m[2]];
+      s.currentInterior = { building: b, areaName: m[2], area: a }; s._areaSwitchHold = true; s.showInteriorArea(a, a.spawn);
+    }
+    ok(await hasta(() => s.currentZoneKey() === zona && !s._doorTransition, 5000), 'no llegó a ' + zona);
+    await esperar(500);
+  };
+  /** Celda caminable más cercana a (x, y) que se alcance a pie desde donde está el héroe (o null). */
+  const alcanzable = (s, x, y, r) => {
+    const G = s.navGrid(true), W = G.gw, b = s.player.body, st = s.navNearestCell(G, b.center.x, b.bottom);
+    if (!st) return null;
+    const vis = new Uint8Array(W * G.gh), q = [st[1] * W + st[0]]; vis[q[0]] = 1;
+    let mejor = null, md = 1e9;
+    while (q.length) {
+      const c = q.pop(), cx = c % W, cy = (c / W) | 0, px = G.x + cx * 8 + 4, py = G.y + cy * 8 + 4, d = Math.hypot(px - x, py - 5 - y);
+      if (d < r && d < md) { md = d; mejor = [px, py]; }
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => { const nx = cx + dx, ny = cy + dy, n = ny * W + nx; if (s.navFreeCell(G, nx, ny) && !vis[n]) { vis[n] = 1; q.push(n); } });
+    }
+    return mejor;
+  };
+  const cerrarDialogo = async s => { for (let i = 0; i < 30 && s._dlg; i++) { s._dlg.shown = 999; s._dlg.at = 0; s.advanceDialog(); await esperar(40); } await esperar(250); };
+  /** Va hasta un personaje de la historia (a un lugar al que se llega caminando) y le habla con T. */
+  const hablar = async (s, id) => {
+    const n = STORY_NPCS.find(x => x.id === id);
+    ok(n, 'no existe ' + id);
+    await irZona(s, n.zone);
+    const a = s.currentInterior.area, p = alcanzable(s, a.x + n.x, a.y + n.y, n.r - 4);
+    ok(p, 'no se llega caminando a ' + n.name + ' (' + n.zone + ')');
+    s.placePlayerFeetAt(p[0], p[1]); s.player.setVelocity(0, 0); await esperar(200);
+    await cerrarDialogo(s);
+    s.interact(); await esperar(250);
+    ok(s._dlg && s._dlg.name === n.name, 'T no abrió la charla con ' + n.name + ' (' + (s._dlg ? s._dlg.name : 'nada') + ')');
+    await cerrarDialogo(s);
+  };
+  const vencer = async (s, filtro, cuantos) => {
+    const e = s.enemies.getChildren().filter(x => x.active && !x.isDead && filtro(x)).slice(0, cuantos);
+    ok(e.length >= cuantos, 'faltan bestias: hay ' + e.length + ' de ' + cuantos);
+    for (const x of e) { s.damageEnemy(x, 99, x.x, x.y); await esperar(150); }
+    await esperar(600);
+  };
+  prueba('Capítulo 1 completo: del Rey al epílogo, caminando hasta cada uno y hablando con T', async () => conGuardadoIntacto(async () => {
+    const s = escena(), paso = () => s.story.step, fl = () => s.story.flags;
+    s.startCampaign(); await hasta(() => s.story && s.player, 4000); await esperar(800);
+    Object.assign(s.story, { step: 0, count: 0, flags: {} }); s.updateObjective();
+    const guardia = setInterval(() => { s.isInvulnerable = true; s.health = s.maxHealth; }, 100);
+    try {
+      await hablar(s, 'king'); ok(paso() === 1, 'el Rey no dio la misión (paso ' + paso() + ')');
+      await hablar(s, 'captain'); ok(paso() === 2, 'el Capitán no mandó al camino (paso ' + paso() + ')');
+      await irZona(s, 'ed_camino_al_castillo.main');
+      await vencer(s, x => !(x.def && x.def.flying), 3); ok(await hasta(() => paso() === 3, 2000), 'las 3 bestias del camino no contaron (paso ' + paso() + ', cuenta ' + s.story.count + ')');
+      await hablar(s, 'captain'); ok(fl().h === 'eloy', 'el Capitán no mandó con Eloy (' + fl().h + ')');
+      await hablar(s, 'eloy'); ok(fl().h === 'taberna', 'Eloy no mandó a la taberna (' + fl().h + ')');
+      await hablar(s, 'tabernero'); ok(fl().h === 'ruy', 'el tabernero no mandó con Ruy (' + fl().h + ')');
+      await hablar(s, 'ruy'); ok(paso() === 4 && fl().sal, 'Ruy no dio la sal ni el paso a Brumavieja (paso ' + paso() + ')');
+      await hablar(s, 'hermit'); ok(paso() === 5, 'Tobías no mandó al cementerio (paso ' + paso() + ')');
+      await irZona(s, 'ruins.village');
+      await vencer(s, x => x.type === 'skeleton_great', 1); ok(await hasta(() => paso() === 6 && fl().key, 2000), 'el Gran Esqueleto no dejó la llave (paso ' + paso() + ')');
+      // la capilla: al acercarse sale el Nigromante (antes habla Varek)
+      const a = s.currentInterior.area;
+      s.placePlayerFeetAt(a.x + 560, a.y + 380); await esperar(400); await cerrarDialogo(s);
+      s.placePlayerFeetAt(a.x + 560, a.y + 330); await esperar(300); await cerrarDialogo(s);
+      ok(await hasta(() => s.enemies.getChildren().some(x => x.active && x.type === 'necromancer'), 4000), 'el Nigromante no salió de la capilla');
+      await vencer(s, x => x.type === 'necromancer', 1);
+      ok(await hasta(() => paso() === 7 && fl().codice, 3000), 'vencer al Nigromante no dio el Códice ni el paso 7 (paso ' + paso() + ')');
+      await hablar(s, 'eloy'); ok(fl().codice_ok, 'Eloy no recibió el Códice');
+      await hablar(s, 'king'); ok(paso() === 8, 'el Rey no cerró el capítulo (paso ' + paso() + ')');
+      await hablar(s, 'eloy'); ok(fl().epilogo, 'Eloy no dio el epílogo');
+    } finally { clearInterval(guardia); s.isInvulnerable = false; s.clearZoneEnemies(); }
+  }));
+  // salida -> [zona a la que lleva, x, y del lugar donde aparece el héroe] (los mapas del Taller, el castillo y las ruinas)
+  const CONEXIONES = [
+    ['ed_camino_al_castillo.main', 'puerta', 'courtyard', 'castle.courtyard', 320, 530],
+    ['castle.courtyard', 'salida', 'training', 'castle.training', 440, 446],     // ojo: portón oeste -> portón sur (así está dibujado)
+    ['castle.courtyard', 'salida', 'garden', 'castle.garden', 45, 352],
+    ['castle.courtyard', 'salida', 'road', 'ed_camino_al_castillo.main', 1189, 452],
+    ['castle.courtyard', 'puerta', 'kitchen', 'castle.kitchen', 202, 287],
+    ['castle.courtyard', 'puerta', 'armory', 'castle.armory', 202, 287],
+    ['castle.courtyard', 'puerta', 'throne', 'ed_salon_del_trono_3.main', 240, 565],
+    ['castle.training', 'salida', 'courtyard', 'castle.courtyard', 29, 312],
+    ['castle.garden', 'salida', 'courtyard', 'castle.courtyard', 605, 236],
+    ['castle.kitchen', 'salida', 'courtyard', 'castle.courtyard', 125, 188],
+    ['castle.armory', 'salida', 'courtyard', 'castle.courtyard', 505, 188],
+    ['ed_salon_del_trono_3.main', 'salida', 'outside', 'castle.courtyard', 320, 192],
+    ['ed_salon_del_trono_3.main', 'puerta', 'kingroom', 'ed_aposentos_del_rey.main', 200, 352],
+    ['ed_salon_del_trono_3.main', 'puerta', 'library', 'ed_biblioteca.main', 200, 386]
+  ];
+  prueba('Conexiones entre mapas: cada salida lleva adonde debe y el héroe aparece en su lugar', async () => conGuardadoIntacto(async () => {
+    const s = escena(), K = s.cursors, mal = [];
+    if (!s.story) { s.startCampaign(); await hasta(() => s.story && s.player, 4000); await esperar(800); }
+    for (const [desde, tipo, to, llega, x, y] of CONEXIONES) {
+      await irZona(s, desde); await cerrarDialogo(s);
+      const a = s.currentInterior.area, z0 = s.currentZoneKey();
+      const e = tipo === 'salida' ? (a.exits || []).find(v => v.to === to) : (a.portals || []).find(v => v.to === to);
+      if (!e) { mal.push(desde + ': no hay ' + tipo + ' a ' + to); continue; }
+      if (tipo === 'salida') s.placePlayerFeetAt(e.x + e.w / 2, e.y + e.h / 2 + 4); else s.placePlayerFeetAt(e.x, e.y + 14);
+      await esperar(150);
+      const tecla = tipo === 'puerta' || e.key === 'up' ? 'up' : e.key === 'down' ? 'down' : null;
+      if (tecla) K[tecla].isDown = true;
+      const fue = await hasta(() => s.currentZoneKey() !== z0 && !s._doorTransition, 4000);
+      if (tecla) K[tecla].isDown = false;
+      await esperar(300);
+      const b = s.player.body, c = s.currentInterior, ox = c ? c.area.x : 0, oy = c ? c.area.y : 0;
+      const d = Math.hypot(b.center.x - ox - x, b.bottom - oy - y);
+      if (!fue || s.currentZoneKey() !== llega) mal.push(desde + ' → ' + to + ': llegó a ' + s.currentZoneKey());
+      else if (d > 40) mal.push(desde + ' → ' + to + ': apareció a ' + Math.round(d) + ' px de donde debía');
+    }
+    ok(!mal.length, mal.join(' / '));
+  }));
   prueba('Sin errores en la consola', async () => ok(!errores.length, errores.join(' / ')));
 
   const correr = async () => {
     const caja = document.createElement('div'); caja.style.cssText = 'position:fixed;right:12px;top:12px;width:440px;max-height:80vh;overflow:auto;z-index:99999;background:#24272c;color:#e9e7e2;border:1px solid #4a505a;border-radius:10px;padding:12px;font:13px Segoe UI,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.5)';
     caja.innerHTML = '<b>Pruebas del juego…</b>'; document.body.append(caja); const res = [];
-    for (const t of lista) { const f = document.createElement('div'); f.style.padding = '3px 0'; f.textContent = '… ' + t.nombre; caja.append(f);
+    for (const t of lista) { actual = t.nombre; const f = document.createElement('div'); f.style.padding = '3px 0'; f.textContent = '… ' + t.nombre; caja.append(f);
       try { await t.fn(); res.push({ nombre: t.nombre, ok: true }); f.textContent = '✔ ' + t.nombre; f.style.color = '#5fc27e'; }
       catch (e) { res.push({ nombre: t.nombre, ok: false, error: e.message }); f.textContent = '✘ ' + t.nombre + ' — ' + e.message; f.style.color = '#e8644f'; } }
     const mal = res.filter(r => !r.ok).length; caja.firstChild.textContent = mal ? mal + ' prueba(s) fallaron de ' + res.length : 'Todo bien: ' + res.length + ' pruebas'; caja.firstChild.style.color = mal ? '#e8644f' : '#5fc27e';

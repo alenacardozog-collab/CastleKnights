@@ -340,10 +340,11 @@
         from: TRONO_Y + 6,
         to: PIE_ESTRADO.y,
         duration: ((PIE_ESTRADO.y - TRONO_Y - 6) / VEL) * 1000,
-        onUpdate: tw => ponerRey(s, k, TRONO_X, tw.getValue()),
+        // el héroe pudo irse del salón mientras el Rey bajaba (sus sprites ya no existen): no tocarlos
+        onUpdate: tw => { if (k.de_pie && k.de_pie.active) ponerRey(s, k, TRONO_X, tw.getValue()); },
         onComplete: () => {
           k.estado = 'hablando';
-          if (s.anims.exists('kingprueba_idle')) k.de_pie.play('kingprueba_idle', true);
+          if (k.de_pie && k.de_pie.active && s.anims.exists('kingprueba_idle')) k.de_pie.play('kingprueba_idle', true);
         }
       });
     };
