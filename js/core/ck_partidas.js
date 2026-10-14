@@ -225,7 +225,9 @@
       'castle.garden': 'Jardín Real',
       'castle.walls': 'Adarve'
     }[l.zona];
-    return t || (/^ruins\./.test(l.zona) ? 'Aldea en Ruinas' : /^castle\./.test(l.zona) ? 'Castillo' : 'Aldea del Roble');
+    // las zonas que conoce el minimapa (también las salas nuevas del editor) tienen su nombre ahí
+    const mm = window.CK_MINIMAPA && window.CK_MINIMAPA.Z && window.CK_MINIMAPA.Z[l.zona];
+    return t || (mm && mm.n) || (/^ruins\./.test(l.zona) ? 'Aldea en Ruinas' : /^castle\./.test(l.zona) ? 'Castillo' : 'Aldea del Roble');
   };
   const objetivo = st => {
     if (!st || typeof QUESTS === 'undefined') return '';

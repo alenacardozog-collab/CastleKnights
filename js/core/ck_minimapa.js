@@ -805,7 +805,7 @@
   };
 
   window.CK_MINIMAPA = {
-    Z, L, meta, ruta, abrir: () => abrir(escena), cerrar: () => cerrar(escena), grande, mini,
+    Z, L, meta, ruta, META_PASO, META_PARTE, abrir: () => abrir(escena), cerrar: () => cerrar(escena), grande, mini,
     niebla: z => escena && niebla(escena.story, z),
     descubiertos: z => escena ? (L[z] || []).filter(l => descubierto(niebla(escena.story, z), l)).map(l => l.n) : [],
     /** Qué hay en un punto del mapa: 'agua', 'pasto', 'bosque', 'camino', 'piedra', 'muro', 'madera', 'techo', 'alfombra', 'borde' (o null si la zona no tiene dibujo). */

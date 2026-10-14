@@ -68,6 +68,13 @@
         if (l.va === 'castle.' + k) l.va = zona;
       });
     });
+    // la misión también: los pasos que llevaban a la sala vieja (hablar con Eloy, el Códice, el epílogo) van a la nueva,
+    // al pie de la escalera del escritorio, que es desde donde se le habla
+    const PUNTO = { kingroom: [201, 300], library: [236, 168] };
+    [MM.META_PASO, MM.META_PARTE].forEach(tabla => tabla && Object.values(tabla).forEach(m => {
+      const k = activas.find(k => m[0] === 'castle.' + k);
+      if (k) { m[0] = kind(k) + '.main'; m[1] = PUNTO[k][0]; m[2] = PUNTO[k][1]; }
+    }));
   }
 
   // del Gran Salón a la sala nueva
