@@ -566,7 +566,7 @@ Object.assign(MainGameScene.prototype, {
    * - Game Over on 0 hearts
    */
   damagePlayer(amount) {
-    if (this.isInvulnerable || this.isDead || this.dialogOpen || this._doorTransition || this.studioOn) return;
+    if (this.isInvulnerable || this.isDead || this.isGamePaused || this.dialogOpen || this._doorTransition || this.studioOn) return;
 
     if (this._gameMode === 'campaign' && this.tryParry && this.tryParry()) return;
 

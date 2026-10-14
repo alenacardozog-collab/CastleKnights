@@ -417,6 +417,9 @@ Object.assign(MainGameScene.prototype, {
       ['game-over-modal', 'pause-modal'].forEach(id => {
         document.getElementById(id)?.classList.remove('active');
       });
+      // restarting from the pause menu: thaw the frozen world first
+      this.isGamePaused = false;
+      this.freezeWorld(false);
       if (this._gameMode === 'campaign') {
         this.startCampaign();
       } else {

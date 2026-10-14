@@ -164,6 +164,7 @@ Object.assign(MainGameScene.prototype, {
         this.damagePlayer(dmg);
       });
       if (this.obstacles) this.physics.add.collider(this.enemyShots, this.obstacles, s => s.destroy());
+      if (this.interiorObstacles) this.physics.add.collider(this.enemyShots, this.interiorObstacles, s => { if (s && s.active) s.destroy(); });
     }
     const sx = enemy.x + (enemy.flipX ? -14 : 14), sy = enemy.y + 4;
     const shot = this.enemyShots.create(sx, sy, r.key);
@@ -420,6 +421,8 @@ Object.assign(MainGameScene.prototype, {
           if (now > enemy.attackCooldown && !enemy.isAttacking) {
             enemy.isAttacking = true;
             enemy.attackCooldown = now + def.cd;
+            // each swing has a number; a hit that staggers the enemy bumps it and cancels the pending blow
+            const swing = enemy.swingId = (enemy.swingId || 0) + 1;
 
             // heavy hitters announce the blow: a red flash and a ring that closes in, then the swing
             const heavy = def.dmg > 1 && !rng, warn = heavy ? 380 : 0;
@@ -428,12 +431,12 @@ Object.assign(MainGameScene.prototype, {
               const ring = this.add.circle(enemy.x, enemy.y + 8, def.reach + 14).setStrokeStyle(2, 0xff4040, 0.9).setDepth(enemy.depth - 1);
               this.tweens.add({ targets: ring, radius: 10, alpha: 0.2, duration: warn + def.hitAt, onComplete: () => ring.destroy() });
               sfx.playAlert();
-              this.time.delayedCall(warn, () => { if (enemy.active && !enemy.isDead) { enemy.clearTint(); enemy.play(`${enemy.type}_attack1`); } });
+              this.time.delayedCall(warn, () => { if (enemy.active && !enemy.isDead && enemy.swingId === swing) { enemy.clearTint(); enemy.play(`${enemy.type}_attack1`); } });
             } else enemy.play(`${enemy.type}_attack1`);
             sfx.fx(def.sfx[0], 0.55, { minGap: 150, rate: def.sfx[3] * (0.92 + Math.random() * 0.18) });
 
             this.time.delayedCall(def.hitAt + warn, () => {
-              if (enemy.active && !enemy.isDead && !this.isDead) {
+              if (enemy.active && !enemy.isDead && !this.isDead && enemy.swingId === swing) {
                 if (rng) {
                   this.enemyShoot(enemy);
                   if (enemy.phase2) { this.enemyShoot(enemy, -0.45); this.enemyShoot(enemy, 0.45); }
