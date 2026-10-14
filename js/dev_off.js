@@ -9,6 +9,20 @@
   P.toggleDevMode = function () { };
   P.toggleStudio = function () { };
   P.openMapEditor = function () { };
+  // Las 4 casas de la aldea y sus puertas no aceptan ajustes viejos del Estudio (guardados en el navegador):
+  // si una casa quedaba agrandada o corrida, la puerta real seguía en su lugar original y no se podía entrar.
+  const aplicar0 = P.studioApplyMoves;
+  if (aplicar0) P.studioApplyMoves = function () {
+    aplicar0.apply(this, arguments);
+    try {
+      if (this.currentInterior) return;
+      (this.campaignObjectSprites || []).forEach(o => {
+        const k = (o && o.texture && o.texture.key) || '', b = o && o._st0;
+        if (!b || !(/House_Hay_/.test(k) || o._doorName)) return;
+        o.setPosition(b.x, b.y); o.setScale(b.sx, b.sy); o.setFlipX(b.flip); o.setDepth(b.depth); o.setAlpha(b.alpha);
+      });
+    } catch (e) { }
+  };
   if (window._pendingAutoStart === 'editor') window._pendingAutoStart = false;
   ['btn-dev-toggle', 'btn-menu-editor'].forEach(id => { const e = document.getElementById(id); if (e) e.remove(); });
   // fuera de la lista de teclas configurables

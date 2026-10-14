@@ -26,6 +26,7 @@
     if (s._gameMode !== 'campaign' || !c) return 'aire';
     const k = c.building.kind;
     if (k === 'castle') return CASTILLO[c.areaName] || 'piedra';
+    if (k.indexOf('ed_') === 0 && window.CK_SALA_ED && window.CK_SALA_ED[k]) return window.CK_SALA_ED[k]; // mapas del Taller que reemplazan salas viejas
     return { ruins: 'ruinas', bar: 'taberna', granero: 'granero', tienda: 'piedra', casa: 'casa' }[k] || 'casa';
   }
   function respuesta(ctx, p) {

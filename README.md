@@ -55,66 +55,53 @@ El código está separado por funcionalidad en `js/core`, `js/config`, `js/maps`
 
 ## 📁 Estructura del Proyecto
 
-La estructura del repositorio está organizada para máxima claridad y facilidad de despliegue:
-
 ```text
-prueba/
-├── assets/                  # Recursos gráficos y multimedia del juego
-│   ├── Music/               # Bandas sonoras del juego (IntroSong.mp3, villageSong.mp3)
-│   ├── UI/                  # Íconos e interfaces visuales de usuario
-│   ├── characters/          # Spritesheets de personajes (Soldado, Mago, Orco, animaciones)
-│   ├── font/                # Fuentes tipográficas medievales y pixel-art (Antiquity, Pixuf)
-│   ├── intro/               # Video cinemático de fondo y portada de introducción
-│   ├── map/                 # Texturas y tilesets del mapa de práctica
-│   ├── map2/                # Texturas ("Art/") y mapas Tiled de campaña
-│   ├── npc/                 # Personajes no jugables (NPCs) de la aldea
-│   └── raw/                 # Recursos originales de diseño (Aseprite, fuentes base)
-├── docs/                    # Documentación adicional y capturas
-│   └── screenshots/         # Capturas de pantalla de la vitrina y auditorías
-├── js/                      # Lógica principal del juego en JavaScript
-│   ├── game.js              # Arranque (el resto: js/core, js/config, js/maps, js/scene — ver docs/ESTRUCTURA.md)
-│   ├── assets_data.js       # Sprites y configuraciones embebidas en Base64
-│   ├── map2_data.js         # Datos del mapa de campaña
-│   ├── mapa1_data.js        # Estructura del mapa para modo práctica
-│   └── map_assets_base64.js # Tilesets base64 para compatibilidad offline
-├── scripts/                 # Herramientas de automatización, generación y pruebas
-├── .gitignore               # Exclusión de archivos temporales, logs y dependencias
-├── index.html               # Punto de entrada principal y contenedor del juego
-├── package.json             # Metadatos del proyecto y scripts NPM
-├── README.md                # Documentación del proyecto
-├── server.js                # Servidor HTTP local con soporte UTF-8, range requests y MIME
-└── styles.css               # Estilos de interfaz de usuario, menús y modales
+CastleKnights/
+├── index.html               # El juego: abre con doble clic (scripts clásicos, en orden)
+├── pruebas.html             # Abre el juego en modo pruebas (no guarda partida)
+├── styles.css, ui-theme.css # Estilos de menús, HUD y modales
+├── assets/                  # Imágenes, sonidos y música que usa el juego
+│   ├── Music/  audio/       # Música por zona y efectos
+│   ├── UI/  font/  intro/   # Interfaz, fuentes y video de inicio
+│   ├── characters/  npc/    # Héroes, enemigos, guardias y aldeanos
+│   ├── map/  map2/          # Mapa de práctica y aldea (Tiled)
+│   ├── castle/  ruins/  interiors/   # Castillo, ruinas y casas
+│   ├── taller/              # Piezas del taller (casa, props)
+│   └── aseprites/           # Archivos fuente de Aseprite propios
+├── js/
+│   ├── game.js              # Arranque (siempre el último script)
+│   ├── *_assets.js, *_data.js   # Arte embebido en base64 (generado, no se edita a mano)
+│   ├── config/  maps/  scene/   # Ver docs/ESTRUCTURA.md
+│   └── core/                # Sistemas sueltos, cada uno en su archivo (se quitan borrando su línea en index.html):
+│       ├── ck_luz.js  ck_clima.js  ck_nieve.js      # luz dinámica, lluvia / tormenta / nieve, nieve acumulada y ríos helados
+│       ├── ck_fauna.js  ck_detalles.js  ck_heroe_fx.js  ck_vida.js   # animales, detalles del entorno, efectos del héroe
+│       ├── ck_minimapa.js  ck_historia.js  ck_partidas.js  ck_dialogo.js   # minimapa, historia, partidas guardadas, diálogos
+│       └── ck_aldea.js  ck_camino*.js  ck_mapas_nuevos.js   # mapas hechos en el editor (AcePixelStudio)
+├── tools/                   # Generadores de mapas y empaquetado de arte (Python)
+├── scripts/                 # Verificación (npm run check) y pruebas viejas
+├── docs/                    # ESTRUCTURA.md y capturas
+├── TRASPASO.md              # Estado actual del proyecto y cómo está armado (notas de desarrollo)
+├── TRASPASO_historial.md    # Historial de cambios
+└── CAMBIOS_PENDIENTES.md    # Lo que falta hacer
 ```
+
+Lo que **no** se sube está en `.gitignore`: dependencias, temporales, y el material de origen que el juego no usa
+(`assets/raw/`, `assets/characters/nuevos/`), que queda solo en la PC.
+
+El editor de mapas, animaciones y arte está en otro repositorio: **AcePixelStudio**.
 
 ---
 
-## 🚀 Instalación y Ejecución Local
+## 🚀 Cómo jugar
 
-### Prerrequisitos
-- [Node.js](https://nodejs.org/) (versión 16 o superior recomendada)
+**Doble clic en `index.html`** (Chrome o Edge). No hace falta instalar nada: todo el arte va embebido.
 
-### Pasos para iniciar
+Con servidor local (opcional):
 
-1. Clona o descarga este repositorio:
-   ```bash
-   git clone https://github.com/TU_USUARIO/TU_REPOSITORIO.git
-   cd TU_REPOSITORIO
-   ```
-
-2. Instala las dependencias necesarias:
-   ```bash
-   npm install
-   ```
-
-3. Inicia el servidor de desarrollo local:
-   ```bash
-   npm start
-   ```
-
-4. Abre tu navegador web en:
-   ```text
-   http://localhost:3000
-   ```
+```bash
+npm install
+npm start          # http://localhost:3000
+```
 
 ---
 
@@ -123,42 +110,6 @@ prueba/
 - `npm start`: Inicia el servidor local en el puerto 3000.
 - `npm run generate:map`: Regenera el mapa de campaña `assets/map2/campaign_map.json`.
 - `npm run patch:map`: Parchea y sincroniza definiciones de tilesets en `assets/map2/mapa1.json`.
-
----
-
-## 📤 Cómo Subir este Proyecto a GitHub
-
-Sigue estos sencillos pasos desde la terminal dentro de esta carpeta:
-
-1. **Inicializa Git** (si no lo has hecho aún):
-   ```bash
-   git init
-   ```
-
-2. **Agrega todos los archivos al seguimiento:**
-   ```bash
-   git add .
-   ```
-
-3. **Crea el primer commit:**
-   ```bash
-   git commit -m "feat: estructura inicial organizada de CastleKnight con modos Campaña y Práctica"
-   ```
-
-4. **Configura la rama principal:**
-   ```bash
-   git branch -M main
-   ```
-
-5. **Conecta tu repositorio remoto de GitHub** (crea uno nuevo en github.com):
-   ```bash
-   git remote add origin https://github.com/TU_USUARIO/NOMBRE_DEL_REPO.git
-   ```
-
-6. **Sube tus cambios:**
-   ```bash
-   git push -u origin main
-   ```
 
 ---
 

@@ -1,44 +1,56 @@
-# Dependencies
+# ============================================================
+#  CastleKnight (juego) - lo que NO se sube al repositorio
+#  Lo que esta aca queda en la PC; solo no se publica.
+# ============================================================
+
+# --- Dependencias (se instalan con "npm install") ---
 node_modules/
 
-# Logs
+# --- Logs ---
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-# OS Files
+# --- Archivos del sistema ---
 .DS_Store
-.DS_Store?
 ._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
+ehthumbs.db
 desktop.ini
+$RECYCLE.BIN/
 
-# Editor & IDE directories
+# --- Editores de codigo y herramientas de IA ---
 .idea/
 .vscode/
 *.suo
-*.ntvs*
-*.njsproj
 *.sln
 *.sw?
-
-# Environment & AI tool caches
 .gemini/
 .agents/
+.claude/
+.cursor/
+.antigravity*/
 .env
-.env.local
+.env.*
 
-# Backup & Temporary files
+# --- Temporales y respaldos ---
 *.bak
 *.tmp
 *~
-tools/mapgen/*/work/
-node_modules/
+*_backup.*
 __pycache__/
+*.pyc
+tools/mapgen/*/work/
+
+# --- Material de origen que el juego NO usa ---
+# Packs de personajes descargados (el juego usa sus copias recortadas en
+# assets/characters/<personaje>/). Ademas, en un repo publico no conviene
+# redistribuir packs comprados o descargados.
+assets/raw/
+assets/characters/nuevos/
+
+# Efectos de sonido sueltos de prueba (los que usa el juego estan en assets/audio/)
+assets/sfx_*.mp3
