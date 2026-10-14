@@ -142,8 +142,38 @@ Object.assign(MainGameScene.prototype, {
       // never on top of the place where the hero arrives
       if (Phaser.Math.Distance.Between(area.x + px, area.y + py, sp.x, sp.y) < 150) return;
       const e = this.spawnEnemy(area.x + px, area.y + py - 26, type);
-      if (e) e.zone = area.key;
+      if (!e) return;
+      e.zone = area.key;
+      // area.solids does not know the walls of the editor maps: check the real bodies and nudge (or drop) the enemy
+      if (!this.placeEnemyClear(e)) e.destroy();
     });
+  },
+
+  /** Flying enemies (bats) pass over walls, water and props; everything else is stopped by them. */
+  enemyHitsTerrain(enemy) {
+    return !(enemy && enemy.def && enemy.def.flying);
+  },
+
+  /** Moves a freshly spawned enemy to the nearest spot where its feet touch no terrain. False if there is none. */
+  placeEnemyClear(e) {
+    if (!this.enemyHitsTerrain(e) || !e.body) return true;
+    const terrain = [];
+    [this.obstacles, this.waterObstacles, this.lowObstacles, this.interiorObstacles].forEach(g => g && g.getChildren().forEach(z => {
+      if (z.body && z.body.enable) terrain.push(z.body);
+    }));
+    const b = e.body, w = b.sourceWidth * e.scaleX, h = b.sourceHeight * e.scaleY;
+    const feetFree = (x, y) => {
+      const bx = x + e.scaleX * (b.offset.x - e.displayOriginX), by = y + e.scaleY * (b.offset.y - e.displayOriginY);
+      return !terrain.some(r => bx < r.right && bx + w > r.x && by < r.bottom && by + h > r.y);
+    };
+    const x0 = e.x, y0 = e.y;
+    for (let ring = 0; ring <= 6; ring++) {
+      for (let k = 0; k < (ring ? 12 : 1); k++) {
+        const a = (k / 12) * Math.PI * 2, x = x0 + Math.cos(a) * ring * 10, y = y0 + Math.sin(a) * ring * 10;
+        if (feetFree(x, y)) { e.setPosition(x, y); return true; }
+      }
+    }
+    return false;
   },
 
   clearZoneEnemies() {
