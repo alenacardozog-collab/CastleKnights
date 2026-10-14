@@ -285,7 +285,7 @@
       const t = STORY_NPCS.find(n => n.id === objetivoDe[p] && n.zone === zone);
       if (t && this.currentInterior) {
         const a = this.currentInterior.area,
-          up = zone === Z_BIBLIO ? 62 : 58;
+          up = t.marca || (zone === Z_BIBLIO ? 62 : 58); // t.marca: altura de la marca sobre el pie (gente más chica)
         this._questMark.setVisible(true).setPosition(a.x + t.x, a.y + t.y - up + Math.sin(this.time.now / 220) * 3);
       } else this._questMark.setVisible(false);
     }

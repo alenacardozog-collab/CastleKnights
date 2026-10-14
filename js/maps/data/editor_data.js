@@ -2,7 +2,7 @@
 window.EDITOR_DATA = {
  "hecho": "Taller CastleKnight",
  "v": 2,
- "guardado": 1791847802199,
+ "guardado": 1792010992919,
  "tile": 16,
  "assets": {
   "ed_mill_anim": {
@@ -1033,6 +1033,126 @@ window.EDITOR_DATA = {
   "ed_pa_camino_tierra_cruce_t16e9ey5": {
    "w": 35,
    "h": 38
+  },
+  "ed_ap_armadura_en_el_nicho": {
+   "w": 26,
+   "h": 48
+  },
+  "ed_ap_ropero": {
+   "w": 40,
+   "h": 49
+  },
+  "ed_ap_consola_con_candelabro": {
+   "w": 21,
+   "h": 72
+  },
+  "ed_ap_tocador": {
+   "w": 45,
+   "h": 51
+  },
+  "ed_ap_banqueta_del_tocador": {
+   "w": 17,
+   "h": 11
+  },
+  "ed_ap_candelabro_abajo_izq": {
+   "w": 15,
+   "h": 38
+  },
+  "ed_ap_candelabro_abajo_der": {
+   "w": 17,
+   "h": 33
+  },
+  "ed_ap_marco_de_la_puerta": {
+   "w": 54,
+   "h": 65
+  },
+  "ed_ap_mesa_con_sillas": {
+   "w": 71,
+   "h": 39
+  },
+  "ed_ap_hogar": {
+   "w": 49,
+   "h": 170
+  },
+  "ed_ap_banquito_del_hogar": {
+   "w": 20,
+   "h": 11
+  },
+  "ed_ap_asiento_de_la_ventana": {
+   "w": 82,
+   "h": 64
+  },
+  "ed_ap_candelabro_cama_der": {
+   "w": 20,
+   "h": 37
+  },
+  "ed_ap_candelabro_cama_izq": {
+   "w": 23,
+   "h": 39
+  },
+  "ed_ap_cama_con_baules": {
+   "w": 66,
+   "h": 112
+  },
+  "ed_bi_escritorio_del_maestre": {
+   "w": 72,
+   "h": 54
+  },
+  "ed_bi_libros_escritorio_izq": {
+   "w": 17,
+   "h": 20
+  },
+  "ed_bi_libros_escritorio_der": {
+   "w": 14,
+   "h": 24
+  },
+  "ed_bi_atril": {
+   "w": 35,
+   "h": 48
+  },
+  "ed_bi_globo_terraqueo": {
+   "w": 30,
+   "h": 38
+  },
+  "ed_bi_escalera_caracol": {
+   "w": 76,
+   "h": 135
+  },
+  "ed_bi_mesa_redonda": {
+   "w": 86,
+   "h": 71
+  },
+  "ed_bi_baul_der_arriba": {
+   "w": 22,
+   "h": 24
+  },
+  "ed_bi_baul_der_abajo": {
+   "w": 22,
+   "h": 36
+  },
+  "ed_bi_libros_rincon_der": {
+   "w": 18,
+   "h": 20
+  },
+  "ed_bi_baul_izq": {
+   "w": 22,
+   "h": 40
+  },
+  "ed_bi_cofre_izq": {
+   "w": 29,
+   "h": 25
+  },
+  "ed_bi_banco_con_pergaminos": {
+   "w": 54,
+   "h": 32
+  },
+  "ed_bi_libros_apilados": {
+   "w": 17,
+   "h": 26
+  },
+  "ed_bi_libros_junto_al_nicho": {
+   "w": 18,
+   "h": 32
   }
  },
  "mapas": {
@@ -9924,6 +10044,769 @@ window.EDITOR_DATA = {
    "fx": [],
    "entrada": null,
    "musica": "",
+   "sonido": []
+  },
+  "aposentos_del_rey": {
+   "nombre": "Aposentos del Rey",
+   "titulo": "Aposentos del Rey",
+   "w": 400,
+   "h": 400,
+   "suelo": "ed_suelo_aposentos_del_rey",
+   "superficie": "wood",
+   "items": [
+    [
+     "ed_ap_armadura_en_el_nicho",
+     74,
+     247,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_ropero",
+     122,
+     250,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_consola_con_candelabro",
+     61,
+     327,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_tocador",
+     117,
+     346,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_banqueta_del_tocador",
+     116,
+     357,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_candelabro_abajo_izq",
+     151,
+     353,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_candelabro_abajo_der",
+     249,
+     353,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_marco_de_la_puerta",
+     202,
+     364,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_mesa_con_sillas",
+     310,
+     349,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_hogar",
+     361,
+     293,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_banquito_del_hogar",
+     374,
+     304,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_asiento_de_la_ventana",
+     321,
+     180,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_candelabro_cama_der",
+     265,
+     162,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_candelabro_cama_izq",
+     158,
+     163,
+     0,
+     ""
+    ],
+    [
+     "ed_ap_cama_con_baules",
+     201,
+     212,
+     0,
+     ""
+    ]
+   ],
+   "cols": [
+    [
+     0,
+     0,
+     400,
+     148
+    ],
+    [
+     0,
+     148,
+     258,
+     2
+    ],
+    [
+     312,
+     148,
+     88,
+     17
+    ],
+    [
+     335,
+     165,
+     65,
+     17
+    ],
+    [
+     254,
+     150,
+     4,
+     76
+    ],
+    [
+     0,
+     150,
+     152,
+     76
+    ],
+    [
+     336,
+     182,
+     64,
+     58
+    ],
+    [
+     0,
+     226,
+     176,
+     14
+    ],
+    [
+     224,
+     226,
+     34,
+     14
+    ],
+    [
+     384,
+     240,
+     16,
+     117
+    ],
+    [
+     0,
+     240,
+     50,
+     117
+    ],
+    [
+     176,
+     300,
+     8,
+     57
+    ],
+    [
+     219,
+     300,
+     9,
+     57
+    ],
+    [
+     0,
+     357,
+     184,
+     15
+    ],
+    [
+     219,
+     357,
+     181,
+     15
+    ],
+    [
+     0,
+     372,
+     400,
+     28
+    ],
+    [
+     62,
+     238,
+     24,
+     10
+    ],
+    [
+     104,
+     236,
+     36,
+     14
+    ],
+    [
+     52,
+     262,
+     18,
+     65
+    ],
+    [
+     95,
+     328,
+     42,
+     17
+    ],
+    [
+     109,
+     348,
+     15,
+     9
+    ],
+    [
+     145,
+     346,
+     11,
+     8
+    ],
+    [
+     243,
+     346,
+     13,
+     8
+    ],
+    [
+     276,
+     333,
+     68,
+     15
+    ],
+    [
+     337,
+     128,
+     49,
+     163
+    ],
+    [
+     366,
+     296,
+     17,
+     9
+    ],
+    [
+     260,
+     155,
+     12,
+     8
+    ],
+    [
+     151,
+     155,
+     14,
+     8
+    ],
+    [
+     170,
+     140,
+     62,
+     72
+    ]
+   ],
+   "luces": [
+    {
+     "x": 158,
+     "y": 128,
+     "radio": 40,
+     "color": "#ffd27a",
+     "fuerza": 0.5,
+     "parpadeo": 1.5,
+     "forma": "punto",
+     "suave": 75
+    },
+    {
+     "x": 266,
+     "y": 124,
+     "radio": 40,
+     "color": "#ffd27a",
+     "fuerza": 0.5,
+     "parpadeo": 1.5,
+     "forma": "punto",
+     "suave": 75
+    },
+    {
+     "x": 150,
+     "y": 316,
+     "radio": 42,
+     "color": "#ffd27a",
+     "fuerza": 0.5,
+     "parpadeo": 1.5,
+     "forma": "punto",
+     "suave": 75
+    },
+    {
+     "x": 250,
+     "y": 316,
+     "radio": 42,
+     "color": "#ffd27a",
+     "fuerza": 0.5,
+     "parpadeo": 1.5,
+     "forma": "punto",
+     "suave": 75
+    },
+    {
+     "x": 61,
+     "y": 290,
+     "radio": 36,
+     "color": "#ffd27a",
+     "fuerza": 0.45,
+     "parpadeo": 1.5,
+     "forma": "punto",
+     "suave": 75
+    },
+    {
+     "x": 350,
+     "y": 252,
+     "radio": 86,
+     "color": "#ff9a3c",
+     "fuerza": 0.65,
+     "parpadeo": 3,
+     "forma": "punto",
+     "color2": "#ff4d1f",
+     "suave": 65,
+     "nucleo": 8
+    },
+    {
+     "x": 84,
+     "y": 80,
+     "radio": 26,
+     "color": "#ffd27a",
+     "fuerza": 0.4,
+     "parpadeo": 1.5,
+     "forma": "punto",
+     "suave": 75
+    }
+   ],
+   "ambiente": {
+    "color": "#2a2034",
+    "fuerza": 0.3
+   },
+   "aparicion": {
+    "x": 201,
+    "y": 342
+   },
+   "puntos": {
+    "Entrada": {
+     "x": 201,
+     "y": 342
+    },
+    "Salida al Gran Salón": {
+     "x": 201,
+     "y": 372
+    }
+   },
+   "puertas": [
+    {
+     "x": 201,
+     "y": 372,
+     "w": 34,
+     "h": 10,
+     "destino": "_aldea",
+     "llegada": "",
+     "nombre": "Salida al Gran Salón"
+    }
+   ],
+   "npcs": [],
+   "enemigos": [],
+   "fx": [],
+   "entrada": null,
+   "musica": "castle",
+   "sonido": []
+  },
+  "biblioteca": {
+   "nombre": "Biblioteca",
+   "titulo": "Biblioteca",
+   "w": 400,
+   "h": 400,
+   "suelo": "ed_suelo_biblioteca",
+   "superficie": "wood",
+   "items": [
+    [
+     "ed_bi_escritorio_del_maestre",
+     200,
+     153,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_libros_escritorio_izq",
+     158,
+     150,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_libros_escritorio_der",
+     242,
+     152,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_atril",
+     133,
+     215,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_globo_terraqueo",
+     267,
+     216,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_escalera_caracol",
+     334,
+     273,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_mesa_redonda",
+     294,
+     350,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_baul_der_arriba",
+     359,
+     296,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_baul_der_abajo",
+     359,
+     332,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_libros_rincon_der",
+     359,
+     357,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_baul_izq",
+     40,
+     347,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_cofre_izq",
+     69,
+     360,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_banco_con_pergaminos",
+     115,
+     361,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_libros_apilados",
+     150,
+     361,
+     0,
+     ""
+    ],
+    [
+     "ed_bi_libros_junto_al_nicho",
+     110,
+     310,
+     0,
+     ""
+    ]
+   ],
+   "cols": [
+    [
+     0,
+     0,
+     400,
+     112
+    ],
+    [
+     258,
+     112,
+     142,
+     14
+    ],
+    [
+     0,
+     112,
+     145,
+     14
+    ],
+    [
+     0,
+     126,
+     132,
+     14
+    ],
+    [
+     270,
+     126,
+     130,
+     14
+    ],
+    [
+     280,
+     140,
+     120,
+     18
+    ],
+    [
+     0,
+     140,
+     122,
+     18
+    ],
+    [
+     240,
+     158,
+     160,
+     34
+    ],
+    [
+     0,
+     158,
+     160,
+     34
+    ],
+    [
+     296,
+     192,
+     104,
+     8
+    ],
+    [
+     0,
+     192,
+     112,
+     8
+    ],
+    [
+     0,
+     200,
+     100,
+     106
+    ],
+    [
+     370,
+     200,
+     30,
+     158
+    ],
+    [
+     0,
+     306,
+     30,
+     52
+    ],
+    [
+     214,
+     358,
+     186,
+     42
+    ],
+    [
+     0,
+     358,
+     186,
+     42
+    ],
+    [
+     168,
+     118,
+     64,
+     34
+    ],
+    [
+     151,
+     140,
+     15,
+     9
+    ],
+    [
+     234,
+     142,
+     13,
+     9
+    ],
+    [
+     122,
+     204,
+     20,
+     11
+    ],
+    [
+     258,
+     206,
+     18,
+     10
+    ],
+    [
+     304,
+     200,
+     66,
+     68
+    ],
+    [
+     256,
+     296,
+     78,
+     50
+    ],
+    [
+     351,
+     282,
+     17,
+     13
+    ],
+    [
+     351,
+     318,
+     17,
+     13
+    ],
+    [
+     351,
+     345,
+     15,
+     11
+    ],
+    [
+     31,
+     334,
+     18,
+     13
+    ],
+    [
+     56,
+     346,
+     25,
+     13
+    ],
+    [
+     90,
+     346,
+     50,
+     14
+    ],
+    [
+     142,
+     348,
+     15,
+     12
+    ],
+    [
+     103,
+     298,
+     14,
+     11
+    ]
+   ],
+   "luces": [
+    {
+     "x": 176,
+     "y": 104,
+     "radio": 46,
+     "color": "#ffd27a",
+     "fuerza": 0.55,
+     "parpadeo": 1.5,
+     "forma": "punto",
+     "suave": 75
+    },
+    {
+     "x": 200,
+     "y": 76,
+     "radio": 96,
+     "color": "#d8e6ff",
+     "fuerza": 0.3,
+     "parpadeo": 0,
+     "forma": "sol",
+     "suave": 70,
+     "dir": 90,
+     "apertura": 18,
+     "ancho": 26
+    }
+   ],
+   "ambiente": {
+    "color": "#24223a",
+    "fuerza": 0.28
+   },
+   "aparicion": {
+    "x": 200,
+    "y": 378
+   },
+   "puntos": {
+    "Entrada": {
+     "x": 200,
+     "y": 378
+    },
+    "Salida al Gran Salón": {
+     "x": 200,
+     "y": 400
+    }
+   },
+   "puertas": [
+    {
+     "x": 200,
+     "y": 400,
+     "w": 30,
+     "h": 10,
+     "destino": "_aldea",
+     "llegada": "",
+     "nombre": "Salida al Gran Salón"
+    }
+   ],
+   "npcs": [],
+   "enemigos": [],
+   "fx": [],
+   "entrada": null,
+   "musica": "castle",
    "sonido": []
   }
  },
