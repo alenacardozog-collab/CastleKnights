@@ -54,3 +54,8 @@ assets/characters/nuevos/
 
 # Efectos de sonido sueltos de prueba (los que usa el juego estan en assets/audio/)
 assets/sfx_*.mp3
+
+# --- Notas y traspasos (quedan en la PC / D:\Editor) ---
+TRASPASO.md
+TRASPASO_historial.md
+CAMBIOS_PENDIENTES.md
