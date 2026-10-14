@@ -559,6 +559,7 @@ class MainGameScene extends Phaser.Scene {
     if (!this.gameStarted || this.isDead) return;
     this.isGamePaused = true;
     this.player.setVelocity(0, 0);
+    this.freezeWorld(true);
     const pauseModal = document.getElementById('pause-modal');
     if (pauseModal) pauseModal.classList.add('active');
   }
@@ -568,8 +569,29 @@ class MainGameScene extends Phaser.Scene {
    */
   resumeGame() {
     this.isGamePaused = false;
+    this.freezeWorld(false);
     const pauseModal = document.getElementById('pause-modal');
     if (pauseModal) pauseModal.classList.remove('active');
+  }
+
+  /**
+   * Freeze (or thaw) everything that keeps running outside update(): physics, timers, tweens and animations.
+   * Without this, enemies kept sliding and their pending blows still landed while the game was paused.
+   */
+  freezeWorld(on) {
+    if (on) {
+      if (this.physics.world) this.physics.world.pause();
+      this.time.paused = true;
+      this.tweens.pauseAll();
+      this.anims.pauseAll();
+      return;
+    }
+    this.time.paused = false;
+    this.tweens.resumeAll();
+    // a shop / journal overlay keeps its own pause until it is closed
+    if (this._overlay) return;
+    if (this.physics.world) this.physics.world.resume();
+    this.anims.resumeAll();
   }
 
   /**
@@ -581,6 +603,7 @@ class MainGameScene extends Phaser.Scene {
     if (this.destroyInteriors) this.destroyInteriors();
     this.gameStarted = false;
     this.isGamePaused = false;
+    this.freezeWorld(false);
     this.readyForCombat = false;
     this.hideReadyPrompt();
 

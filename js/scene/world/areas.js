@@ -368,6 +368,9 @@ Object.assign(MainGameScene.prototype, {
       this.interiorObstacles = this.physics.add.staticGroup();
       this._interiorCollider = this.physics.add.collider(this.player, this.interiorObstacles);
       if (this.enemies) this._interiorEnemyCollider = this.physics.add.collider(this.enemies, this.interiorObstacles);
+      // arrows and spells (the hero's and the enemies') break on the walls of these maps too
+      if (this.projectiles) this.physics.add.collider(this.projectiles, this.interiorObstacles, a => { if (a && a.active) a.destroy(); });
+      if (this.enemyShots) this.physics.add.collider(this.enemyShots, this.interiorObstacles, s => { if (s && s.active) s.destroy(); });
     }
 
     Object.keys(layout.areas).forEach((name, areaIdx) => {

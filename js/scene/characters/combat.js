@@ -1122,7 +1122,7 @@ Object.assign(MainGameScene.prototype, {
       // Play hurt animation (bosses shrug most hits off so they cannot be stun-locked)
       if (edef.boss && Math.random() < 0.7) return;
       enemy.isAttacking = false;
-      enemy.play(`${enemy.type}_hurt`);
+      enemy.swingId = (enemy.swingId || 0) + 1;   // the stagger cancels the blow it was winding up      enemy.play(`${enemy.type}_hurt`);
       enemy.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
         if (!enemy.isDead && enemy.active) {
           enemy.play(`${enemy.type}_idle`);
