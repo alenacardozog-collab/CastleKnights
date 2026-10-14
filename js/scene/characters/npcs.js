@@ -19,8 +19,17 @@ Object.assign(MainGameScene.prototype, {
       { id: 'npc3', texture: 'npc3_villager', ...base, ...fiveRows },
       { id: 'npc4', texture: 'npc4_villager', ...base, ...fiveRows }
     ];
-    // villagers added later (noble woman, old man, old woman, princess, queen, worker)
-    Object.keys(VILLAGER_SHEETS).forEach(id => npcDefs.push({ id, texture: VILLAGER_SHEETS[id], ...base, ...fiveRows }));
+    // villagers added later (noble woman, old man, old woman, princess, queen, worker, and the four of js/chars_extra_assets.js).
+    // Frames of each row of their sheets (6 columns): 5 rows = idle, walk, jump, hurt, fall; 6 rows add an attack (the
+    // peasant's pitchfork) before hurt; 7 rows (the worker) add an axe swing and a hammering.
+    const ROWS = { npc5: [4, 6, 3, 3, 4], npc6: [4, 6, 3, 3, 3], npc7: [4, 6, 3, 3, 4], npc8: [4, 6, 3, 3, 5], npc9: [4, 6, 3, 3, 5], npc10: [4, 6, 3, 4, 5, 3, 4] };
+    const NAMES = { 5: ['idle', 'walk', 'jump', 'hurt', 'damage'], 6: ['idle', 'walk', 'jump', 'action', 'hurt', 'damage'], 7: ['idle', 'walk', 'jump', 'action', 'work', 'hurt', 'damage'] };
+    Object.keys(VILLAGER_SHEETS).forEach(id => {
+      const rows = (window.CK_ANIMS_EXTRA && window.CK_ANIMS_EXTRA[VILLAGER_SHEETS[id]]) || ROWS[id] || [4, 6, 3, 3, 4];
+      const cfg = { id, texture: VILLAGER_SHEETS[id] };
+      (NAMES[rows.length] || NAMES[5]).forEach((name, r) => { cfg[name] = Array.from({ length: rows[r] }, (_, i) => r * 6 + i); });
+      npcDefs.push(cfg);
+    });
 
     npcDefs.forEach(cfg => {
       if (!this.textures.exists(cfg.texture)) return;
@@ -35,6 +44,7 @@ Object.assign(MainGameScene.prototype, {
       if (cfg.action) {
         animList.push({ key: `${cfg.id}_action`, frames: cfg.action, frameRate: 6, repeat: 0 });
       }
+      if (cfg.work) animList.push({ key: `${cfg.id}_work`, frames: cfg.work, frameRate: 7, repeat: 0 });
 
       animList.forEach(def => {
         if (this.anims.exists(def.key)) {
@@ -181,6 +191,27 @@ Object.assign(MainGameScene.prototype, {
         startWaypoint: 0,
         idleChance: 0.35,
         speed: 26
+      },
+      {
+        // Peasant with his pitchfork, working by the barn (rounds checked against the walkable grid of the village)
+        id: 'npc12', texture: 'npc12_villager', name: 'Tobi el Campesino',
+        greetings: ['Esta horquilla ya espantó más de un lobo', 'El heno no se junta solo', 'Si ves al gato del granero, avisame', 'Buena tierra, la del Roble'],
+        waypoints: [{ x: 548, y: 272 }, { x: 465, y: 280 }, { x: 446, y: 258 }, { x: 522, y: 239 }],
+        scale: 1.3, startWaypoint: 1, idleChance: 0.45, speed: 24
+      },
+      {
+        // Villager man: strolls by the tavern
+        id: 'npc13', texture: 'npc13_villager', name: 'Mateo',
+        greetings: ['¿Viste lo que cuesta la cerveza ahora?', 'Dicen que en el castillo hay banquete', 'Buen día, forastero', 'Mi primo vio luces en Brumavieja'],
+        waypoints: [{ x: 361, y: 435 }, { x: 324, y: 447 }, { x: 307, y: 404 }, { x: 352, y: 400 }],
+        scale: 1.3, startWaypoint: 0, idleChance: 0.35, speed: 28
+      },
+      {
+        // Villager woman: between the shop and the big house
+        id: 'npc14', texture: 'npc14_villager', name: 'Clara',
+        greetings: ['La tienda tiene pociones nuevas', '¡Qué lindo día para tender la ropa!', 'Cuidate en el camino al castillo', 'El panadero hoy hizo pan de nuez'],
+        waypoints: [{ x: 255, y: 272 }, { x: 211, y: 263 }, { x: 190, y: 241 }, { x: 236, y: 224 }],
+        scale: 1.3, startWaypoint: 2, idleChance: 0.4, speed: 26
       },
       {
         // 5. Old woman: keeps the fire company (same validated legs as npc1, walked the other way)
@@ -384,16 +415,30 @@ Object.assign(MainGameScene.prototype, {
           const walkKey = `${npc.id}_walk`;
           if (blocked) {
             if (this.anims.exists(idleKey)) sprite.play(idleKey, true);
+            // the hero keeps standing in the way: take a step to the side instead of waiting forever
+            npc.blockedSince = npc.blockedSince || this.time.now;
+            if (this.time.now - npc.blockedSince > 1400 && this.navIsFree) {
+              npc.blockedSince = 0;
+              const px = -dy / dist, py = dx / dist;
+              for (const k of [1, -1]) {
+                const sx = sprite.x + px * k * 16, sy = sprite.y + py * k * 16;
+                if (this.navIsFree(sx, sy)) { this.tweens.add({ targets: sprite, x: sx, y: sy, duration: 220 }); npc.nav = null; break; }
+              }
+            }
           } else {
+            npc.blockedSince = 0;
             if (this.anims.exists(walkKey)) sprite.play(walkKey, true);
-            const speed = npc.speed;
-            const vx = (dx / dist) * speed;
-            const vy = (dy / dist) * speed;
-            sprite.x += vx * (dt / 1000);
-            sprite.y += vy * (dt / 1000);
-
-            // Sheets face right: flip only when walking left
-            sprite.setFlipX(dx < 0);
+            // along a path that goes around houses, fences and water (navigation.js)
+            if (this.navFollow) {
+              const r = this.navFollow(npc.nav || (npc.nav = {}), sprite, target.x, target.y, npc.speed, dt);
+              // no way to that point from here: rest a moment and head for the next one
+              if (r === 'stuck') { npc.state = 'idle'; npc.idleTimer = 800; npc.nav = null; }
+            } else {
+              sprite.x += (dx / dist) * npc.speed * (dt / 1000);
+              sprite.y += (dy / dist) * npc.speed * (dt / 1000);
+              // Sheets face right: flip only when walking left
+              sprite.setFlipX(dx < 0);
+            }
           }
         }
       }

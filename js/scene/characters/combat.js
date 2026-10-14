@@ -1062,6 +1062,8 @@ Object.assign(MainGameScene.prototype, {
    */
   damageEnemy(enemy, amount, sourceX, sourceY) {
     if (enemy.isDead) return;
+    if (this.enemyTryBlock && this.enemyTryBlock(enemy, sourceX, sourceY)) return;   // shield up: no damage
+    if (enemy.state === 'dormant') enemy._wake = true;
     if (this._gameMode === 'campaign' && this.story && this.story.up) amount += this.story.up.atk;   // whetstones from the shop
 
     enemy.hp -= amount;

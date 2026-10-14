@@ -198,7 +198,12 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     garden.items.push({ key: 'npc3_villager', anim: 'npc3_idle', x: 210, baseY: 228, scale: 1.3 });
     garden.colliders.push({ x: 203, y: 220, w: 14, h: 8 });
     talker(garden, 210, 224, ['Las rosas de la reina, mis favoritas 🌹', 'Cuido este jardín desde niño', 'No piséis los canteros, por favor 🙏']);
-    person(garden, 'g_priest_idle', 'g_priest_idle', 112, 316, { scale: 1.2 });
+    // Brother Anselmo stays at his spot, but walks over to heal a hurt guard (and heals the hero who comes to him)
+    garden.actors.push({ type: 'walker', key: 'g_priest_idle', idle: 'g_priest_idle', walk: 'g_priest_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 22,
+      pts: [[112, 316, 1e12]] });
+    // a nobleman of the court taking the air among the flowerbeds
+    garden.actors.push({ type: 'walker', key: 'npc11_villager', idle: 'npc11_idle', walk: 'npc11_walk', scale: 1.3, speed: 20,
+      pts: [[443, 333, 2600], [360, 329, 1800], [359, 299, 3200], [428, 258, 2200]], lines: ['Las rosas de la reina huelen a gloria', 'Un caballero nunca corre… salvo de un oso', '¿Habéis visto el templete? Exquisito'] });
     talker(garden, 112, 320, ['Que la luz os guarde, viajero 🙏', 'Rezo por los que quedaron en Brumavieja', 'El rey toma el té en el templete 🫖'], 40);
     talker(garden, 400, 148, ['«A la Reina Elara, que plantó este jardín»'], 34);
     talker(garden, 180, 562, ['El reloj de sol marca la tarde ☀️'], 30);

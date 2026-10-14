@@ -16,7 +16,7 @@
   const uno = l => l[Math.floor(Math.random() * l.length)];
 
   // casa de cada aldeano (tipo de puerta de la aldea) y quiénes no se mueven de su puesto
-  const CASA = { npc1: 'casa', npc3: 'tienda', npc4: 'granero', npc7: 'casa', npc6: 'casa', npc10: 'granero' };
+  const CASA = { npc1: 'casa', npc3: 'tienda', npc4: 'granero', npc7: 'casa', npc6: 'casa', npc10: 'granero', npc12: 'granero', npc13: 'casa', npc14: 'tienda' };
   const FIJOS = ['npc2']; // el posadero atiende su puesto (abre la tienda)
   const DIALOGO = {
     huir: ['¡Auxilio!', '¡Una bestia!', '¡Corran!', '¡Socorro, socorro!', '¡A las casas!'],
@@ -294,7 +294,10 @@
         if (ene.length) {
           decir(s, npc, DIALOGO.huir, 0xfca5a5);
           const d = puertaRefugio(s, sp.x, sp.y, ene[0]);
-          if (!d || !irA(s, npc, d, 'refugio', true)) {
+          const corre = d && irA(s, npc, d, 'refugio', true);
+          // a jump of fright before running (the hurt row of the villager sheets)
+          if (corre && s.anims.exists(npc.id + '_hurt')) { v.susto = now + 360; npc.sprite.play(npc.id + '_hurt', true); }
+          if (!corre) {
             // sin camino: se aleja de la bestia
             const e = ene[0],
               a = Math.atan2(sp.y - e.y - 26, sp.x - e.x);
@@ -330,6 +333,8 @@
         const d = tipo && puertaDe(s, tipo);
         if (d && irA(s, npc, d, tipo === 'bar' ? 'taberna' : 'casa')) adentroDeDia++;
       } else if (v.modo === 'ir') {
+        if (v.susto && now < v.susto) return;
+        if (v.susto) { v.susto = 0; anim(s, npc, 'walk'); }
         if (avanzar(s, npc, dt)) entrar(s, npc);
       } else if (v.modo === 'adentro') {
         // sale cuando se cumple el tiempo; de la casa, a la mañana; del refugio, cuando no hay peligro

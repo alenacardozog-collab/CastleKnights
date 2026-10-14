@@ -110,6 +110,7 @@ npm start          # http://localhost:3000
 - `npm start`: Inicia el servidor local en el puerto 3000.
 - `npm run generate:map`: Regenera el mapa de campaña `assets/map2/campaign_map.json`.
 - `npm run patch:map`: Parchea y sincroniza definiciones de tilesets en `assets/map2/mapa1.json`.
+- `npm run build:extra`: Vuelve a generar `js/chars_extra_assets.js` (el resto del pack de personajes: ataques, bloqueos, invocaciones, el orco jinete y cuatro aldeanos) desde el pack original, que queda solo en la PC (`assets/characters/nuevos/`, ignorado por git).
 
 ---
 
