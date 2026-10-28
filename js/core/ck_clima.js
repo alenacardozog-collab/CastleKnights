@@ -51,8 +51,14 @@
     for (const k of ORDEN) if ((r -= p[k] || 0) <= 0) return k;
     return 'despejado';
   };
-  const poner = (S, tipo, aviso) => {
+  const poner = (S, tipo, aviso, forzar) => {
     if (!C[tipo] || tipo === E.tipo) return;
+    // nieve y lluvia no se pisan (24/10): de una a otra se pasa primero por nublado, hasta que la anterior terminó de caer
+    const choca = (C[tipo].lluvia > 0 && (E.act.nieve > 0.02 || E.tipo === 'nieve')) || (C[tipo].nieve > 0 && (E.act.lluvia > 0.02 || C[E.tipo].lluvia > 0));
+    if (!forzar && choca) {
+      if (E.tipo === 'nublado') return;
+      tipo = 'nublado';
+    }
     E.tipo = tipo;
     E.hasta = DURA[0] + Math.random() * (DURA[1] - DURA[0]);
     if (S && S.updateObjective && S.story) S.updateObjective();
@@ -488,6 +494,9 @@
     // transición suave hacia el clima elegido
     const meta = C[E.tipo], q = Math.min(1, dt / TRANSICION * 3);
     CAMPOS.forEach(k => (E.act[k] += (meta[k] - E.act[k]) * q));
+    // por las dudas (clima puesto a mano): mientras llueve la nieve se corta enseguida, y al revés
+    if (meta.lluvia > 0) E.act.nieve *= Math.max(0, 1 - dt / 400);
+    if (meta.nieve > 0) E.act.lluvia *= Math.max(0, 1 - dt / 400);
     E.act.amb = E.act.amb.map((a, i) => a + (meta.amb[i] - a) * q);
 
     const fuera = afuera(S);
@@ -604,7 +613,7 @@
     poner: (tipo, inmediato) => {
       const S = window.game && window.game.scene.scenes.find(x => x.startCampaign);
       E.forzado = C[tipo] ? tipo : null;
-      if (C[tipo]) { poner(S, tipo, false); if (inmediato) { Object.assign(E.act, C[tipo]); E.act.amb = C[tipo].amb.slice(); } }
+      if (C[tipo]) { poner(S, tipo, false, inmediato); if (inmediato) { Object.assign(E.act, C[tipo]); E.act.amb = C[tipo].amb.slice(); } }
     },
     estado: E,
     atenuar,

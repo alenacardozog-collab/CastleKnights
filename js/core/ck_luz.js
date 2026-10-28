@@ -88,10 +88,10 @@
         if (!h.active) return;
         const farol = h.displayWidth <= 40;
         fijas({ x: h.x, y: h.y + (farol ? 10 : 18), r: farol ? 62 : Math.max(46, h.displayWidth * 0.75), c: farol ? COL.farol : COL.ventana,
-          f: Math.min(1, al.luz) * (0.92 + 0.08 * Math.sin(t / 300 + i)) });
+          f: Math.min(1, al.luz) * (farol ? 1 : 0.97 + 0.03 * Math.sin(t * 0.0013 + i)) }); // faroles quietos, ventanas casi quietas (23/10)
       });
       if (al.fogNoche && al.fogNoche.active) {
-        const ll = 0.86 + 0.14 * Math.sin(t / 90) * Math.sin(t / 233);
+        const ll = 0.93 + 0.07 * (0.5 * Math.sin(t * 0.0021 + 0) + 0.3 * Math.sin(t * 0.0047 + 0 * 1.7) + 0.2 * Math.sin(t * 0.0089 + 0 * 2.3)); // fogata: vaivén lento e irregular (antes titilaba rápido)
         fijas({ x: al.fogNoche.x, y: al.fogNoche.y + 6, r: 150 * (0.96 + 0.04 * ll), c: COL.fogata, f: ll });
       }
     }
@@ -121,7 +121,7 @@
         if (d.final) o.once('destroy', () => agregar(s, { x: o.x, y: o.y, c: d.final.c, r: d.final.r, f: 1, ms: d.final.ms, curva: 'cae' }));
       }
       if (!d) return;
-      const ti = d.titila ? 1 - d.titila * 0.12 * (0.5 + 0.5 * Math.sin(t / 70 + o.x) * Math.sin(t / 157)) : 1;
+      const ti = d.titila ? 1 - d.titila * 0.06 * (0.5 + 0.5 * (0.5 * Math.sin(t * 0.0021 + o.x) + 0.3 * Math.sin(t * 0.0047 + o.x * 1.7) + 0.2 * Math.sin(t * 0.0089 + o.x * 2.3))) : 1; // suave y lento (23/10)
       (d.fijo ? fijas : l => out.push(l))({ x: o.x, y: o.y, r: d.r * (0.97 + 0.03 * ti), c: d.c, f: d.f * ti * (o.alpha === undefined ? 1 : o.alpha) });
     });
     // luces que suman otros archivos (luciérnagas, reflejos...): CK_LUZ.fuente(fn), fn(escena, lista)

@@ -55,9 +55,24 @@
     if (activa === null || this._ckSinRanuras) return o;
     const r = leer()[activa],
       out = Object.assign({}, o);
+    // con una ranura en uso sólo cuenta lo de esa ranura: antes, al elegir otro héroe en una partida nueva aparecían las
+    // partidas viejas de ese héroe (botón "¡CONTINUAR AVENTURA!" y "NUEVA PARTIDA (nivel…)") aunque empezaras de cero
+    Object.keys(out).forEach(h => { if (h[0] !== '_') out[h] = undefined; });
+    if (!nueva && r && r.heroe && r.story) out[r.heroe] = r.story;
     out[this.playerHero] = !nueva && r && r.heroe === this.playerHero && r.story ? r.story : undefined;
     return out;
   };
+  // desbloquear al orco guarda "todo lo de loadSave": que use lo de verdad y no borre las partidas viejas
+  const desbloquear0 = P.unlockHero;
+  if (desbloquear0)
+    P.unlockHero = function () {
+      this._ckSinRanuras = true;
+      try {
+        return desbloquear0.apply(this, arguments);
+      } finally {
+        this._ckSinRanuras = false;
+      }
+    };
   const lugarActual = s => {
     if (!s.player || !s.player.body) return null;
     const z = s.currentZoneKey(),
@@ -124,7 +139,7 @@
     });
     return r;
   };
-  const RETORNO = { camino_al_castillo: { x: 540, y: 610 }, taberna_2: { x: 454, y: 435 }, castle: { x: 540, y: 610 }, ruins: { x: 148, y: 88 } };
+  const RETORNO = { camino_al_castillo: { x: 540, y: 610 }, taberna_2: { x: 454, y: 435 }, castle: { x: 540, y: 610 }, ruins: { x: 24, y: 168 } };
   const irA = (s, l, intento) => {
     if (!s.story || s._gameMode !== 'campaign') return;
     if (s._doorTransition) {

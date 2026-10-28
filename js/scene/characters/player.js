@@ -757,7 +757,8 @@ Object.assign(MainGameScene.prototype, {
     this.player.setScale(1.20);
     this.player.body.setSize(16, 8);
     this.player.body.setOffset(42, 52);
-    if (this.currentInterior) this.setPlayerIndoorScale(true);
+    // the open-air maps (village-like, and every map made in the editor) keep the outdoor size
+    if (this.currentInterior) this.setPlayerIndoorScale(!(this.currentInterior.area && this.currentInterior.area.outdoor));
 
     // Update active hero button in DOM
     document.querySelectorAll('.hero-btn').forEach(btn => {

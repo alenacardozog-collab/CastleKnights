@@ -212,7 +212,8 @@ Object.assign(MainGameScene.prototype, {
       repeat: 4,
       callback: () => {
         if (!this.player || this.isDead) return;
-        const ghost = this.add.sprite(this.player.x, this.player.y, ghostKey);
+        // de frente / espaldas la estela usa la misma hoja que el héroe (si no, sale de costado)
+        const ghost = this.add.sprite(this.player.x, this.player.y, /_dash_(front|back)$/.test(this.player.texture.key) ? this.player.texture.key : ghostKey);
         const maxF = isWizard ? 5 : 6;
         const curFrame = this.player.anims.currentFrame ? this.player.anims.currentFrame.index - 1 : 2;
         ghost.setFrame(Math.min(Math.max(curFrame, 0), maxF));
@@ -1137,7 +1138,8 @@ Object.assign(MainGameScene.prototype, {
       // Play hurt animation (bosses shrug most hits off so they cannot be stun-locked)
       if (edef.boss && Math.random() < 0.7) return;
       enemy.isAttacking = false;
-      enemy.swingId = (enemy.swingId || 0) + 1;   // the stagger cancels the blow it was winding up      enemy.play(`${enemy.type}_hurt`);
+      enemy.swingId = (enemy.swingId || 0) + 1;   // the stagger cancels the blow it was winding up
+      enemy.play(`${enemy.type}_hurt`);
       enemy.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
         if (!enemy.isDead && enemy.active) {
           enemy.play(`${enemy.type}_idle`);

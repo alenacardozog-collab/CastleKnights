@@ -124,6 +124,7 @@
     [/posadero|cociner|panader|tabern|npc3_/i, 'jovial'], [/paje|niño|chico|npc4_/i, 'joven'],
     [/dama|boticaria|señora|mujer|campesina|npc5_/i, 'mujer']
   ];
+  S.VOCES = VOCES; // otros archivos suman voces propias (ck_voces_nuevas.js)
   function vozDe(nombre, cara) {
     const txt = (nombre || '') + ' ' + (cara || '');
     for (let i = 0; i < VOCES.length; i++) if (VOCES[i][0].test(txt)) return 'voz_' + VOCES[i][1];

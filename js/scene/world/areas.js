@@ -93,13 +93,14 @@ Object.assign(MainGameScene.prototype, {
     }
 
     if (this._gameMode === 'campaign') {
-      // North-west terrace: the old path that leaves towards the ruined village
+      // North-west road of the village: walking off the map to the west leads to the ruined village
       const N = RUINS_ROAD_EXIT;
-      if (body.center.x >= N.x0 && body.center.x <= N.x1 && body.bottom <= N.hintY) {
-        if (up && body.bottom <= N.y) { this.enterRuins(); return; }
+      if (body.center.y >= N.y0 && body.center.y <= N.y1 && body.left <= N.hint) {
+        const left = (this.keyMoveLeft && this.keyMoveLeft.isDown) || (this.cursors && this.cursors.left.isDown);
+        if (left && body.left <= 3) { this.enterRuins(); return; }
         if (this.time.now - (this._ruinsHintAt || 0) > 4000) {
           this._ruinsHintAt = this.time.now;
-          this.createFloatingText(body.center.x, body.top - 34, '▲ Sendero a las ruinas', 0xfde68a);
+          this.createFloatingText(body.center.x + 30, body.top - 34, '◀ Sendero a las ruinas', 0xfde68a);
         }
       }
       // South road of the village: walking off the map leads to the castle road
@@ -184,11 +185,12 @@ Object.assign(MainGameScene.prototype, {
     });
   },
 
-  /** Leave the village by the old north-west path and arrive at the south gate of the ruined village. */
+  /** Leave the village by the north-west road (west edge) and arrive at the south gate of the ruined village. */
   enterRuins() {
     if (this._doorTransition || this.currentInterior) return;
     const body = this.player.body;
-    this._interiorReturn = { x: body.center.x, y: RUINS_ROAD_EXIT.y + 12, zoom: this.cameras.main.zoom };
+    const ry = Math.max(RUINS_ROAD_EXIT.y0 + 10, Math.min(RUINS_ROAD_EXIT.y1 - 10, body.center.y));
+    this._interiorReturn = { x: RUINS_ROAD_EXIT.retX, y: ry, zoom: this.cameras.main.zoom };
     this.fadeTransition(() => {
       const building = this.buildInterior({ _houseName: 'Ruins', _interiorIndex: 7, _interiorKind: 'ruins' });
       const area = building.areas[building.start];
@@ -242,6 +244,9 @@ Object.assign(MainGameScene.prototype, {
    * The player is frozen (this._doorTransition) until the fade-in ends.
    */
   fadeTransition(action) {
+    // each transition has its own number: the safety timer of the previous one must not unlock this one halfway
+    // (that let a door fire twice and drop the hero inside a wall)
+    const tok = this._fadeTok = (this._fadeTok || 0) + 1;
     this._doorTransition = true;
     this.player.setVelocity(0, 0);
     const cam = this.cameras.main;
@@ -253,9 +258,9 @@ Object.assign(MainGameScene.prototype, {
         console.error('[Interior] Error en la transición:', err);
       }
       cam.fadeIn(240, 0, 0, 0);
-      cam.once(Phaser.Cameras.Scene2D.Events.FADE_IN_COMPLETE, () => { this._doorTransition = false; });
+      cam.once(Phaser.Cameras.Scene2D.Events.FADE_IN_COMPLETE, () => { if (this._fadeTok === tok) this._doorTransition = false; });
       // Safety net: never leave the player frozen if the fade event is missed
-      this.time.delayedCall(700, () => { this._doorTransition = false; });
+      this.time.delayedCall(700, () => { if (this._fadeTok === tok) this._doorTransition = false; });
     });
   },
 
@@ -328,9 +333,14 @@ Object.assign(MainGameScene.prototype, {
   placePlayerFeetAt(x, y) {
     const p = this.player;
     const b = p.body;
-    // Offset between sprite position and the top-center of its physics body
-    const dx = (b.x + b.width / 2) - p.x;
-    const dy = b.y - p.y;
+    // Offset between sprite position and the top-center of its physics body. The body only catches up with the sprite
+    // on the next physics step (and right after a reset it sits on the sprite's corner), so it is worked out from the
+    // sprite instead of read from b.x / b.y: two placements in a row (a door used twice) no longer land 50 px off.
+    if (b.updateBounds) b.updateBounds();
+    const bx = p.x + p.scaleX * (b.offset.x - p.displayOriginX);
+    const by = p.y + p.scaleY * (b.offset.y - p.displayOriginY);
+    const dx = (bx + b.width / 2) - p.x;
+    const dy = by - p.y;
     p.setPosition(x - dx, y - dy);
     p.setVelocity(0, 0);
     if (b.reset) b.reset(x - dx, y - dy);

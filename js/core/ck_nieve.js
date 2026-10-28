@@ -294,7 +294,9 @@
   const paso = (S, dt) => {
     const CL = window.CK_CLIMA, act = CL && CL.estado ? CL.estado.act : null;
     const nevando = act && act.nieve > 0.5 && CL.actual() === 'nieve';
-    A = sat(A + (nevando ? dt / JUNTA : -dt / DERRITE));
+    // la lluvia lava la nieve del piso en unos 15 s (24/10: no queda todo blanco mientras llueve)
+    const lloviendo = act && act.lluvia > 0.2;
+    A = sat(A + (nevando ? dt / JUNTA : -dt / (lloviendo ? 15000 : DERRITE)));
     const zona = S.currentZoneKey ? S.currentZoneKey() : 'village';
     const c = S.currentInterior, afuera = window.CK_AFUERA ? window.CK_AFUERA(S) : !c || c.area.outdoor;
     if (A > 0 && afuera) preparar(S, zona);

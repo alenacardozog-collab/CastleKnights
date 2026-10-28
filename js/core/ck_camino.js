@@ -238,7 +238,7 @@
     // la luz se prende cuando ya oscureció bastante y se apaga al amanecer, de a poco
     const meta = noche(s) > 0.35 ? 1 : 0;
     k.luz += (meta - k.luz) * Math.min(1, s.game.loop.delta / 900);
-    const tit = 0.92 + 0.08 * Math.sin(s.time.now / 170) * Math.sin(s.time.now / 530);
+    const tit = 0.97 + 0.03 * Math.sin(s.time.now * 0.0011); // ventana: casi quieta (23/10)
     k.vid.setAlpha(k.luz * (0.85 + 0.15 * tit));
     k.halo.setAlpha(k.luz * 0.5 * tit);
     k.charco.setAlpha(k.luz * 0.22 * tit);

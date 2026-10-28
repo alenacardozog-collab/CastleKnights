@@ -134,6 +134,7 @@
     else if (s.anims.exists(alt)) npc.sprite.play(alt, true);
   };
   const decir = (s, npc, lista, color) => {
+    if (window.CK_SIN_CARTELES) return;   // sin carteles grandes al pasar (ck_sin_carteles.js)
     const v = npc.vida;
     if (s.time.now - (v.dijo || 0) < 4500) return;
     v.dijo = s.time.now;
@@ -392,12 +393,14 @@
   ];
   const merodeador = (s, now, noche) => {
     if (!noche || !s.story || s.story.step < 1 || s.isDead || s._doorTransition || !s.enemies) {
-      s._ckMerodea = now + azar(60000, 120000);
+      s._ckMerodea = now + azar(180000, 360000);
       return;
     }
-    if (!s._ckMerodea) s._ckMerodea = now + azar(60000, 120000);
+    // más raro (pedido del dueño, 23/10): la primera vez a los 3-6 minutos de noche, después cada 6-10 y no siempre
+    if (!s._ckMerodea) s._ckMerodea = now + azar(180000, 360000);
     if (now < s._ckMerodea) return;
-    s._ckMerodea = now + azar(150000, 260000);
+    s._ckMerodea = now + azar(360000, 600000);
+    if (Math.random() < 0.5) return;
     if (s.enemies.getChildren().some(e => e.active && !e.isDead)) return;
     const pl = s.player,
       lejos = BORDES.filter(p => Phaser.Math.Distance.Between(p.x, p.y, pl.x, pl.y) > 230);
@@ -555,5 +558,5 @@
     });
     return r;
   };
-  window.CK_VIDA = { grillaAldea, camino, cercana }; // para probar
+  window.CK_VIDA = { grillaAldea, camino, cercana, grilla }; // para probar (y la taberna viva usa grilla/camino)
 })();

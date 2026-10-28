@@ -66,7 +66,7 @@
       if (pase !== 'particulas') (e.capas || []).forEach(c => {
         if (c.oculta || !this.activa(c)) return; const a = c.inicio || 0, b = c.fin === undefined || c.fin === null ? e.dur : c.fin, k = Math.min(1, Math.max(0, (this.t - a) / Math.max(0.001, b - a)));
         if (c.tipo === 'luz') {
-          const kc = cur(c.curva, k), r = Math.max(1, lerp(c.radio ? c.radio[0] : 30, c.radio ? c.radio[1] : 30, kc) * (1 + (c.parpadeo || 0) * 0.08 * Math.sin(this.t * 31 + 1.7) * Math.sin(this.t * 13))), col = hex(c.color || '#ffcc66'), f = (c.fuerza === undefined ? 0.6 : c.fuerza) * (c.apagar ? 1 - kc : 1), cx = x + (c.x || 0) + this.ox, cy = y + (c.y || 0) + this.oy;
+          const kc = cur(c.curva, k), r = Math.max(1, lerp(c.radio ? c.radio[0] : 30, c.radio ? c.radio[1] : 30, kc) * (1 + (c.parpadeo || 0) * 0.05 * (0.6 * Math.sin(this.t * 2.1 + 1.7) + 0.4 * Math.sin(this.t * 4.7)))), col = hex(c.color || '#ffcc66'), f = (c.fuerza === undefined ? 0.6 : c.fuerza) * (c.apagar ? 1 - kc : 1), cx = x + (c.x || 0) + this.ox, cy = y + (c.y || 0) + this.oy;
           const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, `rgba(${col},${f})`); g.addColorStop(0.5, `rgba(${col},${f * 0.35})`); g.addColorStop(1, `rgba(${col},0)`);
           ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(cx - r, cy - r, r * 2, r * 2); ctx.restore();
         } else if (c.tipo === 'destello') { ctx.save(); ctx.globalCompositeOperation = c.mezcla === 'normal' ? 'source-over' : 'lighter'; ctx.globalAlpha = (c.fuerza === undefined ? 0.6 : c.fuerza) * (1 - k); ctx.fillStyle = c.color || '#ffffff'; ctx.fillRect(-4096, -4096, 8192, 8192); ctx.restore(); }

@@ -292,7 +292,8 @@
     // la voz de Varek desde la capilla, antes de que salga
     if (s.step === 6 && zone === Z_RUINAS && !this._bossSpawned && !this._ckVarek && !fl(s).boss_necromancer && this.currentInterior && !this.dialogOpen) {
       const a = this.currentInterior.area;
-      if (Phaser.Math.Distance.Between(this.player.x, this.player.y, a.x + 560, a.y + 300) < 200) {
+      const cap = window.CK_CAPILLA || { x: 560, y: 300 };
+      if (Phaser.Math.Distance.Between(this.player.x, this.player.y, a.x + cap.x, a.y + cap.y) < 200) {
         this._ckVarek = true;
         this.openDialog(
           'Una voz desde la capilla',

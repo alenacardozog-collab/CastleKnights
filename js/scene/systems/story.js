@@ -457,7 +457,8 @@ Object.assign(MainGameScene.prototype, {
 
     // the chapel: with the key in hand the door gives way and its tenant comes out
     if (s.step === 6 && zone === 'ruins.village' && !this._bossSpawned && !s.flags.boss_necromancer) {
-      const a = this.currentInterior.area, cx = a.x + 560, cy = a.y + 300;
+      const cap = window.CK_CAPILLA || { x: 560, y: 300 };   // frente a la puerta de la capilla (ck_lugares_flow.js la mueve)
+      const a = this.currentInterior.area, cx = a.x + cap.x, cy = a.y + cap.y;
       if (Phaser.Math.Distance.Between(this.player.x, this.player.y, cx, cy) < 120) {
         this._bossSpawned = true;
         this.cameras.main.shake(700, 0.008);

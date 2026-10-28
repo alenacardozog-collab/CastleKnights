@@ -46,7 +46,7 @@
       { n: 'Granero', x: 553, y: 200, ic: 'casa', va: 'granero.main' },
       { n: 'Fogata', x: 272, y: 480, ic: 'fuego' },
       { n: 'Camino al Castillo', x: 540, y: 628, ic: 'flecha', d: 's', va: CAMINO },
-      { n: 'Sendero a las Ruinas', x: 148, y: 84, ic: 'flecha', d: 'n', va: RUINAS }
+      { n: 'Sendero a las Ruinas', x: 6, y: 168, ic: 'flecha', d: 'o', va: RUINAS }
     ],
     [TABERNA]: [
       { n: 'Tabernero', x: 170, y: 168, ic: 'persona' },
@@ -805,6 +805,8 @@
   };
 
   window.CK_MINIMAPA = {
+    /** Agrega o cambia el dibujo plano de una zona (lo usan los archivos que suman mapas, como ck_minimapa_salas.js). */
+    dibujo: (k, src) => { const i = new Image(); i.src = src; img[k] = i; delete pixeles[k]; },
     Z, L, meta, ruta, META_PASO, META_PARTE, abrir: () => abrir(escena), cerrar: () => cerrar(escena), grande, mini,
     niebla: z => escena && niebla(escena.story, z),
     descubiertos: z => escena ? (L[z] || []).filter(l => descubierto(niebla(escena.story, z), l)).map(l => l.n) : [],

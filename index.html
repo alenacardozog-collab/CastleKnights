@@ -934,6 +934,7 @@
   <script src="js/chars_assets.js?v=1.0"></script>
   <script src="js/chars_extra_assets.js?v=1.0"></script>
   <script src="js/hero_dir2_assets.js?v=1.1"></script>
+  <script src="js/hero_dir3_assets.js?v=2"></script>
 
   <!-- 2) Map data (positions of props and solid rectangles; editable by hand) -->
   <script src="js/maps/data/castle_maps.js?v=11.4"></script>
@@ -945,7 +946,7 @@
   <script src="js/core/keybinds.js?v=11.0"></script>
   <script src="js/core/zone_music.js?v=1.0"></script>
   <script src="js/config/map_catalog.js?v=11.0"></script>
-  <script src="js/config/world_constants.js?v=11.2"></script>
+  <script src="js/config/world_constants.js?v=11.3"></script>
   <script src="js/config/characters.js?v=12.2"></script>
 
   <!-- 4) Map layouts (one file per building / map) -->
@@ -962,15 +963,15 @@
   <script src="js/scene/assets_preload.js?v=12.0"></script>
   <script src="js/scene/world/village_map.js?v=11.0"></script>
   <script src="js/scene/world/collisions.js?v=11.1"></script>
-  <script src="js/scene/world/areas.js?v=12.1"></script>
+  <script src="js/scene/world/areas.js?v=12.3"></script>
   <script src="js/scene/world/area_effects.js?v=11.1"></script>
   <script src="js/scene/world/navigation.js?v=1.0"></script>
   <script src="js/scene/characters/npcs.js?v=12.1"></script>
-  <script src="js/scene/characters/player.js?v=12.5"></script>
-  <script src="js/scene/characters/combat.js?v=12.6"></script>
+  <script src="js/scene/characters/player.js?v=12.5b"></script>
+  <script src="js/scene/characters/combat.js?v=12.8"></script>
   <script src="js/scene/characters/enemies.js?v=12.3"></script>
   <script src="js/scene/characters/roster.js?v=12.3"></script>
-  <script src="js/scene/systems/story.js?v=12.4"></script>
+  <script src="js/scene/systems/story.js?v=12.5"></script>
   <script src="js/scene/systems/extras.js?v=1.4"></script>
   <script src="js/scene/ui/hud.js?v=12.2"></script>
   <script src="js/scene/ui/hero_select.js?v=12.2"></script>
@@ -983,31 +984,84 @@
   <!-- Modo Dev apagado. Borrar esta línea lo vuelve a habilitar. -->
   <script src="js/dev_off.js?v=2"></script>
   <!-- Taller (D:\Editor): datos y cargador. Borrar este bloque deja el juego como estaba. -->
-  <script src="js/maps/data/editor_data.js?v=salas2"></script>
-  <script src="js/maps/data/editor_assets.js?v=salas2"></script>
+  <script src="js/maps/data/editor_data.js?v=flow2"></script>
+  <script src="js/maps/data/editor_assets.js?v=flow2"></script>
   <script src="js/core/ck_dialogo.js?v=mv5vx1om"></script>
-  <script src="js/core/ck_fx.js?v=mv5vx1om"></script>
+  <script src="js/core/ck_fx.js?v=2"></script>
   <script src="js/editor_loader.js?v=mv5vx1om"></script>
   <!-- /Taller -->
   <script src="js/core/ck_rey_assets.js?v=1"></script>
   <script src="js/core/ck_mapas_nuevos.js?v=3"></script>
-  <script src="js/core/ck_vida.js?v=2"></script>
-  <script src="js/core/ck_camino.js?v=2"></script>
+  <script src="js/core/ck_vida.js?v=2d"></script>
+  <script src="js/core/ck_camino.js?v=3"></script>
   <script src="js/core/ck_camino_prof.js?v=1"></script>
-  <script src="js/core/ck_historia.js?v=2"></script>
-  <script src="js/core/ck_partidas.js?v=3"></script>
-  <script src="js/core/ck_minimapa.js?v=3"></script>
-  <script src="js/core/ck_luz.js?v=2"></script>
-  <script src="js/core/ck_clima.js?v=1"></script>
-  <script src="js/core/ck_nieve.js?v=1"></script>
+  <script src="js/core/ck_historia.js?v=3"></script>
+  <script src="js/core/ck_partidas.js?v=6"></script>
+  <script src="js/core/ck_minimapa.js?v=5"></script>
+  <script src="js/core/ck_luz.js?v=3"></script>
+  <script src="js/core/ck_clima.js?v=2"></script>
+  <script src="js/core/ck_nieve.js?v=2"></script>
   <script src="js/core/ck_fauna.js?v=1"></script>
-  <script src="js/core/ck_detalles.js?v=1"></script>
+  <script src="js/core/ck_detalles.js?v=3"></script>
   <script src="js/core/ck_heroe_fx.js?v=1"></script>
   <!-- Lugares nuevos del castillo (imágenes de Flow): Aposentos, Biblioteca, Herrería y Jardín Real. Borrar estas dos líneas vuelve a los viejos. -->
-  <script src="js/maps/data/salas_castillo_assets.js?v=2"></script>
+  <script src="js/maps/data/salas_castillo_assets.js?v=3"></script>
   <script src="js/core/ck_salas_castillo.js?v=5"></script>
+  <!-- Delante/detrás por columnas en los muebles de los mapas del Taller (el héroe ya no queda "dentro" de la imagen). Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_profundidad.js?v=1"></script>
+  <!-- Luces que se portan según lo que son (fuego, antorcha, vela, farol): sin titileo rápido. Borrar esta línea deja el titileo de antes. -->
+  <script src="js/core/ck_luces_vivas.js?v=1"></script>
+  <!-- Ataques 2 y 3 y dash de Lancent y Aby de frente y de espaldas (hojas en js/hero_dir3_assets.js). Borrar esta línea los vuelve a ver de costado. -->
+  <script src="js/core/ck_direcciones_ataques.js?v=1"></script>
+  <!-- Portón nuevo en el muro este del Patio de Armas: se llega y se vuelve del patio por el lado de donde se viene. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_porton_armas.js?v=1"></script>
+  <!-- Taberna: fuego del hogar, el fogón y el horno animado; la escalera ya no sube a la nada. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_taberna.js?v=1"></script>
+  <!-- Dibujos del minimapa para Aposentos, Biblioteca, Herrería y Jardín Real. Borrar esta línea los saca. -->
+  <script src="js/core/ck_minimapa_salas.js?v=1"></script>
+  <!-- Camino al Castillo: escalera nueva por el risco hasta el camino de abajo y un mirador. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_mirador.js?v=1"></script>
+  <!-- Puertas laterales del Gran Salón: cerradas, con aviso. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_puertas_cerradas.js?v=1"></script>
+  <!-- Sensación de golpe: chispa, números que saltan, monedas que vuelan al héroe. Borrar esta línea lo saca. -->
+  <script src="js/core/ck_golpes.js?v=2"></script>
+  <!-- Carteles de ayuda de una sola vez (moverse, pelear, poción, tiendas, mapa). Borrar esta línea los saca. -->
+  <script src="js/core/ck_ayudas.js?v=2"></script>
+  <!-- Cierre del Capítulo 1: resumen, créditos y adelanto del Capítulo 2. Borrar esta línea lo saca. -->
+  <script src="js/core/ck_fin_capitulo.js?v=1"></script>
+  <!-- Voces propias de Eloy, Ruy y Varek. Borrar esta línea les devuelve la voz genérica. -->
+  <script src="js/core/ck_voces_nuevas.js?v=1"></script>
+  <!-- Ruinas: sin casa ni árboles parados en medio del pantano. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_ruinas.js?v=1"></script>
+  <!-- Lancent: disparo con arco de frente y de espaldas, flecha hacia abajo / arriba. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_arco_vertical.js?v=1"></script>
+  <!-- Sin carteles grandes al pasar junto a aldeanos y cosas: los avisos útiles van chicos abajo. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_sin_carteles.js?v=2"></script>
+  <!-- Taberna viva: tabernero visible detrás de la barra y parroquianos que piden, toman, charlan y brindan. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_taberna_viva.js?v=1"></script>
+  <!-- Antorcha: ranura en la barra rápida, se compra, L la prende, alumbra al héroe en la oscuridad y se gasta. Borrar esta línea la saca. -->
+  <script src="js/core/ck_antorcha.js?v=1"></script>
+  <!-- Árbol de habilidades: 3 ramas por héroe, 1 punto por nivel, habilidades nuevas con R (H abre el árbol). Borrar esta línea lo saca. -->
+  <script src="js/core/ck_habilidades.js?v=2"></script>
+  <script src="js/core/ck_habilidades_epicas.js?v=2"></script>
+  <script src="js/core/ck_balance.js?v=1"></script>
+  <!-- Economía balanceada: monedas de las bestias, precios, premios de misiones, caer cuesta monedas. Borrar esta línea vuelve a lo de antes. -->
+  <script src="js/core/ck_economia.js?v=1"></script>
+  <!-- Música nueva: tema propio del Camino al Castillo (assets/Music/camino.mp3) y castillo en el Patio de armas. Borrar esta línea vuelve a lo de antes. -->
+  <script src="js/core/ck_musica_nueva.js?v=1"></script>
   <!-- Aldea redibujada (estilo del camino). Borrar esta línea vuelve a la aldea vieja. -->
-  <script src="js/core/ck_aldea.js?v=1"></script>
+  <script src="js/core/ck_aldea.js?v=2"></script>
+  <!-- Tiendas que sirven: cartel "T · Comprar" y lo que vende cada lugar (aldea, patio del castillo, Herrería). Borrar esta línea vuelve a la tienda de antes. -->
+  <script src="js/core/ck_tiendas.js?v=1"></script>
+  <script src="js/core/ck_salas_aldea.js?v=1"></script>
+  <script src="js/core/ck_lugares_flow.js?v=1"></script>
+  <!-- UI nueva (tus referencias: piedra, madera, pergamino, orbes). Borrar estas dos líneas vuelve a la UI vieja. -->
+  <script src="js/maps/data/ui_castillo_assets.js?v=1"></script>
+  <script src="js/core/ck_ui_castillo.js?v=3"></script>
+  <!-- El héroe no queda escondido detrás del HUD: la pieza que lo tapa se vuelve casi transparente. Borrar esta línea lo saca. -->
+  <script src="js/core/ck_hud_detras.js?v=1"></script>
+  <!-- Portada: título animado, "Presioná cualquier botón" bien visible (también con joystick) y recién ahí el menú. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_portada.js?v=4"></script>
   <script src="js/game.js?v=11.1"></script>
 </body>
 </html>

@@ -181,13 +181,13 @@
     const k = s._ckAldea;
     if (!k || !k.vid.active) return;
     const t = s.time.now,
-      tit = 0.92 + 0.08 * Math.sin(t / 170) * Math.sin(t / 530),
-      llama = 0.85 + 0.15 * Math.sin(t / 90) * Math.sin(t / 233);
+      tit = 0.97 + 0.03 * Math.sin(t * 0.0011), // ventanas: casi quietas (23/10)
+      llama = 0.92 + 0.08 * (0.5 * Math.sin(t * 0.0021 + 0) + 0.3 * Math.sin(t * 0.0047 + 0 * 1.7) + 0.2 * Math.sin(t * 0.0089 + 0 * 2.3)); // fogata: vaivén lento
     k.resplandor.setAlpha(0.28 + 0.12 * llama);
     const meta = noche(s) > 0.35 ? 1 : 0;
     k.luz += (meta - k.luz) * Math.min(1, s.game.loop.delta / 900);
     k.vid.setAlpha(k.luz * (0.85 + 0.15 * tit));
-    k.halos.forEach((h, i) => h.setAlpha(k.luz * 0.42 * (0.9 + 0.1 * Math.sin(t / 300 + i))));
+    k.halos.forEach((h, i) => h.setAlpha(k.luz * 0.42 * (h.displayWidth <= 40 ? 1 : 0.97 + 0.03 * Math.sin(t * 0.0013 + i))));
     k.fogNoche.setAlpha(noche(s) * 0.38 * llama);
   };
 

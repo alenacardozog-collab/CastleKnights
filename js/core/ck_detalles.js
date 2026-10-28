@@ -6,8 +6,8 @@
    - Viento visible: hojas que vuelan con las ráfagas y polvo en los caminos secos.
    - Humo en las chimeneas que ya vienen dibujadas en los mapas (`CHIMENEAS`), de noche, de mañana y con frío.
    - Agua viva: destellos sobre el agua con sol (y cerca de las luces de noche) y bruma sobre el agua al amanecer y con frío.
-   - Sombras del sol bajo los personajes: largas a la mañana (hacia el oeste) y a la tarde (hacia el este), cortas al
-     mediodía; con nubes se apagan y de noche no hay.
+   - (Apagado el 19/10) Sombras del sol bajo los personajes: a la mañana hacia el oeste y a la tarde hacia el este (siempre un poco hacia
+     abajo, desde los pies de verdad del dibujo), cortas al mediodía; con nubes se apagan y de noche no hay.
    Sacar la línea de index.html lo quita. */
 (function () {
   if (typeof MainGameScene === 'undefined') return;
@@ -15,6 +15,7 @@
   const R = (a, b) => a + Math.random() * (b - a);
   const UNO = a => a[Math.floor(Math.random() * a.length)];
   const sat = x => Math.max(0, Math.min(1, x));
+  const SOMBRAS_SOL = false; // sombras del sol bajo los personajes (ver más abajo)
 
   const zonaDe = S => (S.currentZoneKey ? S.currentZoneKey() : 'village');
   const areaDe = S => { const c = S.currentInterior; return c ? { x: c.area.x, y: c.area.y, w: c.area.w, h: c.area.h, out: window.CK_AFUERA ? window.CK_AFUERA(S) : c.area.outdoor } : { x: 0, y: 0, w: 640, h: 640, out: true }; };
@@ -237,8 +238,34 @@
       }
     }
 
-    // --- sombras del sol bajo los personajes
-    sombras(S, Z, p, cl);
+    // --- sombras del sol bajo los personajes: APAGADAS (19/10, pedido del dueño; quedan sólo las sombras del dibujo).
+    // Para volver a prenderlas, poner SOMBRAS_SOL = true.
+    if (SOMBRAS_SOL) sombras(S, Z, p, cl);
+    else if (Z.sombras.size) { Z.sombras.forEach(s => s.destroy()); Z.sombras.clear(); }
+  };
+
+  // dónde están los pies de verdad dentro del cuadro: muchas hojas de personajes (100×100) tienen mucho aire abajo, y la
+  // sombra quedaba suelta debajo del personaje. Se mide una vez por textura (la fila opaca más baja y su centro).
+  const PIES = new Map();
+  const piesDe = (S, o) => {
+    const k = o.texture.key + '|' + (o.frame ? o.frame.name : '');
+    if (PIES.has(k)) return PIES.get(k);
+    let r = null;
+    try {
+      const f = o.frame, src = f.source.image, w = f.cutWidth, h = f.cutHeight;
+      if (src && w && h && w * h < 400000) {
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        const g = c.getContext('2d'); g.drawImage(src, f.cutX, f.cutY, w, h, 0, 0, w, h);
+        const d = g.getImageData(0, 0, w, h).data;
+        for (let y = h - 1; y >= 0 && !r; y--) {
+          let x0 = -1, x1 = -1;
+          for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 40) { if (x0 < 0) x0 = x; x1 = x; }
+          if (x0 >= 0) r = { y: (y + 1 + (f.y || 0)) / f.realHeight, x: ((x0 + x1 + 1) / 2 + (f.x || 0)) / f.realWidth };
+        }
+      }
+    } catch (e) { r = null; }
+    PIES.set(k, r);
+    return r;
   };
 
   // personajes que llevan sombra: el héroe, las bestias y la gente
@@ -251,8 +278,9 @@
     const luzSol = dia && Z.A.out ? sat(Math.sin(t * Math.PI) * 3) * (1 - nubes) : 0;
     const vistos = new Set();
     if (luzSol > 0.02) {
-      const v = S.cameras.main.worldView, largo = 0.35 + 1.9 * Math.abs(sx);
-      const dx = sx, dy = -0.32, n = Math.hypot(dx, dy) || 1, ang = Math.atan2(dy, dx);
+      // 19/10: la sombra cae hacia abajo y al costado (antes subía en diagonal y cruzaba por detrás del cuerpo) y es más corta
+      const v = S.cameras.main.worldView, largo = 0.35 + 1.1 * Math.abs(sx);
+      const dx = sx, dy = 0.28, n = Math.hypot(dx, dy) || 1, ang = Math.atan2(dy, dx);
       const lista = [];
       if (S.player && S.player.active && S.player.visible) lista.push(S.player);
       S.children.list.forEach(o => {
@@ -261,10 +289,17 @@
         lista.push(o);
       });
       lista.forEach(o => {
+        let pies;
+        if (o === S.player && o.body) pies = [o.body.center.x, o.body.bottom - 1];
+        else {
+          const m = piesDe(S, o);
+          if (!m) return;                                   // sin cuadro legible: sin sombra (mejor que una suelta)
+          const izq = o.x - o.originX * o.displayWidth, arriba = o.y - o.originY * o.displayHeight;
+          pies = [izq + (o.flipX ? 1 - m.x : m.x) * o.displayWidth, arriba + m.y * o.displayHeight - 1];
+        }
         let s = Z.sombras.get(o);
         if (!s) { s = S.add.image(0, 0, 'ckd_sombra').setOrigin(0, 0.5); Z.sombras.set(o, s); }
         vistos.add(o);
-        const pies = o === S.player && o.body ? [o.body.center.x, o.body.bottom - 1] : [o.x, o.y + o.displayHeight * (1 - o.originY) - 2];
         const ancho = Math.min(26, Math.max(10, (o === S.player && o.body ? o.body.width * 1.4 : o.displayWidth * 0.45)));
         s.setPosition(pies[0] - Math.cos(ang) * ancho * 0.3, pies[1] - Math.sin(ang) * ancho * 0.3)
           .setRotation(ang).setScale(ancho * largo / 32 + ancho / 64, ancho * 0.42 / 12)

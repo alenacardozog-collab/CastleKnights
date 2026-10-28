@@ -16,7 +16,10 @@
   const hasta = async (cond, ms = 4000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (cond()) return true; await esperar(80); } return false; };
   const sonaron = desde => (S().log || []).slice(desde);
 
-  prueba('El juego arranca y la campaña empieza', async () => { const s = escena(); ok(s, 'no está la escena principal'); s.startCampaign(); ok(await hasta(() => s._gameMode === 'campaign' && s.player), 'no arrancó la campaña'); await esperar(800); });
+  prueba('El juego arranca y la campaña empieza', async () => {
+    // el botón de las pruebas aparece mientras el juego todavía carga: esperar a que exista el héroe (en una máquina lenta tarda)
+    ok(await hasta(() => escena() && escena().player, 60000), 'el juego no terminó de cargar');
+    const s = escena(); ok(s, 'no está la escena principal'); s.startCampaign(); ok(await hasta(() => s._gameMode === 'campaign' && s.player), 'no arrancó la campaña'); await esperar(800); });
   prueba('Música de la aldea (día) y de noche', async () => {
     const s = escena(); s.dayClock = 0.1 * 300000; ok(await hasta(() => s._zoneMusic === 'village'), 'de día no suena la aldea (' + s._zoneMusic + ')');
     s.dayClock = 0.7 * 300000; ok(await hasta(() => s._zoneMusic === 'noche'), 'de noche no cambia a "noche"'); s.dayClock = 0.1 * 300000; await hasta(() => s._zoneMusic === 'village');
@@ -37,9 +40,12 @@
     if (prev) z.moves[casa._sid] = prev; else delete z.moves[casa._sid]; s.studioApplyMoves();
     ok(bien, 'la casa quedó escalada o corrida: ' + casa.scaleX);
     const puerta = s.doorSprites.find(d => d._interiorKind === 'casa');
-    s.enterInterior(puerta); ok(await hasta(() => s.currentInterior && s.currentInterior.building.kind === 'casa'), 'no entró a la casa');
-    await hasta(() => !s._doorTransition); s.switchInteriorArea('upper'); ok(await hasta(() => s.currentInterior.areaName === 'upper'), 'no subió a los cuartos');
-    await hasta(() => !s._doorTransition); s.exitInterior(); ok(await hasta(() => !s.currentInterior, 6000), 'no salió'); await esperar(400);
+    s.enterInterior(puerta); ok(await hasta(() => s.currentInterior && /^(casa|ed_casa_grande)$/.test(s.currentInterior.building.kind)), 'no entró a la casa');   // la casa nueva (ck_salas_aldea.js) o la vieja
+    await hasta(() => !s._doorTransition); s.switchInteriorArea('upper'); ok(await hasta(() => s.currentInterior.areaName === 'upper' || s.currentInterior.building.kind === 'ed_casa_de_arriba'), 'no subió a los cuartos');   // el piso de arriba nuevo (ck_lugares_flow.js) o el viejo
+    await hasta(() => !s._doorTransition); s.exitInterior();
+    // del piso de arriba nuevo se baja primero a la casa grande, y de ahí se sale
+    if (await hasta(() => s.currentInterior && s.currentInterior.building.kind === 'ed_casa_grande', 3000)) { await hasta(() => !s._doorTransition); await esperar(300); s.exitInterior(); }
+    ok(await hasta(() => !s.currentInterior, 6000), 'no salió'); await esperar(400);
   });
   prueba('Taberna: puertas, música, ambiente y eco', async () => {
     const s = escena(), d = (S().log || []).length, puerta = s.children.list.find(o => o._interiorKind === 'bar'); ok(puerta, 'no encontré la puerta de la taberna');
@@ -206,9 +212,9 @@
       await irZona(s, 'ruins.village');
       await vencer(s, x => x.type === 'skeleton_great', 1); ok(await hasta(() => paso() === 6 && fl().key, 2000), 'el Gran Esqueleto no dejó la llave (paso ' + paso() + ')');
       // la capilla: al acercarse sale el Nigromante (antes habla Varek)
-      const a = s.currentInterior.area;
-      s.placePlayerFeetAt(a.x + 560, a.y + 380); await esperar(400); await cerrarDialogo(s);
-      s.placePlayerFeetAt(a.x + 560, a.y + 330); await esperar(300); await cerrarDialogo(s);
+      const a = s.currentInterior.area, cap = window.CK_CAPILLA || { x: 560, y: 300 };
+      s.placePlayerFeetAt(a.x + cap.x, a.y + cap.y + 80); await esperar(400); await cerrarDialogo(s);
+      s.placePlayerFeetAt(a.x + cap.x, a.y + cap.y + 30); await esperar(300); await cerrarDialogo(s);
       ok(await hasta(() => s.enemies.getChildren().some(x => x.active && x.type === 'necromancer'), 4000), 'el Nigromante no salió de la capilla');
       await vencer(s, x => x.type === 'necromancer', 1);
       ok(await hasta(() => paso() === 7 && fl().codice, 3000), 'vencer al Nigromante no dio el Códice ni el paso 7 (paso ' + paso() + ')');
@@ -220,15 +226,15 @@
   // salida -> [zona a la que lleva, x, y del lugar donde aparece el héroe] (los mapas del Taller, el castillo y las ruinas)
   const CONEXIONES = [
     ['ed_camino_al_castillo.main', 'puerta', 'courtyard', 'castle.courtyard', 320, 530],
-    ['castle.courtyard', 'salida', 'training', 'castle.training', 440, 446],     // ojo: portón oeste -> portón sur (así está dibujado)
+    ['castle.courtyard', 'salida', 'training', 'castle.training', 838, 274],     // portón oeste -> portón este del Patio de Armas nuevo (ck_lugares_flow.js)
     ['castle.courtyard', 'salida', 'garden', 'ed_jardin_real.main', 26, 270],   // Jardín Real nuevo (ck_salas_castillo.js)
     ['castle.courtyard', 'salida', 'road', 'ed_camino_al_castillo.main', 1189, 452],
-    ['castle.courtyard', 'puerta', 'kitchen', 'castle.kitchen', 202, 287],
+    ['castle.courtyard', 'puerta', 'kitchen', 'ed_cocina_real.main', 240, 226],   // Cocina Real nueva (ck_salas_aldea.js)
     ['castle.courtyard', 'puerta', 'armory', 'ed_herreria.main', 204, 340],    // Herrería nueva, en lugar de la Armería
     ['castle.courtyard', 'puerta', 'throne', 'ed_salon_del_trono_3.main', 240, 565],
     ['castle.training', 'salida', 'courtyard', 'castle.courtyard', 29, 312],
     ['ed_jardin_real.main', 'salida', 'outside', 'castle.courtyard', 606, 226],
-    ['castle.kitchen', 'salida', 'courtyard', 'castle.courtyard', 125, 188],
+    ['ed_cocina_real.main', 'salida', 'outside', 'castle.courtyard', 130, 182],
     ['ed_herreria.main', 'salida', 'outside', 'castle.courtyard', 510, 182],
     ['ed_salon_del_trono_3.main', 'salida', 'outside', 'castle.courtyard', 320, 192],
     ['ed_salon_del_trono_3.main', 'puerta', 'kingroom', 'ed_aposentos_del_rey.main', 200, 352],
@@ -246,8 +252,10 @@
       await esperar(150);
       const tecla = tipo === 'puerta' || e.key === 'up' ? 'up' : e.key === 'down' ? 'down' : null;
       if (tecla) K[tecla].isDown = true;
-      const fue = await hasta(() => s.currentZoneKey() !== z0 && !s._doorTransition, 4000);
+      // se suelta la tecla apenas arranca el cambio de mapa: si no, el héroe sigue caminando al llegar (en una máquina lenta, ~40 px)
+      await hasta(() => s._doorTransition || s.currentZoneKey() !== z0, 4000);
       if (tecla) K[tecla].isDown = false;
+      const fue = await hasta(() => s.currentZoneKey() !== z0 && !s._doorTransition, 4000);
       await esperar(300);
       const b = s.player.body, c = s.currentInterior, ox = c ? c.area.x : 0, oy = c ? c.area.y : 0;
       const d = Math.hypot(b.center.x - ox - x, b.bottom - oy - y);

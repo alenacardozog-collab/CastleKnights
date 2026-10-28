@@ -56,8 +56,10 @@ const RUINS_ASSET_KEYS = ['ground'].concat(Object.keys((typeof window !== 'undef
 /** Cold, overcast light over the ruined village. */
 const RUINS_DAYLIGHT = 0xc3cbdc;
 
-/** Top of the stone steps in the north-west of the village: the old path that leaves towards the ruined village. */
-const RUINS_ROAD_EXIT = { x0: 126, x1: 170, y: 76, hintY: 104 };
+/** West end of the dirt road in the north-west of the village: walking off the map to the left leads to the ruined
+ *  village (19/10: before it was at the top of the stone steps, against a wall of the redrawn village).
+ *  y0..y1 = band of the road, hint = distance from the edge for the sign, ret = where the hero comes back. */
+const RUINS_ROAD_EXIT = { y0: 140, y1: 198, hint: 28, retX: 24, retY: 168 };
 
 /** Textures generated with PixelLab (keys are loaded as 'int_<name>'). */
 const INTERIOR_ASSET_KEYS = [
