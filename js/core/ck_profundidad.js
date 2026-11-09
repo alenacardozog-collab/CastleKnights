@@ -5,7 +5,9 @@
    "detrás" y la madera le tapaba las piernas.
    Ahora cada mueble se parte en franjas verticales y cada franja ordena por dónde apoya en esas columnas (el píxel opaco
    más bajo, suavizado para que los brazos finitos de un candelabro sigan al poste). Los que apoyan derecho quedan igual.
-   No toca los datos del editor: se aplica al armar el mapa. Borrar la línea de index.html lo deshace. */
+   No toca los datos del editor: se aplica al armar el mapa. Borrar la línea de index.html lo deshace.
+   (09/11) Las piezas que vienen recortadas enteras de una capa de croma (árboles, casas: CK_PROF_ENTEROS, la pone
+   ck_campos.js) NO se parten: se ordenan enteras por su base; partidas se veían cortadas en vertical. */
 (function () {
   if (typeof INTERIOR_LAYOUTS === 'undefined') return;
   const VENTANA = 3, // columnas de cada lado que se miran para suavizar (brazos finos siguen al poste)
@@ -81,6 +83,7 @@
         const items = [];
         a.items.forEach(it => {
           const apto = it.key && /^ed_/.test(it.key) && !/^ed_suelo_|_p\d+$/.test(it.key) && !it.anim && !it.floor &&
+            !(window.CK_PROF_ENTEROS && window.CK_PROF_ENTEROS.test(it.key)) &&
             (it.scale || 1) === 1 && it.ox === undefined && it.oy === undefined && s.textures.exists(it.key);
           const p = apto && partir(s, it.key, !!it.flipX);
           if (!p) { items.push(it); return; }

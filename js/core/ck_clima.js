@@ -605,7 +605,9 @@
   });
 
   window.CK_CLIMA = {
-    C,
+    C, PESOS, DURA, // (08/11) ck_dia_noche.js los ajusta: climas más largos y más variados
+    /** Vuelve a sortear el clima ya (para forzar un cambio desde otro archivo). */
+    sortear: () => { E.hasta = 0; },
     /** Lo que usa el motor de luz: color que multiplica afuera y cuánto se prenden las luces. */
     efecto: () => ({ amb: E.act.amb, luces: E.act.luces }),
     actual: () => E.tipo,

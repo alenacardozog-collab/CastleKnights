@@ -412,7 +412,7 @@
       const [x, y] = aP(v.aqui.x, v.aqui.y);
       g.fillStyle = 'rgba(255,248,222,' + (0.22 + 0.12 * Math.sin(v.t / 200)) + ')';
       g.beginPath(); g.arc(x, y, 8 + p * 2, 0, Math.PI * 2); g.fill();
-      pon(flecha(v.ang || Math.PI / 2, p), x, y);
+      pon(flecha(typeof v.ang === "number" ? v.ang : Math.PI / 2, p), x, y);
     }
     // si la misión (o la salida hacia ella) queda fuera de la vista, una flechita en el borde
     let fx = mx, fy = my;

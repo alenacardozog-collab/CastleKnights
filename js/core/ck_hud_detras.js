@@ -6,7 +6,7 @@
 (function () {
   if (typeof MainGameScene === 'undefined') return;
   const P = MainGameScene.prototype;
-  const PIEZAS = '#ck-quick, #ck-antorcha, #ck-hab-r, .ck2-orbe, .ck2-monedas, .ck2-nombre, #ck-minimapa, #ck-objective';
+  const PIEZAS = '#ck-quick, #ck-antorcha, #ck-hab-r, .ck2-orbe, .ck2-monedas, .ck2-nombre, #ck-minimapa, #ck-objective, #ckh .med, #ckh .der';
   const MARGEN = 6;   // píxeles de pantalla alrededor del héroe
 
   const css = () => {

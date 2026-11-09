@@ -984,22 +984,22 @@
   <!-- Modo Dev apagado. Borrar esta línea lo vuelve a habilitar. -->
   <script src="js/dev_off.js?v=2"></script>
   <!-- Taller (D:\Editor): datos y cargador. Borrar este bloque deja el juego como estaba. -->
-  <script src="js/maps/data/editor_data.js?v=flow2"></script>
-  <script src="js/maps/data/editor_assets.js?v=flow2"></script>
+  <script src="js/maps/data/editor_data.js?v=campos6"></script>
+  <script src="js/maps/data/editor_assets.js?v=campos6"></script>
   <script src="js/core/ck_dialogo.js?v=mv5vx1om"></script>
   <script src="js/core/ck_fx.js?v=2"></script>
   <script src="js/editor_loader.js?v=mv5vx1om"></script>
   <!-- /Taller -->
   <script src="js/core/ck_rey_assets.js?v=1"></script>
   <script src="js/core/ck_mapas_nuevos.js?v=3"></script>
-  <script src="js/core/ck_vida.js?v=2d"></script>
+  <script src="js/core/ck_vida.js?v=2e"></script>
   <script src="js/core/ck_camino.js?v=3"></script>
   <script src="js/core/ck_camino_prof.js?v=1"></script>
   <script src="js/core/ck_historia.js?v=3"></script>
   <script src="js/core/ck_partidas.js?v=6"></script>
-  <script src="js/core/ck_minimapa.js?v=5"></script>
+  <script src="js/core/ck_minimapa.js?v=6"></script>
   <script src="js/core/ck_luz.js?v=3"></script>
-  <script src="js/core/ck_clima.js?v=2"></script>
+  <script src="js/core/ck_clima.js?v=3"></script>
   <script src="js/core/ck_nieve.js?v=2"></script>
   <script src="js/core/ck_fauna.js?v=1"></script>
   <script src="js/core/ck_detalles.js?v=3"></script>
@@ -1007,8 +1007,10 @@
   <!-- Lugares nuevos del castillo (imágenes de Flow): Aposentos, Biblioteca, Herrería y Jardín Real. Borrar estas dos líneas vuelve a los viejos. -->
   <script src="js/maps/data/salas_castillo_assets.js?v=3"></script>
   <script src="js/core/ck_salas_castillo.js?v=5"></script>
+  <!-- Recorte por diferencia (06/11): a las piezas del Taller se les quita el piso pegado (lo que ya está igual en el suelo) y se corrige su base. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_piezas_recorte.js?v=1"></script>
   <!-- Delante/detrás por columnas en los muebles de los mapas del Taller (el héroe ya no queda "dentro" de la imagen). Borrar esta línea lo deshace. -->
-  <script src="js/core/ck_profundidad.js?v=1"></script>
+  <script src="js/core/ck_profundidad.js?v=2"></script>
   <!-- Luces que se portan según lo que son (fuego, antorcha, vela, farol): sin titileo rápido. Borrar esta línea deja el titileo de antes. -->
   <script src="js/core/ck_luces_vivas.js?v=1"></script>
   <!-- Ataques 2 y 3 y dash de Lancent y Aby de frente y de espaldas (hojas en js/hero_dir3_assets.js). Borrar esta línea los vuelve a ver de costado. -->
@@ -1020,13 +1022,13 @@
   <!-- Dibujos del minimapa para Aposentos, Biblioteca, Herrería y Jardín Real. Borrar esta línea los saca. -->
   <script src="js/core/ck_minimapa_salas.js?v=1"></script>
   <!-- Camino al Castillo: escalera nueva por el risco hasta el camino de abajo y un mirador. Borrar esta línea lo deshace. -->
-  <script src="js/core/ck_mirador.js?v=1"></script>
+  <script src="js/core/ck_mirador.js?v=2"></script>
   <!-- Puertas laterales del Gran Salón: cerradas, con aviso. Borrar esta línea lo deshace. -->
   <script src="js/core/ck_puertas_cerradas.js?v=1"></script>
   <!-- Sensación de golpe: chispa, números que saltan, monedas que vuelan al héroe. Borrar esta línea lo saca. -->
   <script src="js/core/ck_golpes.js?v=2"></script>
   <!-- Carteles de ayuda de una sola vez (moverse, pelear, poción, tiendas, mapa). Borrar esta línea los saca. -->
-  <script src="js/core/ck_ayudas.js?v=2"></script>
+  <script src="js/core/ck_ayudas.js?v=3"></script>
   <!-- Cierre del Capítulo 1: resumen, créditos y adelanto del Capítulo 2. Borrar esta línea lo saca. -->
   <script src="js/core/ck_fin_capitulo.js?v=1"></script>
   <!-- Voces propias de Eloy, Ruy y Varek. Borrar esta línea les devuelve la voz genérica. -->
@@ -1042,7 +1044,7 @@
   <!-- Antorcha: ranura en la barra rápida, se compra, L la prende, alumbra al héroe en la oscuridad y se gasta. Borrar esta línea la saca. -->
   <script src="js/core/ck_antorcha.js?v=1"></script>
   <!-- Árbol de habilidades: 3 ramas por héroe, 1 punto por nivel, habilidades nuevas con R (H abre el árbol). Borrar esta línea lo saca. -->
-  <script src="js/core/ck_habilidades.js?v=2"></script>
+  <script src="js/core/ck_habilidades.js?v=3"></script>
   <script src="js/core/ck_habilidades_epicas.js?v=2"></script>
   <script src="js/core/ck_balance.js?v=1"></script>
   <!-- Economía balanceada: monedas de las bestias, precios, premios de misiones, caer cuesta monedas. Borrar esta línea vuelve a lo de antes. -->
@@ -1055,13 +1057,117 @@
   <script src="js/core/ck_tiendas.js?v=1"></script>
   <script src="js/core/ck_salas_aldea.js?v=1"></script>
   <script src="js/core/ck_lugares_flow.js?v=1"></script>
+  <!-- Capítulo 2, La Frontera Orca: 4 mapas al este del camino del castillo, historia y jefe Grushak. Borrar estas dos líneas lo saca. -->
+  <script src="js/core/ck_caudillo_assets.js?v=2"></script>
+  <script src="js/core/ck_capitulo2.js?v=2"></script>
+  <!-- Gente y escenas (02/11): escenas cortas, intro en pergaminos con arranque en la posada, aldeanos con personalidad criolla
+       (charlas, chismes, siesta, eventos y guiños) y los otros héroes como personajes. Cada línea se puede borrar por separado,
+       salvo ck_escenas.js, que la usan las otras tres. -->
+  <script src="js/core/ck_escenas.js?v=3"></script>
+  <script src="js/core/ck_intro.js?v=2"></script>
+  <script src="js/core/ck_gente.js?v=2"></script>
+  <script src="js/core/ck_heroes_npc.js?v=2"></script>
+  <!-- Cadáveres (03/11): los enemigos muertos quedan tirados unos 25 segundos. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_cadaveres.js?v=1"></script>
+  <!-- Frontera Orca viva (03/11): misma paleta en Tierras, Pueblo y Fortaleza, fuegos y estandartes animados (PixelLab), humo y chispas.
+       Borrar estas dos líneas deja los mapas como estaban. -->
+  <script src="js/core/ck_frontera_viva_arte.js?v=1"></script>
+  <script src="js/core/ck_frontera_viva.js?v=1"></script>
+  <!-- Marcar piezas mal recortadas (03/11): F9 en el juego. Herramienta del dueño; borrar esta línea la saca. -->
+  <script src="js/core/ck_marcar_piezas.js?v=2"></script>
+  <!-- Piezas arregladas (03/11): sin piso pegado y las altas enteras, según las marcas del dueño. Borrar esta línea las deja como en el Taller. -->
+  <script src="js/core/ck_piezas_arregladas.js?v=1"></script>
+  <!-- Patio del Castillo y Muralla nuevos (03/11): dibujo de Flow, gente y puertas en su lugar, paisaje con paralaje desde la muralla. Borrar estas dos líneas vuelve a los de antes. -->
+  <script src="js/core/ck_patio_muro_arte.js?v=1"></script>
+  <script src="js/core/ck_patio_muro.js?v=1"></script>
+  <!-- Frontera Orca (03/11): orcos más grandes, huargos y jabalíes de PixelLab, cerdos que andan, agua y follaje animados. Borrar estas tres líneas lo saca. -->
+  <script src="js/core/ck_frontera_bestias_arte.js?v=1"></script>
+  <script src="js/core/ck_frontera_bestias.js?v=1"></script>
+  <script src="js/core/ck_frontera_animada.js?v=1"></script>
+  <!-- Barra del héroe y habilidades equipables (03/11): íconos de PixelLab, marcos del color de cada héroe, vida y maná juntos, ranuras Q E R F. Borrar estas tres líneas vuelve a lo anterior (antes, las dos del Oso). -->
+  <script src="js/core/ck_hud_heroe_arte.js?v=2"></script>
+  <script src="js/core/ck_habilidades_equipo.js?v=1"></script>
+  <script src="js/core/ck_hud_heroe.js?v=2"></script>
+  <!-- barra con el modelo de cada héroe y retrato vivo (03/11); borrar estas 2 líneas vuelve a la barra anterior -->
+  <script src="js/core/ck_hud_tema_arte.js?v=1"></script>
+  <script src="js/core/ck_hud_tema.js?v=1"></script>
+  <!-- Cuarto héroe: Urso, el Hombre Oso (03/11). Borrar estas dos líneas lo saca del libro de héroes. -->
+  <script src="js/core/ck_heroe_oso_arte.js?v=2"></script>
+  <script src="js/core/ck_heroe_oso.js?v=6"></script>
+  <!-- Nombres de Aby y Urso con su propio diseño en el Libro de Héroes (03/11). Borrar esta línea vuelve a la letra de antes. -->
+  <script src="js/core/ck_libro_nombres.js?v=1"></script>
+  <!-- efectos de habilidades y ultis (PixelLab) y estados a la vista y ondas de partículas (03/11); borrar estas 4 líneas los saca -->
+  <script src="js/core/ck_vfx_arte.js?v=2"></script>
+  <script src="js/core/ck_vfx.js?v=2"></script>
+  <script src="js/core/ck_ondas.js?v=1"></script>
+  <script src="js/core/ck_estados.js?v=2"></script>
+  <!-- sonidos de habilidades, ultis, estados y regiones (ElevenLabs, 03/11); borrar estas 2 líneas los saca -->
+  <script src="js/core/ck_sonidos_hab_arte.js?v=1"></script>
+  <script src="js/core/ck_sonidos_hab.js?v=1"></script>
+  <!-- hitboxes de verdad: golpes hasta la punta del arma y proyectiles contra el cuerpo (06/11); borrar la línea vuelve a lo de antes -->
+  <script src="js/core/ck_hitboxes.js?v=1"></script>
+  <!-- daño inicial medido (06/11): la ráfaga de Horos a 1,5× y el golpe de tierra de Gork cuesta aguante; borrar la línea vuelve a lo de antes -->
+  <script src="js/core/ck_balance_dano.js?v=1"></script>
+  <!-- economía del capítulo 2 (06/11): Tomás vende desde su carreta (y la 3.ª piedra y el 2.º amuleto); borrar la línea vuelve a lo de antes -->
+  <script src="js/core/ck_economia_frontera.js?v=1"></script>
+  <!-- equipo por capítulo (07/11): espada, armadura y talismán con 3 niveles; borrar la línea lo saca -->
+  <script src="js/core/ck_equipo_niveles.js?v=1"></script>
+  <!-- vasijas y cajones que se rompen, 16 cofres escondidos con contador en el diario (07/11); borrar estas dos líneas lo saca -->
+  <script src="js/core/ck_rompibles_arte.js?v=2"></script>
+  <script src="js/core/ck_rompibles.js?v=3"></script>
+  <!-- trampas (08/11): cajones que explotan, vasijas y cofres que envenenan. Borrar la línea las saca -->
+  <script src="js/core/ck_trampas.js?v=1"></script>
+  <!-- bestias con roles (embestida, escudo, tirador, aullido) y jefes con fases (07/11); borrar cada línea lo saca -->
+  <script src="js/core/ck_roles.js?v=1"></script>
+  <script src="js/core/ck_jefes_fases.js?v=1"></script>
+  <!-- vida más fina (07/11): el daño a las bestias en cuartos de corazón, números en puntos; va después de todo lo que pega. Borrar la línea vuelve a lo de antes -->
+  <script src="js/core/ck_vida_fina.js?v=1"></script>
+  <!-- dificultad elegible en Opciones y mando (07/11); borrar cada línea lo saca -->
+  <script src="js/core/ck_dificultad.js?v=1"></script>
+  <script src="js/core/ck_gamepad.js?v=1"></script>
+  <!-- oscuridad como sistema (07/11): zonas oscuras, bestias en la sombra, braseros seguros; lista para la región final. Borrar la línea lo saca -->
+  <script src="js/core/ck_oscuridad.js?v=1"></script>
+  <!-- tabla de conexiones para los mapas nuevos (07/11): CK_CONEXIONES.unir(mapa, borde, otro); borrar la línea la saca -->
+  <script src="js/core/ck_conexiones.js?v=1"></script>
+  <!-- (08/11) día y noche de 10 min cada uno, luna llena, clima que pega en la pelea, gente que se guarda de la lluvia, ojos rojos/limos/antorchas de noche, pantallas de carga, monolito del claro. Cada línea se borra sola -->
+  <script src="js/core/ck_dia_noche.js?v=1"></script>
+  <script src="js/core/ck_clima_efectos.js?v=1"></script>
+  <script src="js/core/ck_lluvia_gente.js?v=1"></script>
+  <script src="js/core/ck_noche_viva.js?v=1"></script>
+  <!-- fondos de las pantallas de carga (08/11): imágenes de Flow en píxel y su animación por código. Borrar estas dos líneas vuelve a la pantalla oscura -->
+  <script src="js/core/ck_fondo_vivo.js?v=1"></script>
+  <script src="js/core/ck_pantalla_carga_arte.js?v=1"></script>
+  <script src="js/core/ck_carga_videos.js?v=2"></script>
+  <script src="js/core/ck_pantalla_carga.js?v=6"></script>
+  <script src="js/core/ck_monolito_arte.js?v=1"></script>
+  <script src="js/core/ck_monolito.js?v=1"></script>
+  <!-- (09/11) Campos del Roble: en el camino del oeste de la aldea a Brumavieja, con vida y pistas. Borrar la línea vuelve el camino directo a las ruinas -->
+  <script src="js/core/ck_campos.js?v=4"></script>
   <!-- UI nueva (tus referencias: piedra, madera, pergamino, orbes). Borrar estas dos líneas vuelve a la UI vieja. -->
   <script src="js/maps/data/ui_castillo_assets.js?v=1"></script>
   <script src="js/core/ck_ui_castillo.js?v=3"></script>
+  <!-- Pausa pareja: retrato del libro en el arco, íconos y botones iguales. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_pausa2.js?v=1"></script>
   <!-- El héroe no queda escondido detrás del HUD: la pieza que lo tapa se vuelve casi transparente. Borrar esta línea lo saca. -->
-  <script src="js/core/ck_hud_detras.js?v=1"></script>
+  <script src="js/core/ck_hud_detras.js?v=2"></script>
   <!-- Portada: título animado, "Presioná cualquier botón" bien visible (también con joystick) y recién ahí el menú. Borrar esta línea lo deshace. -->
   <script src="js/core/ck_portada.js?v=4"></script>
+  <!-- (10/11) Dash más corto (unos 90 px en vez de 150). Borrar esta línea lo deja como antes. -->
+  <script src="js/core/ck_dash_corto.js?v=1"></script>
+  <!-- (10/11) Monedas de bronce, plata y oro (100 = 1 de la siguiente) y mejores premios en los lugares difíciles. Borrar esta línea lo deshace. -->
+  <script src="js/core/ck_monedas.js?v=1"></script>
+  <!-- (10/11) Globos de diálogo nuevos: burbuja con colita que apunta al que habla, aparece con un "pop" y letra por letra. Borrar esta línea vuelve al globito de antes. -->
+  <script src="js/core/ck_globos.js?v=1"></script>
+  <!-- (10/11) Partidas nuevas: al empezar sólo caminar y golpe básico; correr y dash en el entrenamiento, la parada, el golpe fuerte y las ranuras por nivel; al principio sólo murciélagos y limos. Borrar esta línea lo saca. -->
+  <script src="js/core/ck_progreso.js?v=1"></script>
+  <!-- (10/11) Prólogo nuevo: festejo en la taberna, Pipo (el paje) te despierta y te lleva al Rey, y el entrenamiento con Bruno que da el dash. Borrar esta línea vuelve al arranque de antes. -->
+  <script src="js/core/ck_prologo.js?v=1"></script>
+  <!-- (10/11) Primera misión: los tres aldeanos desaparecidos en los Campos del Roble; el Nigromante deja la llave de la Frontera. Borrar esta línea lo saca. -->
+  <script src="js/core/ck_desaparecidos.js?v=1"></script>
+  <!-- (10/11) La Frontera cerrada por soldados hasta terminar el Capítulo 1; del otro lado, soldados caídos y barricadas. Borrar esta línea abre el paso como antes. -->
+  <script src="js/core/ck_frontera_cerrada.js?v=1"></script>
+  <!-- (10/11) 14 notas escondidas con pistas de la historia (T para leer; el diario las cuenta). Borrar esta línea las saca. -->
+  <script src="js/core/ck_notas.js?v=1"></script>
   <script src="js/game.js?v=11.1"></script>
 </body>
 </html>

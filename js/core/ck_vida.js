@@ -558,5 +558,5 @@
     });
     return r;
   };
-  window.CK_VIDA = { grillaAldea, camino, cercana, grilla }; // para probar (y la taberna viva usa grilla/camino)
+  window.CK_VIDA = { grillaAldea, camino, cercana, grilla, irA, puertaDe, CASA }; // para probar (la taberna viva usa grilla/camino; ck_gente.js, irA para la siesta)
 })();

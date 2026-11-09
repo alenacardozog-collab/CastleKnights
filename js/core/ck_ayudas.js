@@ -60,7 +60,7 @@
   P.update = function (time) {
     const r = u0.apply(this, arguments);
     try {
-      if (this._gameMode !== 'campaign' || !this.story || !this.player || this.dialogOpen || this._overlay || this._doorTransition) return r;
+      if (this._gameMode !== 'campaign' || !this.story || !this.player || this.dialogOpen || this._overlay || this._doorTransition || this._ckEscena) return r;   // _ckEscena: intro y escenas (ck_escenas.js)
       const H = this.story.flags && this.story.flags.ayudas;
       this._ckAyT = this._ckAyT || time;
       if (time - this._ckAyT > 2500 && !(H && H.mover)) ayudar(this, 'mover');

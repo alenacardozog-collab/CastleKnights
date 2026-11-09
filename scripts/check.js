@@ -23,7 +23,9 @@ dupTags.forEach(s => err(`index.html loads ${s} twice`));
 const walk = d => fs.readdirSync(ROOT + d, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(d + '/' + e.name) : e.name.endsWith('.js') ? [d + '/' + e.name] : []);
 // optional data files that a loaded script injects itself with document.write('<script src="...">') (the Taller loader does this)
 const dynamic = scripts.filter(exists).flatMap(s => [...read(s).matchAll(/document\.write\(\s*['"]<script src="([^"?]+)/g)].map(m => m[1]));
-walk('js').forEach(f => { if (!scripts.includes(f) && !dynamic.includes(f)) err(`${f} is not loaded by index.html (add its <script> or delete the file)`); });
+// folders whose files a loaded script fetches by itself later, named as a 'js/.../' string (ck_carga_videos.js does this)
+const dynamicDirs = scripts.filter(exists).flatMap(s => [...read(s).matchAll(/['"](js\/[\w\/-]+\/)['"]/g)].map(m => m[1]));
+walk('js').forEach(f => { if (!scripts.includes(f) && !dynamic.includes(f) && !dynamicDirs.some(d => f.startsWith(d))) err(`${f} is not loaded by index.html (add its <script> or delete the file)`); });
 const order = (a, b, why) => { const i = scripts.findIndex(s => a.test(s)), j = scripts.findIndex(s => b.test(s)); if (i > -1 && j > -1 && i > j) err(`script order: ${why}`); };
 order(/maps\/data\//, /config\/world_constants/, 'js/maps/data/* must load before js/config/world_constants.js');
 order(/maps\/layout_kit/, /maps\/(interiors\/|castle|ruins)/, 'js/maps/layout_kit.js must load before the layouts');

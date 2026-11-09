@@ -571,9 +571,14 @@
     }
   };
   P.ckHabilidadR = function () {
+    const H = hab(this), id = H && H.activa[this.playerHero];
+    return this.ckUsarHabilidad(id, 'R');
+  };
+  // usar una habilidad aprendida por su id (R, o las ranuras Q E R F de ck_habilidades_equipo.js)
+  P.ckUsarHabilidad = function (id, tecla) {
     if (!activo(this) || !this.gameStarted || this.combatLocked() || this.isDead || this.isAttacking || this.isDashing || this.isSpinning || this._overlay || this.isGamePaused) return;
-    const H = hab(this), h = this.playerHero, id = H && H.activa[h];
-    if (!id || !rg(this, id) || !HACER[id]) { if (window.CK_SIN_CARTELES_API) window.CK_SIN_CARTELES_API.nota('R: todavía no tenés una habilidad nueva (árbol de habilidades: H)'); return; }
+    const h = this.playerHero;
+    if (!id || !rg(this, id) || !HACER[id] || !ACTIVAS[id]) { if (window.CK_SIN_CARTELES_API) window.CK_SIN_CARTELES_API.nota((tecla || 'R') + ': todavía no tenés una habilidad ahí (árbol de habilidades: H)'); return; }
     const A = ACTIVAS[id], now = this.time.now;
     this._ckCd = this._ckCd || {};
     if (now < (this._ckCd[id] || 0)) return;
@@ -593,6 +598,7 @@
   // ================================================================== íconos (por código, 16x16)
   const ICONOS = {};
   const icono = (k, col) => {
+    if (window.CK_ICONOS_HEROE && window.CK_ICONOS_HEROE[k]) return window.CK_ICONOS_HEROE[k];
     const key = k + col;
     if (ICONOS[key]) return ICONOS[key];
     const c = document.createElement('canvas'); c.width = 16; c.height = 16;
@@ -645,7 +651,7 @@
 #ck-habilidades h3{margin:2px 0 0!important}
 #ck-habilidades .hb-cab{display:flex;gap:18px;align-items:center;justify-content:center;font-family:var(--ck2-f,Grenze,serif);font-size:17px;color:#4a3020;margin:2px 0 8px}
 #ck-habilidades .hb-cab b{color:#7a2418;font-size:21px}
-#ck-habilidades .hb-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%}
+#ck-habilidades .hb-cols{display:grid;grid-template-columns:repeat(var(--ramas,3),1fr);gap:12px;width:100%}
 #ck-habilidades .hb-rama{display:flex;flex-direction:column;align-items:center;gap:0;padding:4px 4px 8px;background:rgba(120,80,40,.10);border:2px solid rgba(90,58,30,.35)}
 #ck-habilidades .hb-tit{font-family:var(--ck2-f,Grenze,serif);font-weight:700;font-size:15px;color:#2b1a10;padding:2px 30px 2px 12px;margin:2px 0 6px;
   border:solid transparent;border-width:8px 40px 8px 16px;border-image:${u('cinta')} 4 20 4 8 fill / 8px 40px 8px 16px stretch;image-rendering:pixelated;white-space:nowrap}
@@ -691,6 +697,7 @@
     win.classList.toggle('practica', pr);
     win.querySelector('.hb-cab').innerHTML = pr ? `<span>${A.nombre} · <b>práctica</b></span><span>Elegí lo que quieras: sin puntos ni candados</span>`
       : `<span>${A.nombre} · nivel ${S.story.level}</span><span>Puntos para repartir: <b>${pts}</b></span>`;
+    win.querySelector('.hb-cols').style.setProperty('--ramas', A.ramas.length);
     win.querySelector('.hb-cols').innerHTML = A.ramas.map((rama, ri) => {
       const g = gastados(S, h, rama.id);
       return `<div class="hb-rama"><div class="hb-tit">${rama.nombre}<small>(${g})</small></div>` + rama.nodos.map((n, ni) => {
@@ -906,5 +913,6 @@
       return r;
     };
 
-  window.CK_HABILIDADES = { ARBOL, ACTIVAS, rg, puntos, gastados, subir, aplicar, icono, activo, practica, bajar, llenarRama, vaciar };
+  window.CK_HABILIDADES = { ARBOL, ACTIVAS, HACER, rg, puntos, gastados, subir, aplicar, icono, activo, practica, bajar, llenarRama, vaciar,
+    hab, nodo, guardar, texturas, disparo, explosion, brasas, dirV, rotarDir, pintar: S => pintar(S), pintarRanura: S => pintarRanura(S) };
 })();

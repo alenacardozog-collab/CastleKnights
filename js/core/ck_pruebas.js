@@ -221,7 +221,17 @@
       await hablar(s, 'eloy'); ok(fl().codice_ok, 'Eloy no recibió el Códice');
       await hablar(s, 'king'); ok(paso() === 8, 'el Rey no cerró el capítulo (paso ' + paso() + ')');
       await hablar(s, 'eloy'); ok(fl().epilogo, 'Eloy no dio el epílogo');
-    } finally { clearInterval(guardia); s.isInvulnerable = false; s.clearZoneEnemies(); }
+      // al rato sale la pantalla "Capítulo 1 completo" (ck_fin_capitulo.js); "Seguir jugando" la cierra
+      if (window.CK_FIN_CAPITULO) {
+        ok(await hasta(() => s._overlay === 'fin', 8000), 'no apareció la pantalla de Capítulo 1 completo');
+        document.querySelector('#ck-fin button').click();
+        ok(await hasta(() => !s._overlay, 2000), '"Seguir jugando" no cerró la pantalla del fin');
+      }
+    } finally {
+      clearInterval(guardia); s.isInvulnerable = false; s.clearZoneEnemies();
+      // si quedó abierta (una prueba que falló a mitad), que no frene a las que siguen
+      const fin = document.querySelector('#ck-fin button'); if (s._overlay === 'fin' && fin) fin.click();
+    }
   }));
   // salida -> [zona a la que lleva, x, y del lugar donde aparece el héroe] (los mapas del Taller, el castillo y las ruinas)
   const CONEXIONES = [
@@ -243,7 +253,8 @@
   prueba('Conexiones entre mapas: cada salida lleva adonde debe y el héroe aparece en su lugar', async () => conGuardadoIntacto(async () => {
     const s = escena(), K = s.cursors, mal = [];
     if (!s.story) { s.startCampaign(); await hasta(() => s.story && s.player, 4000); await esperar(800); }
-    for (const [desde, tipo, to, llega, x, y] of CONEXIONES) {
+    // con el patio y la muralla nuevos (ck_patio_muro.js) las llegadas al patio cambian de lugar y se suman las de la muralla
+    for (const [desde, tipo, to, llega, x, y] of (window.CK_PATIO_MURO ? CK_PATIO_MURO.conexiones(CONEXIONES) : CONEXIONES)) {
       await irZona(s, desde); await cerrarDialogo(s);
       const a = s.currentInterior.area, z0 = s.currentZoneKey();
       const e = tipo === 'salida' ? (a.exits || []).find(v => v.to === to) : (a.portals || []).find(v => v.to === to);
