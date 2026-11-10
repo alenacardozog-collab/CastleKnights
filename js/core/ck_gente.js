@@ -279,7 +279,7 @@
     ed_biblioteca: [
       { x: 132, y: 240, r: 26, lines: ['En el atril, «Tratado de yuyos y otras hierbas», de Doña Eulalia. En el margen, con otra letra: «La peperina no cura el mal de ojo. —E.»'] }],
     ed_bosque_de_la_frontera: [
-      { x: 830, y: 470, r: 30, lines: ['Al pie del tocón alguien dejó una botella con agua y una cinta roja. «Para que el que pase no tenga sed», dice un papelito.'] }],
+      { x: 338, y: 584, r: 30, lines: ['Al pie del tocón alguien dejó una botella con agua y una cinta roja. «Para que el que pase no tenga sed», dice un papelito.'] }],
     ed_pueblo_orco: [
       { x: 510, y: 325, r: 30, lines: ['Al lado del fogón quedó tirada una taba hecha con hueso de vaca. Los orcos chicos la juegan como los paisanos.'] }]
   };

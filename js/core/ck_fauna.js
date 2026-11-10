@@ -49,6 +49,16 @@
     }
     return null;
   };
+  // (10/11) los bichos de a pie sólo donde se puede pisar (fuera de casas, árboles, muros y agua: la grilla de navegación)
+  const pisa = (S, x, y) => { try { return !S.navIsFree || S.navIsFree(x, y); } catch (e) { return true; } };
+  /** El punto pisable más cercano (los lugares fijos del gato y las gallinas pueden haber quedado contra una pared). */
+  const libreCerca = (S, p) => {
+    try {
+      if (!S.navGrid || pisa(S, p[0], p[1])) return p;
+      const G = S.navGrid(false), c = S.navNearestCell(G, p[0], p[1], 8), k = typeof NAV_CELL !== 'undefined' ? NAV_CELL : 8;
+      return c ? [G.x + c[0] * k + k / 2, G.y + c[1] * k + k / 2] : p;
+    } catch (e) { return p; }
+  };
   const momento = S => {
     const p = S.dayPhase ? S.dayPhase() : 0.2;
     const noche = p > 0.6 && p < 0.94, oscurece = p > 0.5 && p < 0.97 && !(p > 0.62 && p < 0.9);
@@ -255,12 +265,13 @@
       // bandadas: cant = cuántas bandadas
       for (let b = 0; b < cant; b++) {
         const sp0 = tipo === 'palomas' ? 'paloma' : tipo === 'cuervos' ? 'cuervo' : UNO(['gorrion', 'petirrojo', 'azulejo', 'gorrion']);
-        const pt = buscar(zona, A, (t) => tipo === 'aves' ? t === 'pasto' || t === 'camino' : t && t !== 'agua' && t !== 'techo' && t !== 'muro' && t !== 'borde');
+        const pt = buscar(zona, A, (t, x, y) => (tipo === 'aves' ? t === 'pasto' || t === 'camino' : t && t !== 'agua' && t !== 'techo' && t !== 'muro' && t !== 'borde') && pisa(S, A.x + x, A.y + y), 160);
         if (!pt) continue;
         const banda = { tipo, sp0, x: pt[0], y: pt[1], estado: 'suelo', vuelve: 0, miembros: [] };
         const n = tipo === 'cuervos' ? RI(2, 4) : RI(3, 5);
         for (let i = 0; i < n; i++) {
-          const [x, y] = mundo(pt[0] + R(-16, 16), pt[1] + R(-10, 10));
+          let [x, y] = mundo(pt[0] + R(-16, 16), pt[1] + R(-10, 10));
+          if (!pisa(S, x, y)) [x, y] = mundo(pt[0], pt[1]);
           const s = S.add.sprite(x, y, texAve(S, sp0), 0).setOrigin(0.5, 1).setScale(sp0 === 'paloma' || sp0 === 'cuervo' ? 1.7 : 1.5).setDepth(y).setFlipX(Math.random() < 0.5);
           banda.miembros.push({ s, t: R(300, 2000), vx: 0, vy: 0 });
         }
@@ -290,19 +301,20 @@
       }
     } else if (tipo === 'ranas') {
       for (let i = 0; i < cant; i++) {
-        const pt = buscar(zona, A, (t, x, y) => (t === 'pasto' || t === 'piedra' || t === 'camino') && juntoAlAgua(zona, x, y, 14), 220); if (!pt) continue;
+        const pt = buscar(zona, A, (t, x, y) => (t === 'pasto' || t === 'piedra' || t === 'camino') && juntoAlAgua(zona, x, y, 14) && pisa(S, A.x + x, A.y + y), 300); if (!pt) continue;
         const [x, y] = mundo(pt[0], pt[1]);
         const s = S.add.sprite(x, y, texRana(S), 0).setOrigin(0.5, 1).setScale(1.3).setDepth(y).setFlipX(Math.random() < 0.5);
         out.push({ tipo, s, estado: 'quieta', croa: R(2000, 9000), t: 0 });
       }
     } else if (tipo === 'gallinas' && zona === 'village') {
       for (let i = 0; i < cant; i++) {
-        const r = UNO(ALDEA.corral), x = R(r[0], r[0] + r[2]), y = R(r[1], r[1] + r[3]);
+        const r = UNO(ALDEA.corral); let x = R(r[0], r[0] + r[2]), y = R(r[1], r[1] + r[3]);
+        for (let k = 0; k < 20 && !pisa(S, x, y); k++) { x = R(r[0], r[0] + r[2]); y = R(r[1], r[1] + r[3]); }
         const s = S.add.sprite(x, y, texGallina(S, i % 2 === 1), 0).setOrigin(0.5, 1).setScale(1.3).setDepth(y);
         out.push({ tipo, s, corral: r, estado: 'pica', t: R(500, 2000), vx: 0, vy: 0, ani: 0 });
       }
     } else if (tipo === 'gato' && zona === 'village') {
-      const [x, y] = UNO(ALDEA.gatoSol);
+      const [x, y] = libreCerca(S, UNO(ALDEA.gatoSol));
       const s = S.add.sprite(x, y, texGato(S), 0).setOrigin(0.5, 1).setScale(1.3).setDepth(y);
       out.push({ tipo, s, estado: 'duerme', destino: null, t: 0, maulla: 0 });
     } else if (tipo === 'murcielagos') {
@@ -326,11 +338,12 @@
     });
   };
   const posar = (S, A, zona, b) => {
-    const pt = buscar(zona, A, (t) => b.tipo === 'aves' ? t === 'pasto' || t === 'camino' : t && t !== 'agua' && t !== 'techo' && t !== 'muro' && t !== 'borde');
+    const pt = buscar(zona, A, (t, x, y) => (b.tipo === 'aves' ? t === 'pasto' || t === 'camino' : t && t !== 'agua' && t !== 'techo' && t !== 'muro' && t !== 'borde') && pisa(S, A.x + x, A.y + y), 160);
     if (!pt) return;
     b.estado = 'suelo';
     b.miembros.forEach(m => {
-      const x = A.x + pt[0] + R(-16, 16), y = A.y + pt[1] + R(-10, 10);
+      let x = A.x + pt[0] + R(-16, 16), y = A.y + pt[1] + R(-10, 10);
+      if (!pisa(S, x, y)) { x = A.x + pt[0]; y = A.y + pt[1]; }
       m.s.setPosition(x, y).setDepth(y).setAlpha(0).setFrame(0); m.t = R(300, 1500);
       S.tweens.add({ targets: m.s, alpha: 1, duration: 600 });
     });
@@ -350,7 +363,7 @@
             if (m.t <= 0) {
               const r = Math.random();
               if (r < 0.45) { m.s.setFrame(m.s.frame.name == 1 ? 0 : 1); m.t = R(200, 700); }
-              else if (r < 0.8) { const d = R(-8, 8); m.s.setFlipX(d < 0); m.s.x += d; m.s.y += R(-3, 3); m.s.setDepth(m.s.y); m.s.setFrame(0); m.t = R(400, 1500); }
+              else if (r < 0.8) { const d = R(-8, 8), e = R(-3, 3); m.s.setFlipX(d < 0); if (pisa(S, m.s.x + d, m.s.y + e)) { m.s.x += d; m.s.y += e; } m.s.setDepth(m.s.y); m.s.setFrame(0); m.t = R(400, 1500); }
               else { m.s.setFlipX(!m.s.flipX); m.t = R(500, 1800); }
             }
           });
@@ -420,7 +433,7 @@
         } else if (b.estado === 'agua') {
           b.t -= dt;
           if (b.t <= 0 && !cerca(h, b.s.x, b.s.y, 160)) {
-            const pt = buscar(zona, A, (tt, x, y) => (tt === 'pasto' || tt === 'piedra' || tt === 'camino') && juntoAlAgua(zona, x, y, 14), 120);
+            const pt = buscar(zona, A, (tt, x, y) => (tt === 'pasto' || tt === 'piedra' || tt === 'camino') && juntoAlAgua(zona, x, y, 14) && pisa(S, A.x + x, A.y + y), 200);
             if (pt) { b.s.setPosition(A.x + pt[0], A.y + pt[1]).setDepth(A.y + pt[1]).setFrame(0).setVisible(true); b.estado = 'quieta'; }
             else b.t = 5000;
           }
@@ -429,8 +442,8 @@
         const resguardo = hayLluvia || M.noche;
         b.t -= dt;
         if (resguardo) {
-          const [gx, gy] = ALDEA.gallinero, d = Math.hypot(gx - b.s.x, gy - b.s.y);
-          if (d > 14 + (b.s.frame.name % 3) * 4) { b.s.x += (gx - b.s.x) / d * 26 * dt / 1000; b.s.y += (gy - b.s.y) / d * 26 * dt / 1000; b.s.setFlipX(gx < b.s.x).setFrame(Math.floor(t / 160) % 2 ? 2 : 0); }
+          const [gx, gy] = libreCerca(S, ALDEA.gallinero), d = Math.hypot(gx - b.s.x, gy - b.s.y);
+          if (d > 14 + (b.s.frame.name % 3) * 4) { if (S.navFollow) S.navFollow(b.nav || (b.nav = {}), b.s, gx, gy, 26, dt); else { b.s.x += (gx - b.s.x) / d * 26 * dt / 1000; b.s.y += (gy - b.s.y) / d * 26 * dt / 1000; } b.s.setFlipX(gx < b.s.x).setFrame(Math.floor(t / 160) % 2 ? 2 : 0); }
           else b.s.setFrame(0);
         } else if (cerca(h, b.s.x, b.s.y, h && h.apura ? 70 : 38) && b.estado !== 'huye') {
           b.estado = 'huye'; b.t = R(700, 1100);
@@ -438,11 +451,14 @@
           b.vx = Math.cos(a) * 95; b.vy = Math.sin(a) * 70;
           if (Math.random() < 0.7) SINTE.cacareo(S, b.s.x, b.s.y);
         } else if (b.estado === 'huye') {
-          b.s.x += b.vx * dt / 1000; b.s.y += b.vy * dt / 1000; b.s.setFlipX(b.vx < 0).setFrame(3);
+          const nx = b.s.x + b.vx * dt / 1000, ny = b.s.y + b.vy * dt / 1000;
+          if (pisa(S, nx, ny)) { b.s.x = nx; b.s.y = ny; } else { b.vx = -b.vx * 0.6; b.vy = -b.vy * 0.6; }
+          b.s.setFlipX(b.vx < 0).setFrame(3);
           if (b.t <= 0) { b.estado = 'pica'; b.t = R(500, 1500); }
         } else if (b.estado === 'camina') {
-          b.s.x += b.vx * dt / 1000; b.s.y += b.vy * dt / 1000; b.s.setFrame(Math.floor(t / 150) % 2 ? 2 : 0);
-          const r = b.corral;
+          const nx = b.s.x + b.vx * dt / 1000, ny = b.s.y + b.vy * dt / 1000, r = b.corral;
+          if (pisa(S, nx, ny)) { b.s.x = nx; b.s.y = ny; } else { b.vx = -b.vx; b.vy = -b.vy; b.s.setFlipX(b.vx < 0); }
+          b.s.setFrame(Math.floor(t / 150) % 2 ? 2 : 0);
           if (b.s.x < r[0] || b.s.x > r[0] + r[2] || b.s.y < r[1] || b.s.y > r[1] + r[3]) { b.vx = -b.vx; b.vy = -b.vy; b.s.setFlipX(b.vx < 0); }
           if (b.t <= 0) { b.estado = 'pica'; b.t = R(600, 2200); }
         } else {
@@ -455,12 +471,16 @@
       } else if (b.tipo === 'gato') {
         // dónde quiere estar: alero con lluvia, fogata de noche (si está prendida), al sol de día
         const fog = window.CK_CLIMA && window.CK_CLIMA.fuegos ? window.CK_CLIMA.fuegos().find(f => f.k === 'ck_aldea_fogata') : null;
-        let quiere = hayLluvia ? ALDEA.gatoAlero : M.noche && !(fog && fog.apagado) ? ALDEA.gatoFogata : (b.sol || (b.sol = UNO(ALDEA.gatoSol)));
+        let quiere = libreCerca(S, hayLluvia ? ALDEA.gatoAlero : M.noche && !(fog && fog.apagado) ? ALDEA.gatoFogata : (b.sol || (b.sol = UNO(ALDEA.gatoSol))));
         if (!b.destino || b.destino[0] !== quiere[0] || b.destino[1] !== quiere[1]) { b.destino = quiere; if (Math.hypot(quiere[0] - b.s.x, quiere[1] - b.s.y) > 6) b.estado = 'camina'; }
         if (b.estado === 'camina') {
           const d = Math.hypot(b.destino[0] - b.s.x, b.destino[1] - b.s.y);
           if (d < 3) { b.estado = 'sienta'; b.t = R(1500, 3000); }
-          else { const v = hayLluvia ? 46 : 26; b.s.x += (b.destino[0] - b.s.x) / d * v * dt / 1000; b.s.y += (b.destino[1] - b.s.y) / d * v * dt / 1000; b.s.setFlipX(b.destino[0] < b.s.x).setFrame(Math.floor(t / 170) % 2 ? 3 : 4); }
+          else {
+            const v = hayLluvia ? 46 : 26, ok = S.navFollow ? S.navFollow(b.nav || (b.nav = {}), b.s, b.destino[0], b.destino[1], v, dt) : 'stuck';
+            if (ok === 'stuck') { b.s.x += (b.destino[0] - b.s.x) / d * v * dt / 1000; b.s.y += (b.destino[1] - b.s.y) / d * v * dt / 1000; b.s.setFlipX(b.destino[0] < b.s.x); }
+            b.s.setFrame(Math.floor(t / 170) % 2 ? 3 : 4);
+          }
         } else if (b.estado === 'sienta') { b.s.setFrame(2); b.t -= dt; if (b.t <= 0) b.estado = 'duerme'; }
         else b.s.setFrame(Math.floor(t / 1400) % 2);
         b.maulla -= dt;

@@ -45,7 +45,7 @@
   const ZB = 'ed_bosque_de_la_frontera.main', ZT = 'ed_tierras_orcas.main', ZP = 'ed_pueblo_orco.main', ZF = 'ed_fortaleza_orca.main';
   if (typeof ZONE_ENEMIES !== 'undefined' && ARTE && ARTE.cuadros) {
     const sumar = (z, l) => { if (ZONE_ENEMIES[z]) ZONE_ENEMIES[z] = ZONE_ENEMIES[z].concat(l.filter(q => ENEMY_TYPES[q[0]])); };
-    sumar(ZB, [['warg', 760, 420, 40], ['boar', 600, 330, 36], ['warg', 860, 260, 40, 'night']]);
+    sumar(ZB, [['warg', 1250, 420, 40], ['boar', 330, 690, 36], ['warg', 1330, 200, 40, 'night']]);   // (10/11) bosque grande
     sumar(ZT, [['warg', 380, 380, 40], ['warg', 820, 200, 40], ['boar', 560, 470, 30], ['warg', 300, 200, 40, 'night']]);
     sumar(ZP, [['boar', 760, 430, 30], ['warg', 470, 250, 30]]);
     sumar(ZF, [['warg', 420, 470, 30], ['warg', 640, 460, 30]]);

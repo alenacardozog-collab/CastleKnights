@@ -47,6 +47,7 @@
     '*': [214, 206, 194]
   };
   const NOCHE_SALA = 0.4; // cuánto más oscura queda una sala de noche (0 = igual que de día)
+  const SALA_FIJA = new Set(); // (10/11) salas sin día ni noche (las cuevas de ck_oscuridad.js con `sala`)
   // zonas de afuera con penumbra propia aunque sea de día (la maldición de las ruinas)
   const PENUMBRA = { 'ruins.village': [176, 176, 196] };
   // sprites que dan luz por su textura
@@ -179,7 +180,7 @@
       if (cl) { amb = amb.map((a, i) => Math.round(a * cl.amb[i] / 255)); kl = Math.max(kl, cl.luces); }
     } else {
       const sala = AMB_SALA[zona] || AMB_SALA['*'];
-      amb = mezclar(sala, NOCHE, k * NOCHE_SALA);
+      amb = SALA_FIJA.has(zona) ? sala.slice() : mezclar(sala, NOCHE, k * NOCHE_SALA);   // (10/11) las cuevas no tienen noche
       kl = 1;
     }
     const usar = !s.studioOn && (amb[0] < 253 || amb[1] < 253 || amb[2] < 253 || destello);
@@ -279,7 +280,7 @@
   window.CK_LUZ = {
     afuera: esAfuera, INTERIORES,
     agregar: l => window.game && agregar(window.game.scene.scenes.find(s => s.startCampaign), l),
-    COL, NOCHE, AMB_SALA, PENUMBRA,
+    COL, NOCHE, AMB_SALA, PENUMBRA, SALA_FIJA,
     /** Suma una fuente de luz que se consulta cada cuadro: fn(escena, lista) agrega {x,y,c,r,f} a la lista. */
     fuente: fn => fuentes.push(fn),
     /** Las luces del último cuadro (para reflejos). */

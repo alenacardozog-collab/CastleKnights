@@ -3,7 +3,7 @@
    a la zona orca no sea accesible hasta terminar el capítulo uno; que donde esté el monolito haya soldados humanos
    cerrando el paso y digan que por el momento no es seguro pasar, y del otro lado veamos cadáveres de soldados y
    barricadas").
-   - Camino al Castillo, salida del este (la que va al Bosque de la Frontera, donde está el monolito): una barricada de
+   - Camino al Castillo, salida del este (desde el 10/11, el camino al lado del castillo; la que va al Bosque de la Frontera, donde está el monolito): una barricada de
      estacas y dos soldados. Hasta que el Rey cierra el capítulo (paso 8) no se pasa: el sargento lo explica (T).
      Con el capítulo terminado, la barricada se corre, los soldados se hacen a un lado y te dejan pasar.
    - Bosque de la Frontera, apenas se entra: soldados del reino caídos, sangre, escudos tirados y barricadas rotas.
@@ -18,11 +18,12 @@
   const S0 = () => window.activeGameScene || null;
 
   // ------------------------------------------------------------------ el paso (camino al castillo, borde este)
-  const PASO = { x: 1402, y: 650, w: 34, h: 76 };
-  const SOLDADOS = [['g_lancer', 1382, 672, true], ['g_knight', 1384, 716, true]];
-  const A_UN_LADO = [[1384, 638], [1388, 748]];
+  // (10/11) el paso se mudó: ya no se baja por la escalera del mirador; se sale por el camino del este, al lado del castillo
+  const PASO = { x: 1410, y: 324, w: 26, h: 60 };
+  const SOLDADOS = [['g_lancer', 1398, 344, true], ['g_knight', 1400, 384, true]];
+  const A_UN_LADO = [[1396, 296], [1404, 412]];
   STORY_NPCS.push({
-    id: 'sargento_paso', x: 1380, y: 690, r: 48, name: 'Sargento del paso', face: 'g_lancer_idle',
+    id: 'sargento_paso', x: 1398, y: 344, r: 48, name: 'Sargento del paso', face: 'g_lancer_idle',
     get zone() { const s = st(S0()); return s ? ZC : '-'; },
     lines: s => {
       if (abierto(s)) return ['El Rey dio la orden: el paso es tuyo.', 'Del otro lado… preparate para lo que vas a ver. Ahí cayeron los nuestros.', 'Que los dioses te acompañen.'];
@@ -55,7 +56,7 @@
     const s = st(S), a = S.currentInterior.area, L = S._ckFront;
     const libre = abierto(s);
     // la barricada: cerrando el paso, o corrida contra el borde de abajo
-    const bx = libre ? 1414 : 1412, by = libre ? 758 : 724;
+    const bx = libre ? 1428 : 1424, by = libre ? 420 : 386;
     const b = sprite(S, 'ed_ot_estacas_1', null, a.x + bx, a.y + by, { escala: libre ? 0.62 : 0.82 });
     if (b) { if (!libre) b.setFlipX(true); L.push(b); }
     if (!libre) L.push(cuerpoFijo(S, a.x + PASO.x, a.y + PASO.y, PASO.w, PASO.h));
@@ -85,12 +86,13 @@
   // ------------------------------------------------------------------ del otro lado: los que cayeron
   const CAIDOS = [
     // [hoja, x, y, mirando a la izquierda, qué dice con T]
-    ['g_knight', 132, 356, false, 'Un caballero del Roble. Todavía aprieta la empuñadura.'],
-    ['g_lancer', 196, 430, true, 'Un lancero. La lanza está partida en dos, como mordida.'],
-    ['g_archer', 248, 362, false, 'Un arquero con la aljaba vacía. Disparó hasta la última flecha.'],
-    ['g_axeman', 158, 470, true, 'Un recluta. Lleva una carta en el cinto: «Para mi madre, en el Roble».']
+    // (10/11) en el bosque grande, del otro lado de la cuarentena: los que cayeron antes de que se levantara la empalizada
+    ['g_knight', 1150, 378, false, 'Un caballero del Roble. Todavía aprieta la empuñadura.'],
+    ['g_lancer', 1214, 520, true, 'Un lancero. La lanza está partida en dos, como mordida.'],
+    ['g_archer', 1290, 470, false, 'Un arquero con la aljaba vacía. Disparó hasta la última flecha.'],
+    ['g_axeman', 1170, 600, true, 'Un recluta. Lleva una carta en el cinto: «Para mi madre, en el Roble».']
   ];
-  const BARRICADAS = [['ed_ot_estacas_2', 112, 318, 0.7, false], ['ed_ot_estacas_6', 226, 486, 0.7, true], ['ed_ot_estacas_3', 284, 410, 0.62, false]];
+  const BARRICADAS = [['ed_ot_estacas_2', 1160, 330, 0.7, false], ['ed_ot_estacas_6', 1250, 600, 0.7, true], ['ed_ot_estacas_3', 1340, 520, 0.62, false]];
   const armarCaidos = S => {
     const a = S.currentInterior.area, L = S._ckFront;
     BARRICADAS.forEach(([k, x, y, e, flip]) => {

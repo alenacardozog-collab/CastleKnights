@@ -57,18 +57,21 @@
     const bajo = Math.max(...tramos.map(t => t.base));
     // derecho (todo apoya a menos de 4 px del borde de abajo): queda entero
     if (tramos.every(t => bajo - t.base < 4)) return (cache[ck] = null);
+    // (10/11) cada franja lleva además la columna de al lado (1 px de solape): con el zoom de la cámara (2,2) los bordes
+    // de dos franjas caían a veces en medio píxel y quedaba una rayita vertical del suelo entre ellas al moverse
     const partes = tramos.map((t, i) => {
-      const pw = t.x1 - t.x0 + 1, pk = k + '_p' + i;
+      const x0 = Math.max(0, t.x0 - 1), x1 = Math.min(w - 1, t.x1 + 1);
+      const pw = x1 - x0 + 1, pk = k + '_p' + i;
       if (!s.textures.exists(pk)) {
         const tx = s.textures.createCanvas(pk, pw, h), g = tx.getContext(), out = g.createImageData(pw, h), o = out.data;
         for (let y = 0; y < h; y++)
-          for (let x = t.x0; x <= t.x1; x++) {
-            const a = (y * w + x) * 4, b = (y * pw + (x - t.x0)) * 4;
+          for (let x = x0; x <= x1; x++) {
+            const a = (y * w + x) * 4, b = (y * pw + (x - x0)) * 4;
             o[b] = px[a]; o[b + 1] = px[a + 1]; o[b + 2] = px[a + 2]; o[b + 3] = px[a + 3];
           }
         g.putImageData(out, 0, 0); tx.refresh();
       }
-      return { key: pk, x0: t.x0, y0: 0, w: pw, h, base: t.base };
+      return { key: pk, x0, y0: 0, w: pw, h, base: t.base };
     });
     return (cache[ck] = cache[k] = { w, h, partes });
   };

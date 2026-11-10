@@ -30,7 +30,7 @@
   const SIT = {
     patio: T(Z.patio, 440, 165, { ensaya: true }), salon: T(Z.salon, 205, 235), biblio: T(Z.biblio, 110, 225), posada: T(Z.posada, 200, 240),
     puente: T(Z.camino, 1150, 460), fogon: T(Z.camino, 735, 420), fuente: T(Z.ruinas, 600, 470), tumba: T(Z.ruinas, 735, 240),
-    carreta: T(Z.bosque, 605, 410), huellas: T(Z.bosque, 678, 112),
+    carreta: T(Z.bosque, 600, 600), huellas: T(Z.bosque, 1000, 440),   // (10/11) bosque grande: junto a lo que quedó del mercader, en el campamento
     tablon: T(Z.aldea, 250, 245), plaza: T(Z.aldea, 470, 330), sur: T(Z.aldea, 380, 460), oeste: T(Z.aldea, 120, 365), norte: T(Z.aldea, 455, 200)
   };
 

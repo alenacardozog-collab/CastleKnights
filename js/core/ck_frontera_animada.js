@@ -13,7 +13,7 @@
   const ZB = 'ed_bosque_de_la_frontera', ZT = 'ed_tierras_orcas', ZP = 'ed_pueblo_orco', ZF = 'ed_fortaleza_orca';
   const FUEGO = 0xff8a3c;
   const ARTE = window.CK_BESTIAS_ARTE;
-  const LAGUNA = { x: 352, y: 177, rx: 58, ry: 30 }; // la laguna del bosque (elipse adentro del agua)
+  const LAGUNA = { x: 215, y: 655, rx: 95, ry: 38 }; // la laguna del bosque (elipse adentro del agua; 10/11: el estanque del bosque grande)
   const ARBOLES = /^ed_ob_(arbol_del_claro|pino|roble)/; // los árboles verdes del bosque (los secos no se mecen)
 
   const envolver = (k, fn) => {
@@ -29,8 +29,8 @@
 
   envolver(ZB, a => {
     fx(a, { type: 'glints', x: LAGUNA.x - 48, y: LAGUNA.y - 24, w: 96, h: 46, n: 7 });
-    fx(a, { type: 'leaves', x: 0, y: -10, w: 480, h: 360 });
-    fx(a, { type: 'butterflies', x: 40, y: 220, w: 380, h: 200, n: 6 });
+    fx(a, { type: 'leaves', x: 0, y: -10, w: 1000, h: 770 });
+    fx(a, { type: 'butterflies', x: 140, y: 120, w: 820, h: 560, n: 9 });
   });
   envolver(ZT, (a, kit) => {
     // el fogón de piedras: humo, chispas y una luz que titila

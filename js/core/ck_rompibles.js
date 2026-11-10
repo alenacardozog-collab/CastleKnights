@@ -96,7 +96,7 @@
         const c = pal[j], dl = l - L[j], dd = 3 * dl * dl + (r - c[0]) ** 2 + (gg - c[1]) ** 2 + (b - c[2]) ** 2;
         if (dd < bd) { bd = dd; best = j; }
       }
-      const c = pal[best]; d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2];
+      const c = pal[best], m = MEZCLA[k] || 1; d[i] = r + (c[0] - r) * m; d[i + 1] = gg + (c[1] - gg) * m; d[i + 2] = b + (c[2] - b) * m;
     }
     g.putImageData(id, 0, 0); t.refresh();
     return key;
@@ -136,8 +136,23 @@
   //   y de a dos o tres juntos, como una pila. Nunca en medio del camino.
   // - Los cofres van en RINCONES: cerrados por dos o tres lados, en la parte de la zona más lejos de la entrada.
   const GANCHOS = { poner: [], romper: [], abrir: [] };   // los usa ck_trampas.js
+  // (10/11, pedido del dueño: "que varíen según el escenario") qué se rompe en cada lugar; los de barro/loza suenan y
+  // se parten como la vasija, los de madera como el cajón
+  const JUEGOS = [
+    [/^ed_(tierras_orcas|pueblo_orco|fortaleza_orca)\./, ['olla_orca', 'tambor', 'cajon']],
+    [/^ed_bosque_de_la_frontera\./, ['tocon', 'canasto', 'vasija']],
+    [/^(ed_aldea_en_ruinas\.|ruins\.)/, ['urna', 'vasija', 'cajon']],
+    [/^(ed_(jardin_real|patio_de_armas|muralla|patio_del_castillo|patio_armas_nuevo)\.|castle\.)/, ['barril', 'anfora', 'cajon']],
+    [/./, ['cajon', 'vasija', 'canasto']]
+  ];
+  // mapas con sendas marcadas (en los de tierra suelta, como las Tierras Orcas, todo es "camino" en el dibujo del minimapa)
+  const SENDAS = /camino_al_castillo|bosque_de_la_frontera|campos_del_roble|jardin_real|patio_del_castillo/;
+  const NO_PONER = { 'ed_camino_al_castillo.main': [[290, 380, 520, 480], [960, 540, 1060, 620]] };   // las puntas del puente y la escalera de abajo
+  const juegoDe = zona => JUEGOS.find(([re]) => re.test(zona || ''))[1];
+  const BARRO = /^(vasija|anfora|urna|olla_orca)$/;
+  const MEZCLA = { canasto: 0.45, anfora: 0.45, urna: 0.6, tocon: 0.5, olla_orca: 0.55, tambor: 0.55 };   // cuánto toman de la paleta del mapa
   const RES = 2;
-  const DEPOSITO = /barril|cajon|caja|carret|carro|casa|choza|cabana|caba[ñn]a|tienda|granero|establo|cerca|valla|muro|pared|pozo|le[ñn]a|tonel|saco|bolsa|fardo|puesto|banco|mesa|estante|herrer|yunque|tronco|toc[oó]n|baul|choza|tienda|ruina|lapida|tumba|totem|estandarte/i;
+  const DEPOSITO = /barril|cajon|caja|carret|carro|casa|choza|cabana|caba[ñn]a|tienda|granero|establo|cerca|valla|muro|pared|pozo|le[ñn]a|tonel|saco|bolsa|fardo|puesto|banco|mesa|estante|herrer|yunque|tronco|toc[oó]n|baul|choza|tienda|ruina|lapida|tumba|totem|estandarte|armero|jaula|catapulta|balista|secadero|bastidor|fragua|corral|carro|arena|trono|cofre|canast|huerta|espantap|blanco/i;
   const ocupacion = S => {
     const a = S.currentInterior.area, W = Math.ceil(a.w / RES), H = Math.ceil(a.h / RES);
     const mk = () => { const cv = document.createElement('canvas'); cv.width = W; cv.height = H; return cv.getContext('2d', { willReadFrequently: true }); };
@@ -189,7 +204,7 @@
   // los caminos que se usan: el recorrido más corto entre cada par de salidas (y la llegada del héroe), con 2 celdas de
   // ancho para cada lado. Ahí no se pone nada: los rompibles no cortan el camino ni quedan en el medio de la senda
   const rutas = (S, G, a, extra) => {
-    const pts = (a.exits || []).map(e => [e.x + e.w / 2, e.y + e.h / 2]).concat(extra || []);
+    const pts = (a.exits || []).map(e => [e.x + e.w / 2, e.y + e.h / 2]).concat((a.portals || []).map(e => [e.x, e.y + 16]), extra || []);   // (10/11) + portales (el puente del castillo)
     const celda = ([x, y]) => { const c = S.navNearestCell ? S.navNearestCell(G, x, y, 40) : null; return c ? c[1] * G.gw + c[0] : -1; };
     const ids = pts.map(celda).filter(i => i >= 0), marca = new Uint8Array(G.gw * G.gh);
     ids.forEach((ini, n) => {
@@ -202,7 +217,7 @@
       ids.slice(n + 1).forEach(fin => { let i = fin, t = 0; if (padre[i] < 0) return; while (i !== ini && t++ < 20000) { marca[i] = 1; i = padre[i]; } marca[ini] = 1; });
     });
     const ancho = new Uint8Array(marca.length);
-    for (let i = 0; i < marca.length; i++) if (marca[i]) { const cx = i % G.gw, cy = (i - cx) / G.gw; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const x = cx + dx, y = cy + dy; if (x >= 0 && y >= 0 && x < G.gw && y < G.gh) ancho[y * G.gw + x] = 1; } }
+    for (let i = 0; i < marca.length; i++) if (marca[i]) { const cx = i % G.gw, cy = (i - cx) / G.gw; for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const x = cx + dx, y = cy + dy; if (x >= 0 && y >= 0 && x < G.gw && y < G.gh) ancho[y * G.gw + x] = 1; } }
     return (px, py) => { const cx = Math.floor((px - G.x) / 8), cy = Math.floor((py - G.y) / 8); return cx >= 0 && cy >= 0 && cx < G.gw && cy < G.gh && !!ancho[cy * G.gw + cx]; };
   };
   const TAM = k => ({ w: ARTE[k].w, h: ARTE[k].h });
@@ -256,7 +271,7 @@
     M.ruta = rutas(S, G, a, [[S.player.body.center.x, S.player.body.bottom]]);
     const s = S.story; s.flags = s.flags || {};
     // (08/11) lugares nuevos: cofres_pos2. Los cofres ya abiertos siguen abiertos (se guardan por número, no por lugar)
-    const pos = (s.flags.cofres_pos2 = s.flags.cofres_pos2 || {}), abiertos = (s.flags.cofres = s.flags.cofres || {});
+    const pos = (s.flags.cofres_pos3 = s.flags.cofres_pos3 || {}), abiertos = (s.flags.cofres = s.flags.cofres || {});
     const lejos = c => Math.hypot(c.x - entrada.x, c.y - entrada.y), dmax = Math.max(...celdas.map(lejos));
     const cofres = [];
     if (nCofres) {
@@ -289,8 +304,12 @@
       const rnd = semilla(zona + '#rompibles'), cand = [];
       celdas.forEach(c => {
         if (lejos(c) < LEJOS_ENTRADA) return;
+        // (10/11) nunca en una senda (el dibujo del mapa dice dónde hay camino) ni al pie de una escalera
+        const ter = window.CK_MINIMAPA && CK_MINIMAPA.terreno ? (dx, dy) => CK_MINIMAPA.terreno(zona, c.x - a.x + dx, c.y - a.y + dy) : null;
+        if (ter && SENDAS.test(zona) && [[0, 0], [-14, 0], [14, 0], [0, 10]].some(([dx, dy]) => ter(dx, dy) === 'camino')) return;
+        if ((NO_PONER[zona] || []).some(([x0, y0, x1, y1]) => c.x - a.x > x0 && c.x - a.x < x1 && c.y - a.y > y0 && c.y - a.y < y1)) return;
         const e = entra(S, M, G, 'cajon', c.x, c.y + 4); if (!e || !e.n) return;
-        cand.push({ x: c.x, y: c.y + 4, p: e.n * 2 + (e.dep ? 5 : 0) + c.paredes * 0.1 + rnd() * 2.5 });
+        cand.push({ x: c.x, y: c.y + 4, p: e.n * 2 + (e.dep ? 12 : 0) + c.paredes * 0.1 + rnd() * 2.5 });   // (10/11) junto a lo que guarda cosas, mucho mejor
       });
       cand.sort((p, q) => q.p - p.p);
       const puestos = [];
@@ -298,13 +317,13 @@
         if (puestos.length >= nRomp) break;
         if (puestos.concat(cofres).some(o => Math.hypot(o.x - c.x, o.y - c.y) < SEP)) continue;
         if (!entra(S, M, G, 'cajon', c.x, c.y)) continue;            // lo de al lado ya lo pudo ocupar
-        const k1 = rnd() < 0.5 ? 'cajon' : 'vasija', o1 = poner2(S, M, k1, c.x, c.y, { rompible: true });
+        const J = juegoDe(zona), k1 = J[Math.floor(rnd() * J.length)], o1 = poner2(S, M, k1, c.x, c.y, { rompible: true });
         if (!o1) continue;
         puestos.push(o1);
         // la pila: uno o dos más pegados al costado
         const extra = rnd() < 0.45 ? 2 : 1;
         for (let j = 0, lado = rnd() < 0.5 ? -1 : 1; j < extra && puestos.length < nRomp; j++) {
-          const k2 = rnd() < 0.6 ? (k1 === 'cajon' ? 'vasija' : 'cajon') : k1;
+          const otros = J.filter(k => k !== k1), k2 = rnd() < 0.6 ? otros[Math.floor(rnd() * otros.length)] : k1;
           const ult = puestos[puestos.length - 1];
           let hecho = false;
           for (const sgn of [lado, -lado]) {
@@ -325,11 +344,12 @@
     let trampa = false;
     GANCHOS.romper.forEach(f => { try { if (f(S, o)) trampa = true; } catch (e) {} });
     const x = o.x, y = o.y - 10;
-    son(o.k === 'vasija' ? 'bone_hit' : 'sword_hit', 0.7, { rate: o.k === 'vasija' ? 1.6 : 0.8 });
-    if (window.CK_ONDAS) CK_ONDAS.estallido(S, o.k === 'vasija' ? 'fuego' : 'tierra', x, o.y, 14, 320);
+    const barro = BARRO.test(o.k);
+    son(barro ? 'bone_hit' : 'sword_hit', 0.7, { rate: barro ? 1.6 : 0.8 });
+    if (window.CK_ONDAS) CK_ONDAS.estallido(S, barro ? 'fuego' : 'tierra', x, o.y, 14, 320);
     // pedazos
     for (let i = 0; i < 7; i++) {
-      const g = S.add.rectangle(x, y, Phaser.Math.Between(2, 4), Phaser.Math.Between(2, 3), o.k === 'vasija' ? 0xa0522d : 0x7a5230).setDepth(o.y + 1);
+      const g = S.add.rectangle(x, y, Phaser.Math.Between(2, 4), Phaser.Math.Between(2, 3), barro ? 0xa0522d : 0x7a5230).setDepth(o.y + 1);
       const ang = azar(-Math.PI, 0), d = azar(10, 26);
       S.tweens.add({ targets: g, x: x + Math.cos(ang) * d, y: o.y - 2 + azar(-3, 3), angle: azar(-180, 180), duration: azar(260, 420), ease: 'Quad.easeOut' });
       S.tweens.add({ targets: g, alpha: 0, delay: 900, duration: 400, onComplete: () => g.destroy() });

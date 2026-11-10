@@ -466,7 +466,9 @@
   // ================================================================== MISIÓN: el oso de la jaula
   // Por ahora en las Tierras Orcas, al pie del camino del norte que va a la zona de las bestias. Cuando llegue el mapa del
   // Claro de las Bestias (Flow), se cambia ZP y JAULA y listo.
-  const ZP = 'ed_tierras_orcas', JAULA = { x: 590, y: 140 };
+  // (10/11) llegó el Claro (ck_claro_bestias.js): la jaula está en su campamento orco destrozado. Sin ese archivo, en las Tierras.
+  const CLARO = window.CK_CLARO_BESTIAS;
+  const ZP = CLARO ? 'ed_' + CLARO.ID : 'ed_tierras_orcas', JAULA = CLARO ? CLARO.LUGAR.jaula : { x: 590, y: 140 };
   const st = S => { const s = S.story; if (!s) return 0; s.flags = s.flags || {}; return s.flags.oso || 0; };   // 0 nada, 1 habló, 2 tiene la llave, 3 libre
   const ponerSt = (S, v) => { if (S.story) { S.story.flags.oso = v; S.saveStory && S.saveStory(); } };
   const nota = t => { try { window.CK_SIN_CARTELES_API && window.CK_SIN_CARTELES_API.nota(t); } catch (e) {} };
@@ -518,7 +520,7 @@
     if (S.anims.exists(OSO + '_idle')) osoEnJaula.play(OSO + '_idle');
     marca = S.add.text(x, y - 66, st(S) >= 2 ? '🔑' : '!', { fontFamily: "'CK Grenze', serif", fontSize: '22px', fontStyle: 'bold', color: '#ffe08a', stroke: '#1b0f0a', strokeThickness: 5 }).setOrigin(0.5).setDepth(30000);
     S.tweens.add({ targets: marca, y: y - 72, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    if (st(S) === 0 && !S._ckOsoAviso) { S._ckOsoAviso = true; S.time.delayedCall(1500, () => nota('Se oye un gruñido que viene de una jaula, junto al camino del norte…')); }
+    if (st(S) === 0 && !S._ckOsoAviso) { S._ckOsoAviso = true; S.time.delayedCall(1500, () => nota(CLARO ? 'Se oye un gruñido que viene de una jaula, en el campamento orco destrozado…' : 'Se oye un gruñido que viene de una jaula, junto al camino del norte…')); }
     if (st(S) === 1) carcelero(S);
   };
   // los carceleros: Garra Negra, el jefe de la manada (con la llave), dos hombres oso oscuros y un hombre lobo

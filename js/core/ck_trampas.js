@@ -37,7 +37,7 @@
       if (s[o.cofre]) o.trampa = s[o.cofre];
     } else if (o.rompible) {
       const peligro = typeof ZONE_ENEMIES !== 'undefined' && !!ZONE_ENEMIES[S.currentZoneKey()];
-      if (Math.random() < (peligro ? PROB.peligro : PROB.otras)) o.trampa = o.k === 'cajon' ? 'explota' : 'veneno';
+      if (Math.random() < (peligro ? PROB.peligro : PROB.otras)) o.trampa = /^(vasija|anfora|urna|olla_orca)$/.test(o.k) ? 'veneno' : 'explota';
     }
     if (o.trampa) o._ckAviso = S.time.now + azar(800, 3000);
   });

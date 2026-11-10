@@ -106,7 +106,7 @@
   // ------------------------------------------------------------------ 3) humo y chispas
   const FX = {
     'ed_pueblo_orco.main': [{ tipo: 'humo', x: 503, y: 268, cada: 520 }, { tipo: 'chispa', x: 800, y: 214, cada: 900 }],
-    'ed_bosque_de_la_frontera.main': [{ tipo: 'humo', x: 566, y: 292, cada: 760 }],
+    'ed_bosque_de_la_frontera.main': [{ tipo: 'humo', x: 249, y: 462, cada: 760 }],   // (10/11) la chimenea de la cabaña del leñador
     'ed_fortaleza_orca.main': [{ tipo: 'chispa', x: 612, y: 186, cada: 1300 }, { tipo: 'chispa', x: 736, y: 256, cada: 1400 }]
   };
   const texturas = S => {

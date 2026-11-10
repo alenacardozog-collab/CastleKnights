@@ -9,6 +9,9 @@
    - las BESTIAS EN LA SOMBRA no se ven: aparecen de a poco cuando entran a una luz; afuera de la luz sólo brillan sus ojos;
    - BRASEROS: apagados al principio; con la antorcha prendida, T los enciende. Encendidos dan luz para siempre (se guarda
      en la partida) y son PUNTOS SEGUROS: las bestias no entran a su luz, y parado al lado se recupera 1 corazón cada 8 s.
+   Opciones por zona (10/11): `tinte: true` (las bestias no se borran en la sombra: se oscurecen y toman el color de la
+   luz, como de noche en el pueblo) y `sala: [r, g, b]` (zona de adentro, como una cueva: penumbra fija de ese color,
+   sin día, noche ni lluvia, luces a toda su fuerza).
    Borrar la línea de index.html lo saca. */
 (function () {
   if (typeof MainGameScene === 'undefined') return;
@@ -116,7 +119,9 @@
         if (e.isDead) { if (e._ckOjos) { e._ckOjos.destroy(); e._ckOjos = null; } return; }
         const luz = luzEn(e.x, e.y), quiere = Math.min(1, luz * 1.8);
         e._ckVis = (e._ckVis === undefined ? 0 : e._ckVis) + (quiere - (e._ckVis || 0)) * 0.15;
-        e.setAlpha(Math.max(0, e._ckVis));
+        // (10/11) con `tinte` la bestia no se borra: queda a la vista, oscurecida y teñida por la luz que tiene cerca (como
+        // de noche en el pueblo); en la sombra sólo se le notan la silueta y los ojos
+        e.setAlpha(k.c.tinte ? 1 : Math.max(0, e._ckVis));
         if (e.hpBar) e.hpBar.setAlpha(e._ckVis);
         // los ojos en la oscuridad
         if (!e._ckOjos) e._ckOjos = this.add.graphics().setDepth(27600);
@@ -153,6 +158,11 @@
   };
   window.CK_OSCURIDAD = {
     ZONAS, luzEn, BRASERO,
-    zona: (z, c) => { ZONAS[z] = Object.assign({ braseros: [] }, c || {}); aplicarPenumbra(); }
+    zona: (z, c) => {
+      ZONAS[z] = Object.assign({ braseros: [] }, c || {}); aplicarPenumbra();
+      // (10/11) `sala: [r, g, b]`: la zona es de adentro (una cueva): oscuridad fija, sin día ni noche ni lluvia, y las
+      // luces a toda su fuerza (el motor de luz la trata como una sala con esa penumbra)
+      const L = window.CK_LUZ; if (ZONAS[z].sala && L && L.AMB_SALA) { L.AMB_SALA[z] = ZONAS[z].sala; if (L.SALA_FIJA) L.SALA_FIJA.add(z); if (L.PENUMBRA) delete L.PENUMBRA[z]; }
+    }
   };
 })();

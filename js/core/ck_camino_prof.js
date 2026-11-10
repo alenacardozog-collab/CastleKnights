@@ -23,7 +23,7 @@
     ed_cc_barriles: 39,
     ed_cc_cerca: 95
   };
-  const BOSQUES = ['ed_cc_bosque_cabana', 'ed_cc_bosque_norte', 'ed_cc_bosque_sur'];
+  const BOSQUES = ['ed_cc_bosque_cabana', 'ed_cc_bosque_norte', 'ed_cc_bosque_sur', 'ed_cc2_bosque_cabana', 'ed_cc2_bosque_norte', 'ed_cc2_bosque_sur'];
   // colisiones viejas que tapaban la caja de la carreta y la copa del roble
   const QUITAR = [
     [336, 184, 8, 56], [328, 208, 8, 56], [296, 224, 8, 32], [304, 232, 8, 16], [288, 240, 8, 24], [312, 240, 16, 24],
@@ -75,6 +75,13 @@
         } else fin = -1;
       }
     }
+    // (10/11) cada franja se agranda 1 px a los costados con los píxeles de al lado (solape): con el zoom de la cámara los
+    // bordes caían en medio píxel y al moverse se veían rayitas verticales y horizontales del suelo entre los árboles
+    const propio = (gi, x, y) => {
+      if (x < 0 || y < 0 || x >= w || y >= h) return false;
+      return grupo[y * w + x] === gi;
+    };
+    Object.keys(cajas).forEach(g => { const c = cajas[g]; c.x0 = Math.max(0, c.x0 - 1); c.y0 = Math.max(0, c.y0 - 1); c.x1 = Math.min(w - 1, c.x1 + 1); c.y1 = Math.min(h - 1, c.y1 + 1); });
     const partes = [];
     Object.keys(cajas).forEach(g => {
       const c = cajas[g],
@@ -90,7 +97,7 @@
         for (let y = c.y0; y <= c.y1; y++)
           for (let x = c.x0; x <= c.x1; x++) {
             const i = y * w + x;
-            if (grupo[i] !== gi) continue;
+            if (grupo[i] !== gi && !(px[i * 4 + 3] > 8 && (propio(gi, x - 1, y) || propio(gi, x + 1, y) || propio(gi, x, y - 1) || propio(gi, x, y + 1)))) continue;
             const j = ((y - c.y0) * pw + (x - c.x0)) * 4;
             o[j] = px[i * 4];
             o[j + 1] = px[i * 4 + 1];

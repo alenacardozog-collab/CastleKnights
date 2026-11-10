@@ -16,8 +16,8 @@
   if (typeof MainGameScene === 'undefined' || !window.CK_MONOLITO_ARTE) return;
   const P = MainGameScene.prototype, D = window.EDITOR_DATA || {}, ARTE = window.CK_MONOLITO_ARTE;
   const MAPA = 'bosque_de_la_frontera', ZONA = 'ed_' + MAPA + '.main';
-  const X = 150, Y = 120;          // la base, en coordenadas del mapa (centro del claro)
-  const PIE = [X - 14, Y - 10, 28, 10];
+  const X = 220, Y = 196;          // la base, en coordenadas del mapa (10/11: el bosque grande, el monolito que dibujó Flow)
+  const PIE = [X - 26, Y - 12, 52, 12];
   const CERCA = 46;
   const vista = (/[?&]ck_monolito=(\w+)/.exec(location.search) || [])[1];
   const MIRAR = [

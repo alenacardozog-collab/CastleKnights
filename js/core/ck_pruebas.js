@@ -275,6 +275,12 @@
     }
     ok(!mal.length, mal.join(' / '));
   }));
+  prueba('Presentación de un personaje: aparece, pausa el juego y se cierra', async () => {
+    const s = escena(), PR = window.CK_PRESENTACIONES; if (!PR) return;
+    const antes = !!s.isGamePaused; PR.mostrar(s, 'rey'); await esperar(700);
+    ok(document.getElementById('ckp'), 'no apareció la tarjeta'); ok(s.isGamePaused, 'el juego no quedó en pausa');
+    PR.cerrar(); await esperar(150); ok(!document.getElementById('ckp'), 'la tarjeta no se fue'); ok(!!s.isGamePaused === antes, 'el juego quedó en pausa');
+  });
   prueba('Sin errores en la consola', async () => ok(!errores.length, errores.join(' / ')));
 
   const correr = async () => {
