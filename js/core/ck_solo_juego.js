@@ -1,8 +1,9 @@
 'use strict';
 /* Sólo el juego en la pantalla (11/11, pedido del dueño: "en la pantalla de inicio del juego, antes de darle full screen,
    sale como opciones y eso y el cuadrado; ¿eso se puede quitar y dejar sólo el juego full screen?").
-   - Ya no se ven la cabecera de la página (título, Menú, Sonido, Fullscreen, Modo Dev), la barra de teclas de abajo ni
-     el marco de madera: el juego ocupa toda la ventana desde que se abre, sobre fondo negro.
+   - Ya no se ven la cabecera de la página (título, Menú, Sonido, Fullscreen, Modo Dev), la barra de teclas de abajo, el
+     marco de madera ni el marco de piedra con telarañas de la portada (v2): el juego ocupa toda la ventana desde el primer
+     instante (un estilo en el <head> de index.html lo esconde antes de que cargue nada), sobre fondo negro.
    - Pantalla completa de verdad: el navegador sólo la deja pedir después de que el jugador toca algo, así que se pide
      sola con el primer clic o la primera tecla (y la F la sigue prendiendo y apagando, como siempre).
    - Lo que hacían esos botones sigue estando: el menú y la salida arriba a la derecha del juego (y Esc), el sonido en
@@ -18,6 +19,7 @@ body.ck-solo { margin: 0 !important; padding: 0 !important; overflow: hidden !im
 body.ck-solo .game-viewport-wrapper { position: fixed !important; inset: 0 !important; max-width: none !important; width: 100vw !important; height: 100vh !important;
   border: none !important; box-shadow: none !important; margin: 0 !important; }
 body.ck-solo #game-canvas-container { width: 100vw !important; height: 100vh !important; }
+body.ck-solo #start-menu-overlay::after, body.ck-solo .ck2-esq { display: none !important; }
 body.ck-solo #dev-toolbar:not(.hidden) { position: fixed !important; top: 0; left: 0; right: 0; z-index: 99995; }
 `;
   const st = document.createElement('style'); st.id = 'ck-solo-css'; st.textContent = css; document.head.append(st);
