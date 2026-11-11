@@ -7,9 +7,10 @@
      esquina sube a la muralla; el arco del oeste va al Patio de Armas, el del este al Jardín Real y el portón de abajo al
      camino. Los otros archivos que vuelven al patio con las coordenadas viejas (640x560) caen en su lugar nuevo (DESDE).
    - Muralla: la puerta de cada torre y la escalera de cada hueco bajan al patio. Arriba de las almenas se ve el paisaje
-     (ck_patio_muro_arte.js) en 3 capas que se mueven a distinta velocidad (paralaje): las montañas casi quietas, el
-     bosque un poco más y el valle con la aldea más rápido. Pasan nubes y pájaros y sale humo de la aldea. En la muralla
-     la cámara mira un poco más arriba para que se vea el paisaje.
+     (ck_patio_muro_arte.js). Desde el 11/11 (pedido: "en el fondo de paralaje de las murallas poné la imagen completa sin
+     recortarla detrás de los muros y hacé paralaje sólo con esa") es UNA sola imagen entera que se mueve más despacio
+     que el mapa; antes eran 3 capas cortadas (montañas, bosque, valle) y en los cortes se veía raro al acercarse.
+     Pasan pájaros y sale humo de la aldea. En la muralla la cámara mira un poco más arriba para que se vea el paisaje.
    Si un mapa no está en el Taller, ese lugar queda como antes. Borrar las 2 líneas de index.html lo apaga entero. */
 (function () {
   if (typeof MainGameScene === 'undefined' || typeof INTERIOR_LAYOUTS === 'undefined') return;
@@ -206,12 +207,9 @@
   // dy: dónde queda cada fila de la capa en el mapa cuando la cámara mira a la altura de referencia (REF)
   // (todo entre el fondo negro de alrededor del mapa, profundidad 6.5, y el suelo del mapa, 7)
   const REF = -75;
-  const CAPAS = [
-    { k: 'A', f: 0.06, fy: 0.1, dy: -135, prof: 6.6 },
-    { k: 'B', f: 0.22, fy: 0.4, dy: -190, prof: 6.7 },
-    { k: 'C', f: 0.42, fy: 0.62, dy: -255, prof: 6.76 }
-  ];
-  const HUMO = [[467, 352], [567, 386], [503, 404]]; // chimeneas de la aldea (en la capa C)
+  // (11/11) una sola capa: la imagen entera (fila r de la imagen = fila dy + r del mapa a la altura de referencia)
+  const CAPAS = [{ k: 'P', f: 0.2, fy: 0.35, dy: -235, prof: 6.7 }];
+  const HUMO = [[467, 352], [567, 386], [503, 404]]; // chimeneas de la aldea (en la imagen)
   const enMuro = s => {
     const c = s.currentInterior;
     return !!(muro && c && c.area && c.building && c.building.kind === 'castle' && c.areaName === 'walls');
@@ -236,7 +234,7 @@
   const armar = s => {
     const M = s._ckMuro;
     if (M && M.ok) return M;
-    if (!PA || !['A', 'B', 'C'].every(k => s.textures.exists('ck_muro_' + k))) return null;
+    if (!PA || !CAPAS.every(c => s.textures.exists('ck_muro_' + c.k))) return null;
     texturas(s); aves(s);
     const capas = CAPAS.map(c => Object.assign({}, c, { img: s.add.image(0, 0, 'ck_muro_' + c.k).setOrigin(0, 0).setDepth(c.prof).setVisible(false), y0: PA['y' + c.k] || 0 }));
     const nubes = (PA.nubes || []).map((n, i) => ({
@@ -270,12 +268,10 @@
     const a = s.currentInterior && s.currentInterior.area;
     if (!a) return;
     M.capas.forEach(c => { const o = origen(s, a, c.f, c.fy, c.dy); c.img.setPosition(Math.round(o.x), Math.round(o.y + c.y0)); });
-    const oA = origen(s, a, 0.04, 0.09, -135);
-    M.nubes.forEach(n => n.img.setPosition(Math.round(oA.x + n.x), Math.round(oA.y + n.y)));
-    const oC = origen(s, a, CAPAS[2].f, CAPAS[2].fy, CAPAS[2].dy);
-    M.humo.forEach(h => h.img.setPosition(oC.x + h.x, oC.y + h.y));
-    const oB = origen(s, a, CAPAS[1].f, CAPAS[1].fy, CAPAS[1].dy);
-    M.aves.forEach(v => v.img.setPosition(Math.round(oB.x + v.x), Math.round(oB.y + v.y)));
+    const o = origen(s, a, CAPAS[0].f, CAPAS[0].fy, CAPAS[0].dy);   // nubes, humo y pájaros van con la imagen
+    M.nubes.forEach(n => n.img.setPosition(Math.round(o.x + n.x), Math.round(o.y + n.y)));
+    M.humo.forEach(h => h.img.setPosition(o.x + h.x, o.y + h.y));
+    M.aves.forEach(v => v.img.setPosition(Math.round(o.x + v.x), Math.round(o.y + v.y)));
   };
   const vivir = (s, dt) => {
     const M = s._ckMuro, W = (PA && PA.w) || 958;
@@ -302,7 +298,7 @@
     M.proxAve -= dt;
     if (M.proxAve <= 0 && !M.aves.length) {
       M.proxAve = 14000 + Math.random() * 16000;
-      const izq = Math.random() < 0.5, y0 = 40 + Math.random() * 70, n = 3 + ((Math.random() * 3) | 0);
+      const izq = Math.random() < 0.5, y0 = 85 + Math.random() * 70, n = 3 + ((Math.random() * 3) | 0);
       for (let i = 0; i < n; i++) {
         const img = s.add.image(0, 0, 'ck_muro_ave0').setDepth(6.72).setFlipX(!izq);
         M.aves.push({ img, x: izq ? -20 - i * 9 : W + 20 + i * 9, y: y0 + (i % 2) * 5 + i * 2, v: (izq ? 1 : -1) * (16 + Math.random() * 4), fase: Math.random() * 400 });
@@ -320,7 +316,7 @@
   P.preload = function () {
     if (pre0) pre0.apply(this, arguments);
     if (!muro || !PA) return;
-    ['A', 'B', 'C'].forEach(k => { if (!this.textures.exists('ck_muro_' + k)) this.load.image('ck_muro_' + k, PA[k]); });
+    CAPAS.forEach(c => { if (!this.textures.exists('ck_muro_' + c.k) && PA[c.k]) this.load.image('ck_muro_' + c.k, PA[c.k]); });
     (PA.nubes || []).forEach((n, i) => { if (!this.textures.exists('ck_muro_nube' + i)) this.load.image('ck_muro_nube' + i, n.img); });
     if (ARTE.mascara_muro && !this.textures.exists('ck_muro_mascara')) this.load.image('ck_muro_mascara', ARTE.mascara_muro);
   };
