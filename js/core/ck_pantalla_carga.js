@@ -228,7 +228,10 @@
         if (el && claveDe(lug) !== claveDe(c.lugar) && window.CK_CARGA_ARTE) { const a = arteDe(lug); conocer(lug); visto(a); ponerArte(el, a); }
       } catch (e) {}
       // un rato después de armar el mapa (si armarlo tardó, igual se alcanza a leer y termina de cargar lo de atrás)
-      setTimeout(() => { ocultar(); setTimeout(() => { S._ckCargando = false; }, 120); }, Math.max(MIN_DESPUES, duraAhora - (Date.now() - t0)));
+      const listo = () => { ocultar(); setTimeout(() => { S._ckCargando = false; }, 120); };
+      // (11/11) ck_carga_medida.js: dura lo que tarda ESTE mapa en armarse (medido), con 1,4 s para leer y 6 s de tope
+      if (window.CK_CARGA_MEDIDA) CK_CARGA_MEDIDA.esperar(S, listo, { min: Math.max(MIN_DESPUES, 1400 - (Date.now() - t0)), max: duraAhora });
+      else setTimeout(listo, Math.max(MIN_DESPUES, duraAhora - (Date.now() - t0)));
     });
   };
   const e0 = P.ckEntrar;

@@ -38,7 +38,9 @@
   // de 100x100; las vistas de frente y de espaldas viejas se sacan (eran del dibujo grande); desde el 10/11 tienen las suyas
   // nuevas (walk_front, walk_back, al final de ck_bestias_chibi_arte.js) y caminan de frente o de espaldas cuando van arriba/abajo
   const CA = window.CK_COLISEO_ARTE, CC = A.coliseo;
-  const COL = { orc_campeon: { h: 'elite', w: 24 }, bestia_kragmor: { h: 'gorila', w: 34 }, cazador_ulrak: { h: 'jinete', w: 36 } };
+  // (11/11) Gorvak, el campeón del escudo, rediseñado más chiquito ("quedó muy grande, rediseñalo más tiny"): dibujo nuevo
+  // de PixelLab de unos 40 px de alto (el de antes, 54), a escala 1 como los otros dos
+  const COL = { orc_campeon: { h: 'elite', w: 20, s: 1 }, bestia_kragmor: { h: 'gorila', w: 34, s: 1 }, cazador_ulrak: { h: 'jinete', w: 36, s: 1 } };
   if (CA && CC) Object.keys(CC).forEach(h => {
     Object.keys(CA).filter(k => k.indexOf(h + '_') === 0).forEach(k => delete CA[k]);
     Object.keys(CC[h]).forEach(an => { CA[h + '_' + an] = { img: CC[h][an].img, t: 100, n: CC[h][an].n }; });
@@ -53,7 +55,8 @@
     const r = pr0.apply(this, arguments);
     try {
       if (A[JEFE] && ENEMY_TYPES[JEFE]) ENEMY_TYPES[JEFE].scale = 1.15;
-      if (CC) Object.keys(COL).forEach(id => { if (ENEMY_TYPES[id]) ENEMY_TYPES[id].scale = 1; }); // unas 2 veces el héroe
+      if (CC) Object.keys(COL).forEach(id => { if (ENEMY_TYPES[id]) ENEMY_TYPES[id].scale = COL[id].s; }); // unas 2 veces el héroe (Gorvak, 1,5)
+      if (CC && ENEMY_TYPES.orc_campeon) ENEMY_TYPES.orc_campeon.reach = 52;   // más chico, el brazo llega menos
     } catch (e) {}
     return r;
   };
@@ -65,7 +68,7 @@
       if (e && e.type === 'orc_corneta') { const k = 1.2 / 1.45, w = 16 * k, h = 8 * k; e.setScale(1.45); e.body.setSize(w, h); e.body.setOffset(50 - w / 2, 60 - h); }
       if (e && e.type === JEFE && A[JEFE]) { e.setScale(1.15); e.body.setSize(20, 8); e.body.setOffset(40, 52); }
       const C = e && CC && COL[e.type];
-      if (C) { e.setScale(1); e.body.setSize(C.w, 10); e.body.setOffset(50 - C.w / 2, 50); }
+      if (C) { e.setScale(C.s); e.body.setSize(C.w, 10); e.body.setOffset(50 - C.w / 2, 50); }
       if (e && e.type === 'werebear_jefe' && A.werebear_jefe) { e.setScale(1); e.body.setSize(22, 9); e.body.setOffset(39, 51); }
     } catch (er) {}
     return e;

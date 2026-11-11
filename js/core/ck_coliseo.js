@@ -76,7 +76,7 @@
   P.createRosterAnimations = function () {
     const r = cra0.apply(this, arguments);
     try {
-      const RATE = { idle: [6, -1], walk: [10, -1], walk_front: [10, -1], walk_back: [10, -1], attack1: [16, 0], death: [9, 0], salto: [12, 0], block: [10, 0], slam: [12, 0], charge: [14, -1], arco: [14, 0], aullido: [10, 0] };
+      const RATE = { windup: [12, 0], attack2: [15, 0], idle: [6, -1], walk: [10, -1], walk_front: [10, -1], walk_back: [10, -1], attack1: [16, 0], death: [9, 0], salto: [12, 0], block: [10, 0], slam: [12, 0], charge: [14, -1], arco: [14, 0], aullido: [10, 0] };
       Object.keys(JEFES).forEach(id => {
         const h = JEFES[id].hoja;
         Object.keys(ARTE).filter(k => k.indexOf(h + '_') === 0).forEach(k => {
@@ -119,6 +119,7 @@
 
   // ------------------------------------------------------------------ dibujos en el piso
   const marca = (S, x, y, r, col, ms) => {
+    if (FX() && FX().zona) { FX().zona(S, x, y, r, col, ms); return; }   // (11/11) aviso a píxel, con aro que gira y relleno que crece
     const g = S.add.ellipse(x, y, r * 2, r * 1.24, col, 0.18).setStrokeStyle(2, col, 0.95).setDepth(9);
     const n = S.add.ellipse(x, y, 4, 3, col, 0.35).setDepth(9);
     S.tweens.add({ targets: n, width: r * 2, height: r * 1.24, duration: ms, ease: 'Linear' });
@@ -126,6 +127,7 @@
     S.time.delayedCall(ms, () => { g.destroy(); n.destroy(); });
   };
   const franja = (S, x0, y0, x1, y1, ancho, col, ms) => {
+    if (FX() && FX().franjaViva) { FX().franjaViva(S, x0, y0, x1, y1, ancho, col, ms); return; }
     const L = Math.hypot(x1 - x0, y1 - y0), a = Math.atan2(y1 - y0, x1 - x0);
     const g = S.add.rectangle((x0 + x1) / 2, (y0 + y1) / 2, L, ancho, col, 0.2).setStrokeStyle(2, col, 0.9).setRotation(a).setDepth(9);
     S.tweens.add({ targets: g, alpha: { from: 0.45, to: 1 }, duration: 150, yoyo: true, repeat: Math.max(0, Math.floor(ms / 300)) });
@@ -134,6 +136,10 @@
   const aviso = (S, e, col) => {
     e.setTint(col === ROJO ? 0xff8080 : 0xffe08a);
     if (FX()) FX().carga(S, e, col, 500);
+    // (11/11) anticipación: la animación de carga del jefe (PixelLab) si la tiene, y si no, se agacha y se tensa
+    const wu = e.type + '_windup';
+    if (S.anims.exists(wu)) { e.play({ key: wu, repeat: -1 }, true); e._ckWindup = S.time.now + 420; }
+    else if (FX() && FX().anticipar) FX().anticipar(S, e, 420);
     const t = S.add.text(e.x, e.y - 62, '!', { fontFamily: 'Georgia, serif', fontSize: '22px', fontStyle: 'bold', color: col === ROJO ? '#ff4040' : '#ffd23a', stroke: '#1b0f0a', strokeThickness: 4 }).setOrigin(0.5, 1).setDepth(26002);
     S.tweens.add({ targets: t, y: t.y - 8, duration: 220, yoyo: true, repeat: 2, onComplete: () => t.destroy() });
     (col === ROJO && son('ck_aviso_carga', 0.6)) || son('alert', 0.6) || (typeof sfx !== 'undefined' && sfx.playAlert && sfx.playAlert());
@@ -268,15 +274,17 @@
       if (!vivo(e)) return;
       polvo(S, cx, cy, 50); if (FX()) { FX().grieta(S, cx, cy, 70); FX().escombros(S, cx, cy, 50, 16); } son('ck_pisoton_jefe', 1) || son('bone_hit', 1, { rate: 0.45 });
       [0, 380, 760].forEach((d, i) => S.time.delayedCall(d, () => {
-        const ring = S.add.ellipse(cx, cy, 20, 12).setStrokeStyle(5, ROJO, 0.9).setDepth(9), k = { r: 10 }, golpeados = new Set();
+        const viva = FX() && FX().ondaViva ? FX().ondaViva(S, cx, cy, ROJO) : null;   // (11/11) borde quebrado, frente claro, estela y polvo
+        const ring = S.add.ellipse(cx, cy, 20, 12).setStrokeStyle(5, ROJO, 0.9).setDepth(9).setVisible(!viva), k = { r: 10 }, golpeados = new Set();
         S.tweens.add({ targets: k, r: 190, duration: 900, ease: 'Sine.easeOut',
           onUpdate: () => {
             ring.setSize(k.r * 2, k.r * 1.24); ring.setDisplaySize(k.r * 2, k.r * 1.24); ring.setAlpha(1 - k.r / 220);
+            if (viva) viva.poner(k.r, 1 - k.r / 220);
             if (FX() && Math.random() < 0.35) { const aa = R(0, Math.PI * 2); FX().escombros(S, cx + Math.cos(aa) * k.r, cy + Math.sin(aa) * k.r * 0.62, 8, 2); }
             const p = pies(S), d = Math.hypot(p.x - cx, (p.y - cy) / 0.62);
             if (!golpeados.has(i) && Math.abs(d - k.r) < 10) { golpeados.add(i); golpeRojo(S, 1); }
           },
-          onComplete: () => ring.destroy() });
+          onComplete: () => { ring.destroy(); if (viva) viva.fin(); } });
       }));
       S.time.delayedCall(1500, () => terminar(S, e));
     });

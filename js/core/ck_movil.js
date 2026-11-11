@@ -55,6 +55,7 @@ body.ck-movil { margin: 0 !important; padding: 0 !important; overflow: hidden !i
 body.ck-movil .game-viewport-wrapper { position: fixed !important; inset: 0 !important; max-width: none !important; width: 100vw !important; height: 100vh !important; height: 100dvh !important;
   border: none !important; box-shadow: none !important; margin: 0 !important; }
 body.ck-movil #game-canvas-container { width: 100vw !important; height: 100vh !important; height: 100dvh !important; }
+body.ck-movil #game-canvas-container canvas { width: min(100vw, calc(100dvh * 1.6)) !important; height: min(100dvh, calc(100vw / 1.6)) !important; }
 body.ck-movil { touch-action: none; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
 body.ck-movil #ckh .ran b, body.ck-movil .ck-teclas-ayuda { display: none !important; }
 /* en el celular la barra del héroe sólo muestra retrato, nombre y barras (las habilidades y pociones están en los botones) */

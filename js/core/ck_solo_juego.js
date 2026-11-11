@@ -19,6 +19,7 @@ body.ck-solo { margin: 0 !important; padding: 0 !important; overflow: hidden !im
 body.ck-solo .game-viewport-wrapper { position: fixed !important; inset: 0 !important; max-width: none !important; width: 100vw !important; height: 100vh !important;
   border: none !important; box-shadow: none !important; margin: 0 !important; }
 body.ck-solo #game-canvas-container { width: 100vw !important; height: 100vh !important; }
+body.ck-solo #game-canvas-container canvas { width: min(100vw, calc(100vh * 1.6)) !important; height: min(100vh, calc(100vw / 1.6)) !important; }
 body.ck-solo #start-menu-overlay::after, body.ck-solo .ck2-esq { display: none !important; }
 body.ck-solo #dev-toolbar:not(.hidden) { position: fixed !important; top: 0; left: 0; right: 0; z-index: 99995; }
 `;

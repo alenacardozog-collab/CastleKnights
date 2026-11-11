@@ -90,10 +90,16 @@
       e._ckPisoAt = now + GRUSHAK.cada;
       e.state = 'ck_aturdido'; e._ckRolHasta = now + GRUSHAK.aviso + 300; e.setVelocity(0, 0);   // se planta (sin estrellas)
       const x = e.body ? e.body.center.x : e.x, y = e.body ? e.body.center.y : e.y + 20;
-      const g = S.add.graphics().setDepth(9);
-      g.fillStyle(0xff3b2f, 0.22); g.fillEllipse(x, y, GRUSHAK.radio * 2, GRUSHAK.radio * 1.2);
-      g.lineStyle(2, 0xff3b2f, 0.8); g.strokeEllipse(x, y, GRUSHAK.radio * 2, GRUSHAK.radio * 1.2);
-      S.tweens.add({ targets: g, alpha: { from: 0.3, to: 1 }, duration: GRUSHAK.aviso, yoyo: false });
+      const FX = window.CK_JEFES_FX, g = S.add.graphics().setDepth(9);
+      if (FX && FX.zona) FX.zona(S, x, y, GRUSHAK.radio, 0xff3b2f, GRUSHAK.aviso);   // (11/11) aviso a píxel, no una elipse lisa
+      else {
+        g.fillStyle(0xff3b2f, 0.22); g.fillEllipse(x, y, GRUSHAK.radio * 2, GRUSHAK.radio * 1.2);
+        g.lineStyle(2, 0xff3b2f, 0.8); g.strokeEllipse(x, y, GRUSHAK.radio * 2, GRUSHAK.radio * 1.2);
+        S.tweens.add({ targets: g, alpha: { from: 0.3, to: 1 }, duration: GRUSHAK.aviso, yoyo: false });
+      }
+      // levanta el hacha (su carga, PixelLab) mientras se llena el aviso
+      if (S.anims.exists('orc_warlord_windup')) e.play({ key: 'orc_warlord_windup', repeat: -1 }, true);
+      else if (FX && FX.anticipar) FX.anticipar(S, e, GRUSHAK.aviso);
       son('beast_growl', 0.7, { rate: 0.5 });
       if (window.CK_JEFES_FX) CK_JEFES_FX.carga(S, e, 0xff3b2f, GRUSHAK.aviso);
       S.time.delayedCall(GRUSHAK.aviso, () => {
@@ -101,7 +107,7 @@
         if (!vivo(e)) return;
         if (S.anims.exists('orc_warlord_attack2')) e.play('orc_warlord_attack2');
         if (window.CK_ONDAS) CK_ONDAS.estallido(S, 'tierra', x, y, GRUSHAK.radio, 450);
-        if (window.CK_JEFES_FX) { CK_JEFES_FX.grieta(S, x, y, GRUSHAK.radio); CK_JEFES_FX.escombros(S, x, y, GRUSHAK.radio * 0.8, 16); }
+        if (window.CK_JEFES_FX) { CK_JEFES_FX.grieta(S, x, y, GRUSHAK.radio); CK_JEFES_FX.escombros(S, x, y, GRUSHAK.radio * 0.8, 16); if (CK_JEFES_FX.onda) CK_JEFES_FX.onda(S, x, y, GRUSHAK.radio * 1.15, 0xff3b2f, 520); }
         S.cameras.main.shake(300, 0.014); son('ck_giro_hacha', 0.9) || son('sword_hit', 0.9, { rate: 0.5 }); S.time.delayedCall(160, () => son('ck_pisoton_jefe', 0.6));
         const p = S.player; if (!p || !p.body) return;
         const dx = (p.body.center.x - x) / GRUSHAK.radio, dy = (p.body.center.y - y) / (GRUSHAK.radio * 0.6);

@@ -129,5 +129,173 @@
         onComplete: () => g.destroy() });
     }
   };
-  window.CK_JEFES_FX = { carga, flecha, roca, sombraCaida, escombros, grieta, rastro, estela, chispas, ondaVoz };
+  // ------------------------------------------------------------------ (11/11) aviso en el piso, onda expansiva, anticipación y tajo
+  // "las ondas expansivas rojas, mejoralas, hacelas más profesionales, que no sean un círculo y ya"
+  const SQ = 0.62;
+  const hex = c => '#' + c.toString(16).padStart(6, '0');
+  // aro de aviso a píxel: borde doble con muescas, marcas cada 30°, flechitas hacia adentro (una textura por color)
+  const texAro = (S, col) => tex(S, 'ckj_aro_' + col.toString(16), 128, 128, p => {
+    const c = hex(col), cx = 64, cy = 64;
+    for (let a = 0; a < 360; a += 1.2) {
+      const t = a * Math.PI / 180, cs = Math.cos(t), sn = Math.sin(t);
+      const muesca = Math.floor(a / 15) % 2 === 0;
+      for (let rr = 59; rr <= 62; rr++) if (muesca || rr >= 61) p(c, Math.round(cx + cs * rr), Math.round(cy + sn * rr));
+      if (Math.floor(a / 7.5) % 2 === 0) p(c, Math.round(cx + cs * 55), Math.round(cy + sn * 55));
+    }
+    for (let a = 0; a < 360; a += 30) {
+      const t = a * Math.PI / 180;
+      for (let rr = 46; rr <= 52; rr++) { p(c, Math.round(cx + Math.cos(t) * rr), Math.round(cy + Math.sin(t) * rr)); p('#ffffff', Math.round(cx + Math.cos(t) * rr), Math.round(cy + Math.sin(t) * rr) + 0); }
+      // flechita hacia adentro
+      const bx = cx + Math.cos(t + 0.26) * 40, by = cy + Math.sin(t + 0.26) * 40;
+      for (let k = 0; k < 4; k++) { p(c, Math.round(bx - Math.cos(t + 0.26) * k + Math.cos(t + 1.83) * k), Math.round(by - Math.sin(t + 0.26) * k + Math.sin(t + 1.83) * k)); p(c, Math.round(bx - Math.cos(t + 0.26) * k - Math.cos(t + 1.83) * k), Math.round(by - Math.sin(t + 0.26) * k - Math.sin(t + 1.83) * k)); }
+    }
+  });
+  const texDisco = (S, col) => tex(S, 'ckj_disco_' + col.toString(16), 64, 64, p => {
+    // disco con borde más fuerte y textura de rayas finas (no un relleno plano)
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
+      const d = Math.hypot(x - 31.5, y - 31.5); if (d > 31) continue;
+      if (d > 28 || (x + y) % 6 === 0) p(hex(col), x, y);
+    }
+  });
+  /** Aviso en el piso (reemplaza al círculo rojo): aro que gira, relleno que crece hasta el borde (= cuánto falta),
+   *  flechitas que se cierran y un destello al final. */
+  const zona = (S, x, y, r, col, ms) => {
+    const cont = S.add.container(x, y).setDepth(9).setScale(1, SQ);
+    const base = S.add.circle(0, 0, r, col, 0.08);
+    const disco = S.add.image(0, 0, texDisco(S, col)).setScale(0.02).setAlpha(0.5);
+    const aro = S.add.image(0, 0, texAro(S, col)).setScale(r / 62);
+    const aro2 = S.add.image(0, 0, texAro(S, col)).setScale(r / 62 * 1.25).setAlpha(0);
+    cont.add([base, disco, aro, aro2]);
+    S.tweens.add({ targets: aro, angle: 90, duration: ms + 200 });
+    S.tweens.add({ targets: disco, scale: r / 31, duration: ms, ease: 'Sine.easeIn' });
+    S.tweens.add({ targets: disco, alpha: { from: 0.25, to: 0.55 }, duration: ms });
+    // un aro de afuera que se cierra hacia el borde, una vez por medio segundo
+    S.tweens.add({ targets: aro2, scale: r / 62, alpha: { from: 0, to: 0.8 }, duration: 480, repeat: Math.max(0, Math.floor(ms / 480) - 1), ease: 'Quad.easeIn' });
+    S.time.delayedCall(ms, () => {
+      aro2.destroy();
+      const fl = S.add.circle(0, 0, r, 0xffffff, 0.55).setBlendMode(Phaser.BlendModes.ADD); cont.add(fl);
+      S.tweens.add({ targets: cont, alpha: 0, duration: 260, onComplete: () => cont.destroy() });
+    });
+    return cont;
+  };
+  /** Franja de aviso (embestidas): rectángulo con flechas que avanzan hacia donde va el golpe. */
+  const franjaViva = (S, x0, y0, x1, y1, ancho, col, ms) => {
+    const L = Math.hypot(x1 - x0, y1 - y0), a = Math.atan2(y1 - y0, x1 - x0);
+    const cont = S.add.container(x0, y0).setDepth(9).setRotation(a);
+    const fondo = S.add.rectangle(L / 2, 0, L, ancho, col, 0.12);
+    const lleno = S.add.rectangle(0, 0, L, ancho, col, 0.3).setOrigin(0, 0.5).setScale(0, 1);
+    const bordes = S.add.graphics();
+    bordes.fillStyle(col, 0.95);
+    for (let k = 0; k < L; k += 8) { bordes.fillRect(k, -ancho / 2, 5, 2); bordes.fillRect(k, ancho / 2 - 2, 5, 2); }
+    cont.add([fondo, lleno, bordes]);
+    const fl = [];
+    for (let k = 0; k < Math.floor(L / 34); k++) {
+      const g = S.add.graphics(); g.lineStyle(2, 0xffffff, 0.9).beginPath().moveTo(-5, -6).lineTo(2, 0).lineTo(-5, 6).strokePath();
+      g.x = 14 + k * 34; g.alpha = 0; cont.add(g); fl.push(g);
+      S.tweens.add({ targets: g, alpha: { from: 0, to: 0.9 }, x: g.x + 12, duration: 420, delay: k * 60, repeat: -1, yoyo: false });
+    }
+    S.tweens.add({ targets: lleno, scaleX: 1, duration: ms, ease: 'Sine.easeIn' });
+    S.time.delayedCall(ms, () => S.tweens.add({ targets: cont, alpha: 0, duration: 200, onComplete: () => cont.destroy() }));
+    return cont;
+  };
+  /** Onda expansiva viva: borde quebrado (no un círculo perfecto), un frente claro, una estela roja que se desvanece,
+   *  polvo y piedritas que salen del borde. Devuelve { poner(r, a), fin() } para seguir el radio del que la usa. */
+  const ondaViva = (S, x, y, col) => {
+    const g = S.add.graphics().setDepth(9.5).setPosition(x, y);
+    const N = 48, ruido = Array.from({ length: N }, () => R(-0.06, 0.06));
+    const poligono = (rr, desv) => { const pts = []; for (let i = 0; i <= N; i++) { const t = i / N * Math.PI * 2, k = 1 + ruido[i % N] * desv; pts.push(Math.cos(t) * rr * k, Math.sin(t) * rr * k * SQ); } return pts; };
+    const trazo = (pts, ancho, c, al) => { g.lineStyle(ancho, c, al).beginPath().moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]); g.strokePath(); };
+    let ult = 0;
+    return {
+      poner(rr, al) {
+        g.clear();
+        const a = Math.max(0, Math.min(1, al));
+        [[rr * 0.72, 10, 0.12], [rr * 0.84, 7, 0.22], [rr * 0.93, 5, 0.4]].forEach(([q, w, k]) => trazo(poligono(q, 1.4), w, col, k * a));
+        trazo(poligono(rr, 1), 4, col, 0.9 * a);
+        trazo(poligono(rr + 2, 0.6), 2, 0xfff1e0, 0.85 * a);
+        if (rr - ult > 14) {
+          ult = rr;
+          for (let i = 0; i < 5; i++) {
+            const t = R(0, Math.PI * 2), px = x + Math.cos(t) * rr, py = y + Math.sin(t) * rr * SQ;
+            const c = S.add.circle(px, py, R(3, 6), 0xb8a58a, 0.5).setDepth(py);
+            S.tweens.add({ targets: c, y: py - R(6, 16), scale: 1.8, alpha: 0, duration: R(400, 650), onComplete: () => c.destroy() });
+            if (Math.random() < 0.5) { const q = S.add.rectangle(px, py, 2, 2, 0x6b5a4a).setDepth(py + 1); S.tweens.add({ targets: q, x: px + Math.cos(t) * R(8, 18), y: py - R(4, 12), alpha: 0, duration: 420, onComplete: () => q.destroy() }); }
+          }
+        }
+      },
+      fin() { g.destroy(); }
+    };
+  };
+  /** Onda completa que se maneja sola (para quien no lleva su propio radio). */
+  const onda = (S, x, y, rmax, col, ms) => {
+    const o = ondaViva(S, x, y, col), k = { r: 6 };
+    S.tweens.add({ targets: k, r: rmax, duration: ms || 700, ease: 'Sine.easeOut', onUpdate: () => o.poner(k.r, 1 - k.r / (rmax * 1.15)), onComplete: () => o.fin() });
+  };
+  /** Anticipación: se agacha y se echa para atrás (aplastado), tiembla, y al soltar se estira hacia adelante. */
+  const anticipar = (S, e, ms) => {
+    if (!e || !e.active || e._ckAnt) return;
+    const sx = e.scaleX, sy = e.scaleY; e._ckAnt = { sx, sy };
+    const atras = e.flipX ? 3 : -3;
+    S.tweens.add({ targets: e, scaleY: sy * 0.86, scaleX: sx * 1.1, angle: atras, duration: Math.max(80, ms * 0.7), ease: 'Quad.easeOut' });
+    const t = S.time.addEvent({ delay: 50, repeat: Math.floor(ms * 0.7 / 50), callback: () => { if (e.active) e.setAngle(atras + R(-1.2, 1.2)); } });
+    const b = e.body, px = b ? b.center.x : e.x, py = b ? b.bottom : e.y;
+    for (let i = 0; i < 4; i++) { const c = S.add.circle(px + R(-12, 12), py, R(3, 5), 0xb8a58a, 0.45).setDepth(py); S.tweens.add({ targets: c, x: c.x + (c.x < px ? -10 : 10), y: py - 4, alpha: 0, duration: 500, onComplete: () => c.destroy() }); }
+    S.time.delayedCall(ms, () => { t.remove(); soltar(S, e); });
+  };
+  const soltar = (S, e) => {
+    const q = e && e._ckAnt; if (!q || !e.active) { if (e) e._ckAnt = null; return; }
+    e._ckAnt = null;
+    S.tweens.killTweensOf(e);
+    e.setAngle(e.flipX ? -5 : 5);
+    e.setScale(q.sx * 0.9, q.sy * 1.14);
+    S.tweens.add({ targets: e, scaleX: q.sx, scaleY: q.sy, angle: 0, duration: 260, ease: 'Back.easeOut' });
+  };
+  /** Tajo: un arco de luz en la dirección del golpe. */
+  const tajo = (S, e, alcance, col) => {
+    if (!e || !e.active) return;
+    const b = e.body, x = b ? b.center.x : e.x, y = b ? b.center.y - 6 : e.y, izq = e.flipX;
+    const g = S.add.graphics().setDepth(y + 40).setPosition(x, y);
+    const R0 = Math.max(18, alcance * 0.8), k = { t: 0 };
+    S.tweens.add({ targets: k, t: 1, duration: 200, ease: 'Quad.easeOut', onUpdate: () => {
+      g.clear();
+      const a0 = izq ? Math.PI * 1.15 : -Math.PI * 0.15, a1 = izq ? Math.PI * 0.65 : Math.PI * 0.35, a = a0 + (a1 - a0) * k.t;
+      for (let i = 0; i < 4; i++) {
+        g.lineStyle(6 - i * 1.4, i === 0 ? 0xffffff : (col || 0xffd6a0), (1 - k.t) * (0.9 - i * 0.18));
+        g.beginPath(); g.arc(0, 0, R0 - i * 3, Math.min(a0, a) , Math.max(a0, a), false); g.strokePath();
+      }
+    }, onComplete: () => g.destroy() });
+  };
+  // ------------------------------------------------------------------ (11/11) anticipación de los golpes
+  // Pedido: "añade más animaciones a sus ataques, anticipaciones… a todos los jefes". El motor (enemies.js) llama a esto
+  // antes de cada golpe cuerpo a cuerpo y espera lo que devuelve (ms) para soltar el golpe:
+  // - los jefes: su animación de carga (windup, PixelLab) en bucle o, si no tienen, se agachan y se tensan; al pegar, un tajo;
+  // - los golpes pesados de cualquiera: el aviso a píxel en el piso (aro que gira y se llena) en lugar del círculo rojo liso.
+  const JEFES = { orc_campeon: 1, bestia_kragmor: 1, cazador_ulrak: 1, orc_warlord: 1, werebear_jefe: 1 };
+  if (typeof MainGameScene !== 'undefined') MainGameScene.prototype.ckAvisoGolpe = function (enemy, def, heavy, hitAt, anim, swing) {
+    const S = this, jefe = !!(def.boss || JEFES[enemy.type]);
+    if (!jefe && !heavy) { enemy.play(anim); return 0; }
+    const wu = enemy.type + '_windup', tiene = jefe && S.anims.exists(wu);
+    const warn = jefe ? (tiene ? Math.max(380, Math.min(620, S.anims.get(wu).duration)) : (heavy ? 420 : 280)) : 380;
+    const b = enemy.body, fx = b ? b.center.x : enemy.x, fy = b ? b.bottom : enemy.y + 8;
+    if (heavy) {
+      // del lado al que mira y del tamaño del brazo (no un círculo enorme alrededor)
+      const re = def.reach || 40, lado = enemy.flipX ? -1 : 1;
+      zona(S, fx + lado * re * 0.45, fy - 2, re * 0.7 + 8, 0xff3b2f, warn + hitAt);
+      try { sfx.playAlert(); } catch (e) {}
+    }
+    if (tiene) enemy.play({ key: wu, repeat: -1 }, true);
+    else { if (heavy) enemy.setTint(0xff7070); anticipar(S, enemy, warn); }
+    if (jefe) carga(S, enemy, heavy ? 0xff5a40 : 0xffd27a, warn);
+    S.time.delayedCall(warn, () => {
+      if (!enemy.active || enemy.isDead || enemy.swingId !== swing) return;
+      enemy.clearTint(); enemy.play(anim);
+    });
+    if (jefe) S.time.delayedCall(warn + Math.max(0, hitAt - 70), () => {
+      if (!enemy.active || enemy.isDead || enemy.swingId !== swing) return;
+      tajo(S, enemy, def.reach || 40, heavy ? 0xff9a7a : null);
+      if (heavy) { const bb = enemy.body; onda(S, bb ? bb.center.x + (enemy.flipX ? -14 : 14) : enemy.x, bb ? bb.bottom - 2 : enemy.y, (def.reach || 40) * 0.9, 0xff3b2f, 380); }
+    });
+    return warn;
+  };
+  window.CK_JEFES_FX = { carga, flecha, roca, sombraCaida, escombros, grieta, rastro, estela, chispas, ondaVoz, zona, franjaViva, ondaViva, onda, anticipar, soltar, tajo };
 })();

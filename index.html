@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
 
   <!-- Custom Styles (CastleKnight Theme) -->
-  <link rel="stylesheet" href="styles.css?v=7.0">
+  <link rel="stylesheet" href="styles.css?v=7.1">
   <!-- UI skin cut from assets/UI/fantasyUI.png (overrides only) -->
   <link rel="stylesheet" href="ui-theme.css?v=3.3">
   <!-- (11/11) sólo el juego en la pantalla desde el primer instante, sin la página ni el marco alrededor (ck_solo_juego.js; ?pagina=1 = la página de antes) -->
@@ -25,6 +25,7 @@
     html.ck-solo-pre body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #000 !important; }
     html.ck-solo-pre .game-viewport-wrapper { position: fixed !important; inset: 0 !important; max-width: none !important; width: 100vw !important; height: 100vh !important; border: none !important; box-shadow: none !important; margin: 0 !important; }
     html.ck-solo-pre #game-canvas-container { width: 100vw !important; height: 100vh !important; }
+    html.ck-solo-pre #game-canvas-container canvas { width: min(100vw, calc(100vh * 1.6)) !important; height: min(100vh, calc(100vw / 1.6)) !important; }
     html.ck-solo-pre #start-menu-overlay::after, html.ck-solo-pre .ck2-esq { display: none !important; }
   </style>
 </head>
@@ -978,7 +979,7 @@
   <script src="js/scene/characters/npcs.js?v=12.2"></script>
   <script src="js/scene/characters/player.js?v=12.5b"></script>
   <script src="js/scene/characters/combat.js?v=12.8"></script>
-  <script src="js/scene/characters/enemies.js?v=12.3"></script>
+  <script src="js/scene/characters/enemies.js?v=12.4"></script>
   <script src="js/scene/characters/roster.js?v=12.3"></script>
   <script src="js/scene/systems/story.js?v=12.7"></script>
   <script src="js/scene/systems/extras.js?v=1.4"></script>
@@ -1131,7 +1132,7 @@
   <script src="js/core/ck_trampas.js?v=2"></script>
   <!-- bestias con roles (embestida, escudo, tirador, aullido) y jefes con fases (07/11); borrar cada línea lo saca -->
   <script src="js/core/ck_roles.js?v=1"></script>
-  <script src="js/core/ck_jefes_fases.js?v=3"></script>
+  <script src="js/core/ck_jefes_fases.js?v=4"></script>
   <!-- (10/11) llamadores de refuerzos por especie (corneta orca, alfa de la manada, alzahuesos…) y panel de pruebas de la práctica (F4: bestias, soldados, probar mapas sin guardar). Borrar cada línea lo saca -->
   <script src="js/core/ck_refuerzos.js?v=2"></script>
   <script src="js/core/ck_panel_pruebas.js?v=2"></script>
@@ -1141,9 +1142,9 @@
   <script src="js/core/ck_dificultad.js?v=1"></script>
   <script src="js/core/ck_gamepad.js?v=2"></script>
   <!-- (11/11) modo celular horizontal: palanca, botones táctiles y "girá el celular" (borrar esta línea lo saca) -->
-  <script src="js/core/ck_movil.js?v=1"></script>
+  <script src="js/core/ck_movil.js?v=2"></script>
   <!-- (11/11) sólo el juego en la pantalla: sin cabecera, sin barra de teclas ni marco; pantalla completa con el primer clic (?pagina=1 muestra la página de antes; borrar esta línea vuelve a la de antes) -->
-  <script src="js/core/ck_solo_juego.js?v=2"></script>
+  <script src="js/core/ck_solo_juego.js?v=3"></script>
   <!-- oscuridad como sistema (07/11): zonas oscuras, bestias en la sombra, braseros seguros; lista para la región final. Borrar la línea lo saca -->
   <script src="js/core/ck_oscuridad.js?v=2"></script>
   <!-- tabla de conexiones para los mapas nuevos (07/11): CK_CONEXIONES.unir(mapa, borde, otro); borrar la línea la saca -->
@@ -1162,7 +1163,7 @@
   <script src="js/core/ck_fondo_vivo.js?v=1"></script>
   <script src="js/core/ck_pantalla_carga_arte.js?v=1"></script>
   <script src="js/core/ck_carga_videos.js?v=2"></script>
-  <script src="js/core/ck_pantalla_carga.js?v=6"></script>
+  <script src="js/core/ck_pantalla_carga.js?v=7"></script>
   <script src="js/core/ck_monolito_arte.js?v=2"></script>
   <script src="js/core/ck_monolito.js?v=2"></script>
   <!-- (09/11) Campos del Roble: en el camino del oeste de la aldea a Brumavieja, con vida y pistas. Borrar la línea vuelve el camino directo a las ruinas -->
@@ -1181,7 +1182,9 @@
   <!-- (10/11) Monedas de bronce, plata y oro (100 = 1 de la siguiente) y mejores premios en los lugares difíciles. Borrar esta línea lo deshace. -->
   <script src="js/core/ck_monedas.js?v=1"></script>
   <!-- (10/11) Globos de diálogo nuevos: burbuja con colita que apunta al que habla, aparece con un "pop" y letra por letra. Borrar esta línea vuelve al globito de antes. -->
-  <script src="js/core/ck_globos.js?v=1"></script>
+  <script src="js/core/ck_globos.js?v=2"></script>
+  <!-- (11/11) cinemáticas sin interfaz: borrar esta línea la vuelve a mostrar -->
+  <script src="js/core/ck_cine_ui.js?v=1"></script>
   <!-- (10/11) Partidas nuevas: al empezar sólo caminar y golpe básico; correr y dash en el entrenamiento, la parada, el golpe fuerte y las ranuras por nivel; al principio sólo murciélagos y limos. Borrar esta línea lo saca. -->
   <script src="js/core/ck_progreso.js?v=1"></script>
   <!-- (10/11) Prólogo nuevo: festejo en la taberna, Pipo (el paje) te despierta y te lleva al Rey, y el entrenamiento con Bruno que da el dash. Borrar esta línea vuelve al arranque de antes. -->
@@ -1212,13 +1215,13 @@
   <script src="js/core/ck_dialogos_npc.js?v=1"></script>
   <script src="js/core/ck_reloj.js?v=1"></script>
   <script src="js/core/ck_coliseo_arte.js?v=2"></script>
-  <script src="js/core/ck_coliseo.js?v=3"></script>
+  <script src="js/core/ck_coliseo.js?v=4"></script>
   <script src="js/core/ck_coliseo_gradas_arte.js?v=1"></script>
   <script src="js/core/ck_coliseo_gradas.js?v=1"></script>
   <script src="js/core/ck_coliseo_historia.js?v=1"></script>
   <!-- (10/11) bestias en el estilo chico de los héroes (huargo, Grushak y el orco del cuerno nuevo; PixelLab). Borrar estas dos líneas vuelve a las de antes -->
-  <script src="js/core/ck_bestias_chibi_arte.js?v=3"></script>
-  <script src="js/core/ck_bestias_chibi.js?v=3"></script>
+  <script src="js/core/ck_bestias_chibi_arte.js?v=4"></script>
+  <script src="js/core/ck_bestias_chibi.js?v=4"></script>
   <!-- (10/11) personajes más grandes en los mapas del Taller (el pie queda igual). Borrar esta línea lo saca -->
   <script src="js/core/ck_escala_mapas.js?v=3"></script>
   <!-- (10/11) música que sigue el momento: temas por lugar y capa de batalla (tambores orcos). Borrar esta línea lo saca -->
@@ -1228,7 +1231,7 @@
   <!-- (10/11) terreno que se rompe peleando: estacas, cercas, carretas, barriles del dibujo (borrar esta línea lo saca) -->
   <script src="js/core/ck_terreno_rompible.js?v=1"></script>
   <!-- (10/11) partículas y proyectiles a píxel de las habilidades de los jefes (borrar esta línea vuelve a los dibujos de antes) -->
-  <script src="js/core/ck_jefes_fx.js?v=1"></script>
+  <script src="js/core/ck_jefes_fx.js?v=2"></script>
   <script src="js/core/ck_sendero_orco.js?v=1"></script>
   <script src="js/core/ck_afueras_orcas.js?v=1"></script>
   <!-- (10/11) presentaciones de los personajes principales (retrato en pose, nombre en su tipografía, sonido) y barras de
@@ -1236,6 +1239,8 @@
   <script src="js/core/ck_presentaciones_arte.js?v=1"></script>
   <script src="js/core/ck_presentaciones.js?v=1"></script>
   <script src="js/core/ck_barras.js?v=1"></script>
+  <!-- (11/11) cargas medidas por mapa: la pantalla de carga y el fundido duran lo que tarda cada mapa en armarse -->
+  <script src="js/core/ck_carga_medida.js?v=1"></script>
   <script src="js/game.js?v=11.1"></script>
 </body>
 </html>

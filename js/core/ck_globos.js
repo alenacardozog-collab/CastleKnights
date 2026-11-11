@@ -7,6 +7,13 @@
    - aparece con un "pop" (crece desde la colita), primero tres puntitos y después el texto letra por letra;
    - si dos globos se pisan, el más nuevo se acomoda arriba; si el mismo personaje vuelve a hablar, el globo anterior se va;
    - no se sale de la pantalla (se corre de costado y la colita sigue apuntando al personaje).
+   v2 (11/11, pedido: "me gustaban más las burbujas de diálogo anteriores; dale timing a los diálogos, si hay más de un
+   personaje a veces los globos salen todos al mismo tiempo; mientras se escriben algunas letras se salen del borde"):
+   - el dibujo vuelve a ser el globo de pergamino de PixelLab (el del 10/11, de ck_ui_sutil.js), estirado al tamaño de la
+     frase sin deformar las esquinas, con su colita;
+   - el texto se corta en renglones ANTES de escribirse y se escribe dentro de una caja fija: ninguna letra se sale;
+   - turnos: si otro personaje cerca (300 px) todavía está hablando, el nuevo globo espera a que el otro termine de
+     escribir y se lea (el de antes queda un rato, y el nuevo aparece arriba si se pisan).
    Borrar su línea de index.html vuelve al globito de antes. */
 (function () {
   if (typeof MainGameScene === 'undefined' || !window.CK_ESCENA) return;
@@ -15,6 +22,24 @@
   const ANCHO = 128, PAD_X = 5, PAD_Y = 3, COLA = 5, PROF = 29400;
   const vivos = [];   // globos en pantalla
   let orden = 0;
+  // ------------------------------------------------------------------ (v2) el globo de pergamino de PixelLab
+  const ARTE = { globo: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEkAAAAuCAYAAABkgjQ+AAAFVklEQVR42uVbvY4cRRCu6pnzERza0EanQ3ICcnIXEPIEgIgcICQikHgAR05NQMgTABIQIJAIkRNCCAlsAgsSC8wZTpYsrXGw57vpIpjtnu7qqp7pmZ0Lblta7c5MT/98/dVPV/UiCOVwf4/OLALYFwDmClzWsmMIwnleqQ0AANx7tMSwXnRx45WXyf3+6e7nsG3lrXc+akEDgAf//IcJSIf7e3T3xy/8C1dfe3OrADr545fo+u13P/aMQscgxxwHzurZ4+4NsgBo9B7Itl/UERORomt3z9Vzv9sHRm0zeu7uoQGyBGjQf4fv8X5937wfNq/lvw8TZt0/fo61k00H0Gr5t3+RzEtdJ3alg7Suj9gNUhpoeM/9TibKwCFLAEQx8dfXZEnsw7Xp2vfNEgOUgba4dj0Ca62iwHAx850FAEnXuRKxpOe5m0wLRscUD7zB6Jvf60BI23S/OWB8XtrcvvryEzjc3yMT6qDVs8d5sRrSwYD3JZbl3pdACQGIgM52bCOmauAsrl2Hp0+O131WYGozXelJnfWxSaqfBW/mojGqggZMA5U8aKaD/HWoMxSgNJ3kwOAAuutiYA1Oey7oWQ5UAxUYss1otmgdaoOTQAgtngN2kNgoC8bF0YkoGox0XW5O4f0KGjBoKtns9uiMHGiaonRAcCuXuARTxIYBHOos/lyz2Px+La6Ssyx2FYuRAkzYaC8LcuATpX6PUhfBTgLSG4OcawMA55aDhCZhk2tkDEAlgOXMdK9vpvQZ+kv8/tBSGwDTa4LXoEmI961CqRIuGXwfQ6RFyvaRUTVmYO+9AI0Ws8KV7WtHG4eq85zvlPHv6qJBbJA5CQOkvdUEFonbFbCiSukVucgFkDaVQzxouznLNIVVQ8bR1hluTc8tMBdgpIndkKxkxaXUey96liECmooxqVB/bAqgcJM6lknxe61ohZEG790U+mNkG6hLmTSXTtqkAg/9LtHKFQIVb0tC2oWuf7hz3pR4TbBwfWPgXramyL33z+bI/aQ8k4IoHyLMClSpqGnO4Zix+TmCFXWUKRmUNLBNishw6zTBj8pEKLT7ugsgKNXQYYv2Pxu1SjgLuLl6OR11bjmTtIA82S6kMbdOyuiHOfpOEhIMg9oU+ElJ5mMGVyDnr0ztQ1ILHiABHD0KwGNGmYHNwiiys7E0TEGVFpMb7Eb9liH6Ak3LWGFVxaimxA4pI2LHq4o0VOJM/gAmzbXaozIsIxgeJR4yelBl0hBnbPQ+aYSoaWOZsogi6MoYIo97TKw5t8IlKSKXeU3EJbCss1o2BagkChC+hEgXopPmcEqnZpiTbYnons/sE5Xs2+ZIWJa2afriOxcVAehbeS1nF36mMMgDJ1jWSCdxEbsIJiFSVmn7bVHhfmu0iAmWLo4CsJBtX+ZhDiC1aIB0VsBnfDNA5bLGQ0GsSwetOXBTwcq+7w5tBcmCvjyadyADPessaHfeSTkkpoHkD29RGlOR4to8AjAGqHDSiEOcTYgmmNOZCdPR+D54WJeD9fC3nyE6MOEulid/xkiy3T/vtG8lh7gQYy2XpjvVnL8Q7pH8sUl5N4k1pUpSTw5m8m0saRi1EUyqPYZI/lu9Zwbk3MhCtbMLzdkpVDu7UEHTRriODhb07Tef+nqvvv5GWThjpt37RZe/fv+1FbGzUwAA+ODDO3Dv0bKd8YtzK1bOmsjwc4kAcqXa2U0Pu9+4uks/fPdZp7DWdNvWcvO9W/Dg5BSTfwT4v0sAwPdf39k6kG6+f9sf175//BzFv024cnSwoAoa0M5TXsZCtgE0FZBtIoAgl5o4OljQNrFIAseV/wGblXLGXjVtEAAAAABJRU5ErkJggg==', cola: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAFCAYAAAB4ka1VAAAASUlEQVR42mM0kuX5v3BeEwM2EJ1Qx8B07vEXxpikRqySl55+YWRiYGBg+PXnHwNBoC/L///y7r7/l3f3/deT5vmPVZGeNA+GJAASaxqkfGRH7gAAAABJRU5ErkJggg==' };
+  const IMG = new Image(); IMG.src = ARTE.globo;
+  const B = 7;   // borde del dibujo (esquinas que no se estiran)
+  const texGlobo = (S, w, h) => {
+    const k = 'ckglobo_' + w + 'x' + h;
+    if (S.textures.exists(k)) return k;
+    if (!IMG.complete || !IMG.naturalWidth) return null;
+    const t = S.textures.createCanvas(k, w, h), g = t.getContext(), W = IMG.naturalWidth, H = IMG.naturalHeight;
+    g.imageSmoothingEnabled = false;
+    const d = (sx, sy, sw, sh, dx, dy, dw, dh) => { if (dw > 0 && dh > 0) g.drawImage(IMG, sx, sy, sw, sh, dx, dy, dw, dh); };
+    const cw = W - 2 * B, ch = H - 2 * B, iw = w - 2 * B, ih = h - 2 * B;
+    d(0, 0, B, B, 0, 0, B, B); d(W - B, 0, B, B, w - B, 0, B, B); d(0, H - B, B, B, 0, h - B, B, B); d(W - B, H - B, B, B, w - B, h - B, B, B);
+    d(B, 0, cw, B, B, 0, iw, B); d(B, H - B, cw, B, B, h - B, iw, B); d(0, B, B, ch, 0, B, B, ih); d(W - B, B, B, ch, w - B, B, B, ih);
+    d(B, B, cw, ch, B, B, iw, ih);
+    t.refresh(); return k;
+  };
+  const texCola = S => { if (!S.textures.exists('ckglobo_cola')) { try { S.textures.addBase64('ckglobo_cola', ARTE.cola); } catch (e) {} } return S.textures.exists('ckglobo_cola') ? 'ckglobo_cola' : null; };
 
   const dibujar = (g, w, h, colaX, largo) => {
     // cuerpo con esquinas recortadas de a un píxel (se ve pixel art, no redondeado liso)
@@ -78,14 +103,22 @@
       fontFamily: "'CK Grenze', Georgia, serif", fontSize: '10px', fontStyle: '600', color: C.tinta,
       wordWrap: { width: ANCHO - PAD_X * 2 }, align: 'center', lineSpacing: -1
     }).setOrigin(0.5, 1).setResolution(4);
-    // medida final con el texto entero
+    // medida final con el texto entero, cortado en renglones de una vez (así se escribe sin que nada salte ni se salga)
     t.setText(texto);
-    const w = Math.max(22, Math.ceil(t.width) + PAD_X * 2), h = Math.ceil(t.height) + PAD_Y * 2;
+    const lineas = t.getWrappedText ? t.getWrappedText(texto) : [texto];
+    const final = lineas.join('\n');
+    t.setWordWrapWidth(null); t.setText(final);
+    const tw = Math.ceil(t.width), th = Math.ceil(t.height);
+    t.setFixedSize(tw, th);
+    const arte = texGlobo(S, Math.max(26, tw + 14), th + 13);   // el pergamino (null: todavía no cargó, va el dibujado)
+    const w = arte ? Math.max(26, tw + 14) : Math.max(22, tw + PAD_X * 2), h = arte ? th + 13 : th + PAD_Y * 2;
     t.setText('');
     const g = S.add.graphics();
+    const fondo = arte ? S.add.image(0, 0, arte).setOrigin(0.5, 1) : null;
+    const colaImg = arte && texCola(S) ? S.add.image(0, 0, 'ckglobo_cola').setOrigin(0.5, 0) : null;
     // el más nuevo va detrás de los que ya estaban: si sube con su palito, el palito pasa por detrás del otro globo
     if (!vivos.length) orden = 0;
-    const cont = S.add.container(0, 0, [g, t]).setDepth(PROF - (orden++) * 0.01).setScale(0.2).setAlpha(0);
+    const cont = S.add.container(0, 0, [g, fondo, colaImg, t].filter(Boolean)).setDepth(PROF - (orden++) * 0.01).setScale(0.2).setAlpha(0);
     t.setPosition(0, -COLA - PAD_Y + 1);
 
     const altura = alto || (sp.displayHeight ? sp.displayHeight * 0.92 : 40);
@@ -117,7 +150,18 @@
       const largo = Math.round(v.dy);
       cont.setPosition(bx, y + bob);
       colaX = x - bx;
-      if (colaX !== ultimaColaX || largo !== ultimoLargo) { dibujar(g, w, h, colaX, largo); ultimaColaX = colaX; ultimoLargo = largo; t.setY(-COLA - largo - PAD_Y + 1); }
+      if (colaX !== ultimaColaX || largo !== ultimoLargo) {
+        ultimaColaX = colaX; ultimoLargo = largo;
+        if (fondo) {
+          // pergamino: abajo en -COLA-largo; la colita sale del borde de abajo y apunta a la cabeza
+          const yb = -COLA - largo;
+          fondo.setPosition(0, yb); t.setY(yb - 6);
+          const cx = Math.round(Math.max(-w / 2 + 9, Math.min(w / 2 - 9, colaX)));
+          g.clear();
+          if (largo > 0) { g.fillStyle(C.borde, 1); g.fillRect(cx - 2, yb - 1, 5, largo + 2); g.fillStyle(0xd3bb8e, 1); g.fillRect(cx - 1, yb - 2, 3, largo + 2); }
+          if (colaImg) colaImg.setPosition(cx, yb - 2 + largo);
+        } else { dibujar(g, w, h, colaX, largo); t.setY(-COLA - largo - PAD_Y + 1); }
+      }
     };
     v.nacio = S.time.now;
     vivos.push(v);
@@ -131,13 +175,14 @@
     // tres puntitos y después letra por letra (termina antes de la mitad del tiempo)
     const puntos = Math.min(260, ms * 0.12);
     let tipeo = null, pt = null, k = 0;
+    t.setAlign('center');
     pt = S.time.addEvent({ delay: 85, repeat: Math.max(0, Math.floor(puntos / 85) - 1), callback: () => { k = (k + 1) % 4; if (!v.cerrado) t.setText('.'.repeat(k || 1)); } });
     const arrancar = S.time.delayedCall(puntos, () => {
       if (v.cerrado) return;
       if (pt) pt.remove();
       const total = texto.length, dur = Math.max(200, Math.min(ms * 0.45, total * 32));
       let n = 0;
-      tipeo = S.time.addEvent({ delay: Math.max(12, dur / total), repeat: total - 1, callback: () => { n++; if (!v.cerrado) t.setText(texto.slice(0, n)); } });
+      tipeo = S.time.addEvent({ delay: Math.max(12, dur / total), repeat: total - 1, callback: () => { n++; if (!v.cerrado) t.setText(final.slice(0, n)); } });
     });
 
     v.cerrar = (rapido) => {
@@ -146,7 +191,7 @@
       [pt, tipeo, arrancar, fin].forEach(x => { try { x && x.remove && x.remove(); } catch (e) {} });
       const terminar = () => { ev.remove(); try { cont.destroy(); } catch (e) {} const i = vivos.indexOf(v); if (i >= 0) vivos.splice(i, 1); resolver(); };
       if (rapido || !cont.active) { terminar(); return; }
-      t.setText(texto);
+      t.setText(final);
       S.tweens.add({ targets: cont, scale: 0.7, alpha: 0, duration: 170, ease: 'Sine.easeIn', onComplete: terminar });
     };
     const fin = S.time.delayedCall(ms, () => v.cerrar(false));
@@ -154,6 +199,22 @@
     cont.once('destroy', () => { if (!v.cerrado) { v.cerrado = true; ev.remove(); const i = vivos.indexOf(v); if (i >= 0) vivos.splice(i, 1); resolver(); } });
   });
 
-  E.globo = globo;
-  window.CK_GLOBOS = { globo, vivos };
+  // ------------------------------------------------------------------ (v2) turnos entre los que charlan
+  // cada globo anota hasta cuándo "habla" (puntitos + escritura + un rato para leer); si otro personaje cerca todavía
+  // habla, el nuevo espera su turno
+  const CERCA = 300, turnos = [];
+  const habla = (ms, texto) => { const p = Math.min(260, ms * 0.12), d = Math.max(200, Math.min(ms * 0.45, texto.length * 32)); return p + d + Math.min(1400, 450 + texto.length * 18); };
+  const conTurno = (S, sp, texto, ms = 2600, alto) => {
+    if (!S || !sp || !sp.active || !texto) return Promise.resolve();
+    const now = S.time.now;
+    for (let i = turnos.length - 1; i >= 0; i--) if (turnos[i].hasta <= now || !turnos[i].sp.active) turnos.splice(i, 1);
+    let desde = now;
+    turnos.forEach(o => { if (o.sp !== sp && Math.hypot(o.sp.x - sp.x, o.sp.y - sp.y) < CERCA) desde = Math.max(desde, o.hasta); });
+    const espera = desde - now, yo = { sp, hasta: desde + habla(ms, texto) };
+    turnos.push(yo);
+    if (espera < 30) return globo(S, sp, texto, ms, alto);
+    return new Promise(r => S.time.delayedCall(espera, () => globo(S, sp, texto, ms, alto).then(r)));
+  };
+  E.globo = conTurno;
+  window.CK_GLOBOS = { globo: conTurno, solo: globo, vivos };
 })();

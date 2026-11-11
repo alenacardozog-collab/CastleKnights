@@ -463,8 +463,11 @@ Object.assign(MainGameScene.prototype, {
             if (melee) { const m = this.enemyMeleeAttack(enemy, def); anim = m.key; hitAt = m.hitAt; big = m.n === 3; }
 
             // heavy hitters announce the blow: a red flash and a ring that closes in, then the swing
-            const heavy = melee && (def.dmg > 1 || big), warn = heavy ? 380 : 0;
-            if (heavy) {
+            const heavy = melee && (def.dmg > 1 || big);
+            let warn = heavy ? 380 : 0;
+            // (11/11) ck_jefes_fx.js: anticipación de los jefes (su animación de carga o agacharse) y aviso a píxel en el piso
+            if (melee && this.ckAvisoGolpe) warn = this.ckAvisoGolpe(enemy, def, heavy, hitAt, anim, swing);
+            else if (heavy) {
               enemy.setTint(0xff7070);
               const ring = this.add.circle(enemy.x, enemy.y + 8, def.reach + 14).setStrokeStyle(2, 0xff4040, 0.9).setDepth(enemy.depth - 1);
               this.tweens.add({ targets: ring, radius: 10, alpha: 0.2, duration: warn + hitAt, onComplete: () => ring.destroy() });
