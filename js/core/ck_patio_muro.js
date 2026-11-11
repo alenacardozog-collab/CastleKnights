@@ -98,8 +98,8 @@
         puerta(PC.torreO, 'walls', '▲ Subir a la muralla', MU.llegaO);
         puerta(PC.torreE, 'walls', '▲ Subir a la muralla', MU.llegaE);
         // guardias en la escalinata del Gran Salón
-        kit.person(y, 'g_knight_idle', 'g_knight_idle', 446, 202, { scale: 1.2 });
-        kit.person(y, 'g_knight_idle', 'g_knight_idle', 514, 202, { scale: 1.2, flipX: true });
+        kit.person(y, 'g_templar_idle', 'g_templar_idle', 446, 202, { scale: 1.2 });   // (10/11) lanceros del Rey (espada y escudo: sólo Bruno)
+        kit.person(y, 'g_templar_idle', 'g_templar_idle', 514, 202, { scale: 1.2, flipX: true });
         habla(480, 198, ['El rey os espera en el Gran Salón 👑', '¡Alto! ...Ah, sois vos. Pasad.', 'Mantened la espada envainada aquí ⚔️'], 46);
         // un guardia hace la ronda alrededor de la fuente; un albañil va y viene junto a la fachada
         y.actors.push({ type: 'walker', key: 'g_lancer_idle', idle: 'g_lancer_idle', walk: 'g_lancer_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 24,

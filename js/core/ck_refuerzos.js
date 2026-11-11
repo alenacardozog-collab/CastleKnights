@@ -2,16 +2,18 @@
 /* Llamadores de refuerzos (10/11, pedido del dueño: "que de los orcos haya uno que destaque, que haga una animación de
    llamar refuerzos y ahí se llene de más enemigos, y así por especie, pero no tan igual").
    En cada zona, del grupo más numeroso de una especie (3 o más) uno se vuelve LLAMADOR: un poco más grande, más vida
-   (×1,5) y su nombre arriba, del color de su especie. La primera vez que te ve se planta y llama (1,3 s: anima, ondas
+   (×1,5). La primera vez que te ve se planta y llama (1,3 s: anima, ondas
    de color, sonido). Si le pegás mientras llama, LO INTERRUMPÍS y no viene nadie. Si termina, llegan los refuerzos,
    distinto según la especie:
-   - Corneta orca (orcos): sopla el cuerno de guerra; 4 orcos llegan corriendo desde fuera de la pantalla.
+   - Orco del cuerno (orcos): sopla el cuerno de guerra; 4 orcos llegan corriendo desde fuera de la pantalla.
    - Alfa de la manada (huargos, hombres lobo): aúlla; la manada llega de a uno, desde dos o tres lados distintos.
    - Oso rugidor (hombre oso): ruge, tiembla el piso y caen piedritas; llegan dos huargos y un jabalí.
    - Alzahuesos (esqueletos): golpea el piso; tres muertos salen de la tierra a su alrededor.
    - Limo madre: se infla y se parte; tres limos brotan de ella y saltan para los costados.
    - Murciélago chillón: chilla; cuatro murciélagos bajan volando desde arriba.
    - Jabalí viejo: gruñe y escarba; dos jabalíes llegan embistiendo.
+   (10/11) El de los orcos es uno en especial, el ORCO DEL CUERNO (orc_corneta, ck_bestias_chibi.js): en la zona, uno de los
+   orcos se cambia por él. Nada de carteles: se entiende por lo que hace (sopla el cuerno y salen las ondas del sonido).
    Un llamador llama una vez; si pasa de la mitad de la vida y sigue en pie, puede llamar otra vez (con la mitad).
    Nunca hay más de TOPE bestias a la vez (los refuerzos que sobran no vienen). Los refuerzos no llaman a nadie.
    CK_REFUERZOS.hacer(escena, bestia, 'orco') convierte a una bestia en llamador (lo usa el panel de pruebas);
@@ -21,11 +23,12 @@
   const P = MainGameScene.prototype;
   const TOPE = 30, LLAMA_MS = 1300, GRUPO = 3;
   const ESPECIES = {
-    orco: { tipos: /^(orc|orc_armored|orc_elite)$/, prefiere: ['orc_elite', 'orc_armored', 'orc'], nombre: 'Corneta orca', color: 0xf97316,
-      grito: '¡CUERNO DE GUERRA!', sonido: [['ev_cuerno_orco', 0.75], ['orc_attack', 0.8, 0.6]], llegan: 'corriendo', refuerzos: ['orc', 'orc', 'orc_armored', 'orc'],
+    orco: { tipos: /^(orc|orc_armored|orc_elite|orc_corneta)$/, prefiere: ['orc_corneta', 'orc', 'orc_armored'], nombre: 'Corneta orca', color: 0xf97316,
+      llamador: 'orc_corneta', anim: 'attack2', cuerno: true,
+      grito: '¡CUERNO DE GUERRA!', sonido: [['ck_cuerno_orco', 0.85, 1], ['ev_cuerno_orco', 0.75], ['orc_attack', 0.8, 0.6]], llegaSon: 'ck_refuerzos_llegan', llegan: 'corriendo', refuerzos: ['orc', 'orc', 'orc_armored', 'orc'],
       aviso: '¡Vienen más orcos!' },
     lobo: { tipos: /^(warg|werewolf)$/, prefiere: ['werewolf', 'warg'], nombre: 'Alfa de la manada', color: 0x93c5fd,
-      grito: '¡AÚÚÚÚÚÚ!', sonido: [['ev_aullido', 0.8], ['beast_growl', 0.8, 0.6]], llegan: 'manada', refuerzos: ['warg', 'warg', 'warg', 'werewolf'],
+      grito: '¡AÚÚÚÚÚÚ!', sonido: [['warg_howl', 0.85, 1], ['ev_aullido', 0.8], ['beast_growl', 0.8, 0.6]], llegan: 'manada', refuerzos: ['warg', 'warg', 'warg', 'werewolf'],
       aviso: 'La manada contesta' },
     oso: { tipos: /^werebear$/, prefiere: ['werebear'], grupo: 1, nombre: 'Oso rugidor', color: 0xf59e0b,
       grito: '¡GRRRAAAAAH!', sonido: [['rugido_oso', 0.85], ['beast_growl', 0.9, 0.5]], llegan: 'corriendo', refuerzos: ['warg', 'warg', 'boar'], temblor: true,
@@ -56,11 +59,8 @@
     esp = esp || especieDe(e.type); const E = ESPECIES[esp];
     if (!E || !vivo(e) || e._ckLlama || (e.def && e.def.boss)) return false;
     e._ckLlama = esp; e._ckLlamadas = 0;
-    e.setScale(e.scaleX * 1.15);
-    e.maxHp = Math.ceil(e.maxHp * 1.5); e.hp = Math.ceil(e.hp * 1.5);
-    e._ckLlamaTag = S.add.text(e.x, e.y - 40, E.nombre, { fontFamily: 'MedievalSharp, monospace', fontSize: '10px', color: colorCss(E.color),
-      stroke: '#000000', strokeThickness: 3 }).setOrigin(0.5, 1).setDepth(26001);
-    e.once('destroy', () => { if (e._ckLlamaTag) e._ckLlamaTag.destroy(); });
+    // (10/11) sin cartel con el nombre: se entiende por lo que hace. El que no tiene dibujo propio se ve un poco más grande
+    if (e.type !== E.llamador) { e.setScale(e.scaleX * 1.15); e.maxHp = Math.ceil(e.maxHp * 1.5); e.hp = Math.ceil(e.hp * 1.5); }
     return true;
   };
   // al entrar a una zona: del grupo más numeroso de una especie, uno se vuelve llamador
@@ -74,7 +74,14 @@
     const k = ks[0], E = ESPECIES[k], g = grupos[k];
     g.sort((a, b) => E.prefiere.indexOf(a.type) - E.prefiere.indexOf(b.type));
     const mejores = g.filter(e => e.type === g[0].type);
-    hacer(S, Phaser.Utils.Array.GetRandom(mejores), k);
+    let elegido = Phaser.Utils.Array.GetRandom(mejores);
+    // la especie con su propio llamador (el orco del cuerno): uno del grupo se cambia por él, en el mismo lugar
+    if (E.llamador && elegido.type !== E.llamador && ENEMY_TYPES[E.llamador] && S.textures.exists(E.llamador + '_idle')) {
+      const x = elegido.x, y = elegido.y, z = elegido.zone, home = elegido.home;
+      const n = S.spawnEnemy(x, y, E.llamador);
+      if (n) { n.zone = z; n.home = home; n.setAlpha(1); try { if (elegido.hpBar) elegido.hpBar.destroy(); elegido.destroy(); } catch (er) {} elegido = n; }
+    }
+    hacer(S, elegido, k);
   };
 
   // ------------------------------------------------------------------ dónde aparecen
@@ -115,16 +122,37 @@
     });
     try { if (window.CK_LUZ) CK_LUZ.agregar({ x: e.x, y: e.y, c: [(color >> 16) & 255, (color >> 8) & 255, color & 255], r: 120, f: 0.9, ms: LLAMA_MS, curva: 'crece' }); } catch (er) {}
   };
+  const cuerno = (S, e, color) => {
+    const dir = e.flipX ? -1 : 1, t0 = S.time.now;
+    for (let i = 0; i < 7; i++) S.time.delayedCall(i * 130, () => {
+      if (!vivo(e) || !e._ckLlamando) return;
+      const k = e.scaleX / 1.45, x = e.x + dir * 15 * k, y = e.y - 3 * k;
+      const g = S.add.graphics().setDepth(e.y + 60).setPosition(x, y);
+      g.lineStyle(2, i % 2 ? 0xfff1c2 : color, 0.95); g.beginPath(); g.arc(0, 0, 6, -0.7, 0.7); g.strokePath();
+      g.setRotation(dir < 0 ? Math.PI : 0);
+      S.tweens.add({ targets: g, scaleX: 6, scaleY: 6, x: x + dir * 46, alpha: 0, duration: 620, ease: 'Quad.easeOut', onComplete: () => g.destroy() });
+      // el aire sacude el polvo del piso delante del cuerno
+      const d = S.add.circle(x + dir * Phaser.Math.Between(10, 40), e.y + 22, Phaser.Math.Between(1, 3), 0x9a8a70, 0.8).setDepth(e.y + 20);
+      S.tweens.add({ targets: d, x: d.x + dir * Phaser.Math.Between(10, 30), y: d.y - Phaser.Math.Between(2, 8), alpha: 0, duration: 520, onComplete: () => d.destroy() });
+    });
+    try { if (window.CK_LUZ) CK_LUZ.agregar({ x: e.x, y: e.y, c: [255, 190, 110], r: 90, f: 0.7, ms: 900, curva: 'crece' }); } catch (er) {}
+    S.cameras.main.shake(500, 0.0025);
+  };
   const llamar = (S, e) => {
     const E = ESPECIES[e._ckLlama]; if (!E || !vivo(e)) return;
     e._ckLlamadas++; e._ckLlamando = true; e._ckLlamaHp = e.hp;
     e.state = 'ck_aulla'; e._ckRolHasta = S.time.now + LLAMA_MS; e.setVelocity(0, 0);
     e.isAttacking = false; e.swingId = (e.swingId || 0) + 1;
-    if (S.anims.exists(e.type + '_attack1')) { e.play({ key: e.type + '_attack1', timeScale: 0.6 }); e.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => { if (vivo(e) && S.anims.exists(e.type + '_idle')) e.play(e.type + '_idle'); }); }
-    const sy = e.scaleY; S.tweens.add({ targets: e, scaleY: sy * 1.1, duration: 260, yoyo: true, repeat: 1, onComplete: () => { if (e.active) e.setScale(e.scaleX, sy); } });
+    const propia = E.anim && S.anims.exists(e.type + '_' + E.anim) ? e.type + '_' + E.anim : null;
+    const clave = propia || (S.anims.exists(e.type + '_attack1') ? e.type + '_attack1' : null);
+    if (clave) {
+      if (propia) { const a = S.anims.get(propia); e.play({ key: propia, timeScale: a ? (a.frames.length / a.frameRate * 1000) / (LLAMA_MS - 150) : 1 }); }
+      else e.play({ key: clave, timeScale: 0.6 });
+      e.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => { if (vivo(e) && S.anims.exists(e.type + '_idle')) e.play(e.type + '_idle'); });
+    }
+    if (!propia) { const sy = e.scaleY; S.tweens.add({ targets: e, scaleY: sy * 1.1, duration: 260, yoyo: true, repeat: 1, onComplete: () => { if (e.active) e.setScale(e.scaleX, sy); } }); }
     E.sonido.some(([k, v, r]) => (r ? son(k, v, { rate: r }) : hab(k, v, { gap: 400 }) || son(k, v)));
-    S.createFloatingText(e.x, e.y - 52, E.grito, E.color);
-    ondas(S, e, E.color);
+    if (E.cuerno) S.time.delayedCall(320, () => vivo(e) && e._ckLlamando && cuerno(S, e, E.color)); else ondas(S, e, E.color);
     if (E.temblor) { S.cameras.main.shake(LLAMA_MS * 0.7, 0.006); piedritas(S, e); }
     S.time.delayedCall(LLAMA_MS - 60, () => {
       e._ckLlamando = false;
@@ -143,6 +171,7 @@
     const lista = E.refuerzos.slice(0, e._ckLlamadas > 1 ? Math.ceil(E.refuerzos.length / 2) : E.refuerzos.length);
     const p = S.player, base = Math.atan2(e.y - p.y, e.x - p.x);
     let n = 0;
+    if (E.llegaSon) son(E.llegaSon, 0.7);
     if (E.llegan === 'corriendo' || E.llegan === 'manada') {
       const lados = E.llegan === 'manada' ? [base, base + 2.1, base - 2.1] : [base];
       lista.forEach((t, i) => S.time.delayedCall(E.llegan === 'manada' ? i * 380 : i * 120, () => {
@@ -173,7 +202,6 @@
         S.tweens.add({ targets: r, y: p.y - 60 + Phaser.Math.Between(-30, 30), duration: 700, ease: 'Sine.easeOut' });
       }));
     }
-    S.time.delayedCall(600, () => { if (n) S.createFloatingText(p.x, p.y - 60, E.aviso, E.color); });
   };
 
   // ------------------------------------------------------------------ enganches
@@ -191,8 +219,11 @@
     try {
       if (enemy && enemy._ckLlama && vivo(enemy)) {
         if (enemy._ckLlamando && !enemy._ckInterrumpido) {
-          enemy._ckInterrumpido = true; enemy._ckLlamando = false; enemy._ckRolHasta = this.time.now + 300;
-          this.createFloatingText(enemy.x, enemy.y - 52, '¡Lo interrumpiste!', 0xfde68a);
+          enemy._ckInterrumpido = true; enemy._ckLlamando = false; enemy._ckRolHasta = this.time.now + 500;
+          // se le corta: el cuerno se le cae de la boca (se ve en su golpe) y queda un momento aturdido, sin cartel
+          if (this.anims.exists(enemy.type + '_hurt')) enemy.play(enemy.type + '_hurt');
+          for (let i = 0; i < 5; i++) { const c = this.add.circle(enemy.x + Phaser.Math.Between(-8, 8), enemy.y - 14, 2, 0xfde68a).setDepth(enemy.y + 40);
+            this.tweens.add({ targets: c, y: c.y - Phaser.Math.Between(8, 16), x: c.x + Phaser.Math.Between(-10, 10), alpha: 0, duration: 420, onComplete: () => c.destroy() }); }
         } else if (enemy._ckLlamadas === 1 && !enemy._ckLlamando && enemy.hp <= enemy.maxHp / 2 && enemy.state === 'chase' && !enemy.isAttacking && Math.random() < 0.6) {
           this.time.delayedCall(200, () => { if (vivo(enemy) && enemy._ckLlamadas === 1) llamar(this, enemy); });
         }

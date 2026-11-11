@@ -221,7 +221,7 @@
   const pegarBarricada = (S, t) => {
     const now = S.time.now; if (t._ult && now - t._ult < 220) return; t._ult = now;
     t.vida--;
-    son('sword_hit', 0.75, { rate: 0.7 });
+    son('ck_barricada_golpe', 0.8) || son('sword_hit', 0.75, { rate: 0.7 });
     S.tweens.add({ targets: t.sp, x: t.X + 3, duration: 40, yoyo: true, repeat: 2, onComplete: () => { if (t.sp.active) t.sp.x = t.X; } });
     const cx = (t.caja.x0 + t.caja.x1) / 2, cy = t.caja.y1 - 10;
     for (let i = 0; i < 6; i++) {

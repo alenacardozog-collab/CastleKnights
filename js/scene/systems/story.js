@@ -301,8 +301,8 @@ Object.assign(MainGameScene.prototype, {
   /** Generic name for a character known only by its sheet. */
   nameForTexture(key) {
     const m = /^g_(\w+)_idle$/.exec(key);
-    if (m) return { knight: 'Caballero de la guardia', templar: 'Templario', lancer: 'Lancero', axeman: 'Recluta', archer: 'Arquero', priest: 'Hermano Anselmo' }[m[1]] || 'Guardia';
-    return { npc1_villager: 'Aldeano', npc2_villager: 'Campesino', npc3_villager: 'Cocinero', npc4_villager: 'Paje', npc5_villager: 'Dama', npc6_villager: 'Anciano', npc7_villager: 'Anciana',
+    if (m) return { knight: 'Capitán Bruno', templar: 'Lancero del Rey', lancer: 'Jinete mercenario', axeman: 'Mercenario', archer: 'Arquero del Rey', priest: 'Padre Oswin' }[m[1]] || 'Guardia';
+    return { npc1_villager: 'Aldeano', npc2_villager: 'Campesino', npc3_villager: 'Cocinero', npc4_villager: 'Aldeana', npc5_villager: 'Dama', npc6_villager: 'Anciano', npc7_villager: 'Anciana',
       npc8_villager: 'Princesa Lía', npc9_villager: 'Reina Elara', npc10_villager: 'Albañil', king_idle: 'Rey Aldric' }[key] || 'Habitante';
   },
 

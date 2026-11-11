@@ -103,8 +103,9 @@
       ['npc5_villager', 'npc5_idle', 128, 250, { escala: 1.3, oy: 1 }],
       ['g_templar_idle', 'g_templar_idle', 176, 112, { escala: 1.2 }],
       ['g_templar_idle', 'g_templar_idle', 304, 112, { escala: 1.2, flip: true }],
-      ['g_knight_idle', 'g_knight_idle', 208, 500, { escala: 1.2 }],
-      ['g_knight_idle', 'g_knight_idle', 272, 500, { escala: 1.2, flip: true }]
+      // (10/11) en la puerta del Rey, dos mercenarios suyos (el único caballero de espada y escudo es Bruno)
+      ['g_axeman_idle', 'g_axeman_idle', 208, 500, { escala: 1.2 }],
+      ['g_axeman_idle', 'g_axeman_idle', 272, 500, { escala: 1.2, flip: true }]
     ],
     charlas: [
       [212, 106, ['Reina Elara: Bienvenido a nuestra casa 👑', 'Reina Elara: El jardín ya no huele igual desde que llegó la niebla…'], 30],

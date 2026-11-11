@@ -20,10 +20,10 @@
   // ------------------------------------------------------------------ el paso (camino al castillo, borde este)
   // (10/11) el paso se mudó: ya no se baja por la escalera del mirador; se sale por el camino del este, al lado del castillo
   const PASO = { x: 1410, y: 324, w: 26, h: 60 };
-  const SOLDADOS = [['g_lancer', 1398, 344, true], ['g_knight', 1400, 384, true]];
+  const SOLDADOS = [['g_templar', 1398, 344, true], ['g_archer', 1400, 384, true]];   // (10/11) soldados leales: lanceros y arqueros
   const A_UN_LADO = [[1396, 296], [1404, 412]];
   STORY_NPCS.push({
-    id: 'sargento_paso', x: 1398, y: 344, r: 48, name: 'Sargento del paso', face: 'g_lancer_idle',
+    id: 'sargento_paso', x: 1398, y: 344, r: 48, name: 'Sargento del paso', face: 'g_templar_idle',
     get zone() { const s = st(S0()); return s ? ZC : '-'; },
     lines: s => {
       if (abierto(s)) return ['El Rey dio la orden: el paso es tuyo.', 'Del otro lado… preparate para lo que vas a ver. Ahí cayeron los nuestros.', 'Que los dioses te acompañen.'];
@@ -73,7 +73,7 @@
     if (nombre === 'c2_bosque' && this._gameMode === 'campaign' && !abierto(st(this)) && !this._doorTransition) {
       if (!this._ckFrontAviso || this.time.now - this._ckFrontAviso > 2500) {
         this._ckFrontAviso = this.time.now;
-        const sar = (this._ckFront || []).find(o => o && o.texture && o.texture.key === 'g_lancer_idle');
+        const sar = (this._ckFront || []).find(o => o && o.texture && o.texture.key === 'g_templar_idle');
         const t = '¡Alto! Por ahora no es seguro pasar.';
         if (sar && E) E.globo(this, sar, t, 2200); else this.createFloatingText(this.player.x, this.player.y - 46, t, 0xfca5a5);
       }
@@ -87,10 +87,10 @@
   const CAIDOS = [
     // [hoja, x, y, mirando a la izquierda, qué dice con T]
     // (10/11) en el bosque grande, del otro lado de la cuarentena: los que cayeron antes de que se levantara la empalizada
-    ['g_knight', 1150, 378, false, 'Un caballero del Roble. Todavía aprieta la empuñadura.'],
-    ['g_lancer', 1214, 520, true, 'Un lancero. La lanza está partida en dos, como mordida.'],
+    ['g_templar', 1150, 378, false, 'Un soldado del Roble. Todavía aprieta el escudo.'],
+    ['g_templar', 1214, 520, true, 'Un lancero. La lanza está partida en dos, como mordida.'],
     ['g_archer', 1290, 470, false, 'Un arquero con la aljaba vacía. Disparó hasta la última flecha.'],
-    ['g_axeman', 1170, 600, true, 'Un recluta. Lleva una carta en el cinto: «Para mi madre, en el Roble».']
+    ['g_templar', 1170, 600, true, 'Un recluta. Lleva una carta en el cinto: «Para mi madre, en el Roble».']
   ];
   const BARRICADAS = [['ed_ot_estacas_2', 1160, 330, 0.7, false], ['ed_ot_estacas_6', 1250, 600, 0.7, true], ['ed_ot_estacas_3', 1340, 520, 0.62, false]];
   const armarCaidos = S => {

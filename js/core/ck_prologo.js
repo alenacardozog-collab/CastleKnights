@@ -125,7 +125,7 @@
   };
 
   // ------------------------------------------------------------------ 2. Pipo despierta al héroe
-  const PIPO = 'npc4_villager';
+  const PIPO = 'npc13_villager';   // (10/11) Pipo es varón: la hoja de npc4 es de una aldeana
   const despertar = async (S, soltar) => {
     S.ckEntrar(MAPA_T, { x: 419, y: 150 });
     await hasta(() => enZona(S, ZT));
@@ -190,8 +190,8 @@
       let x = hx + dx / d * 28, y = hy + dy / d * 28;
       if (S.navIsFree && !S.navIsFree(x, y)) { x = hx + 18; y = hy; }
       this.sp = S.add.sprite(x, y, PIPO).setOrigin(0.5, 1).setScale(S.currentInterior ? 1.3 : 1.15).setDepth(y);
-      this.sp._ckAnim = 'npc4';
-      if (S.anims.exists('npc4_idle')) this.sp.play('npc4_idle');
+      this.sp._ckAnim = 'npc13';
+      if (S.anims.exists('npc13_idle')) this.sp.play('npc13_idle');
       if (zona === ZS) S.time.delayedCall(500, () => this.sp && E.globo(S, this.sp, '¡Llegamos! El Rey está al fondo, en su trono.', 2200));
     },
     cuadro(S, dt) {
@@ -199,7 +199,7 @@
       if (!sp || !sp.active || !S.player || S._ckEscena) return;
       const r = RUTA[this.zona]; if (!r) return;
       const b = S.player.body, hx = b.center.x, hy = b.bottom, dH = Phaser.Math.Distance.Between(sp.x, sp.y, hx, hy);
-      const anim = k => { if (S.anims.exists('npc4_' + k)) sp.play('npc4_' + k, true); };
+      const anim = k => { if (S.anims.exists('npc13_' + k)) sp.play('npc13_' + k, true); };
       sp.setDepth(sp.y);
       // muy lejos: lo llama de vez en cuando
       if (dH > 260 && S.time.now - this.llamado > 7000) { this.llamado = S.time.now; E.globo(S, sp, UNO(['¡Eh, por acá!', '¡Por acá, que el Rey espera!', '¿Adónde vas? ¡El castillo es para el otro lado!']), 1800); }

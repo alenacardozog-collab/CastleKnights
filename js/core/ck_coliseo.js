@@ -37,6 +37,7 @@
   const vivo = e => e && e.active && !e.isDead;
   const son = (k, v, o) => { try { return sfx.fx(k, v, o); } catch (e) { return false; } };
   const ROJO = 0xff3030, AMARILLO = 0xffd23a;
+  const FX = () => window.CK_JEFES_FX;   // partículas y proyectiles a píxel (ck_jefes_fx.js); sin él, como antes
 
   // ------------------------------------------------------------------ los tres jefes
   const JEFES = {
@@ -132,9 +133,10 @@
   };
   const aviso = (S, e, col) => {
     e.setTint(col === ROJO ? 0xff8080 : 0xffe08a);
+    if (FX()) FX().carga(S, e, col, 500);
     const t = S.add.text(e.x, e.y - 62, '!', { fontFamily: 'Georgia, serif', fontSize: '22px', fontStyle: 'bold', color: col === ROJO ? '#ff4040' : '#ffd23a', stroke: '#1b0f0a', strokeThickness: 4 }).setOrigin(0.5, 1).setDepth(26002);
     S.tweens.add({ targets: t, y: t.y - 8, duration: 220, yoyo: true, repeat: 2, onComplete: () => t.destroy() });
-    son('alert', 0.6) || (typeof sfx !== 'undefined' && sfx.playAlert && sfx.playAlert());
+    (col === ROJO && son('ck_aviso_carga', 0.6)) || son('alert', 0.6) || (typeof sfx !== 'undefined' && sfx.playAlert && sfx.playAlert());
   };
   /** Pies del héroe. */
   const pies = S => { const b = S.player.body; return { x: b.center.x, y: b.bottom - 3 }; };
@@ -160,6 +162,7 @@
   const salto = (S, e) => {
     empezar(S, e); const t = pies(S); mirar(S, e, t.x);
     aviso(S, e, ROJO); marca(S, t.x, t.y, 64, ROJO, 900);
+    if (FX()) FX().sombraCaida(S, t.x, t.y, 64, 900);
     S.time.delayedCall(250, () => {
       if (!vivo(e)) return;
       e.play('orc_campeon_salto', true);
@@ -170,7 +173,7 @@
         onComplete: () => {
           if (!vivo(e)) return;
           e.body.enable = true; e.body.reset(e.x, e.y);
-          polvo(S, t.x, t.y, 64); son('bone_hit', 0.9, { rate: 0.6 });
+          polvo(S, t.x, t.y, 64); if (FX()) { FX().grieta(S, t.x, t.y, 60); FX().escombros(S, t.x, t.y, 60, 14); } son('ck_aterriza', 0.9) || son('bone_hit', 0.9, { rate: 0.6 });
           const p = pies(S);
           if (Math.hypot((p.x - t.x) / 64, (p.y - t.y) / 40) < 1) { golpeRojo(S, 2); empujar(S, t.x, t.y, 260); }
           S.time.delayedCall(450, () => terminar(S, e));
@@ -194,6 +197,7 @@
       if (!vivo(e)) return;
       const ox = e.body.center.x, oy = e.body.bottom - 22, a = Math.atan2(t.y - oy, t.x - ox), L = Math.min(300, Math.hypot(t.x - ox, t.y - oy) + 80);
       const c = S.add.image(ox, oy, texCuchilla(S)).setDepth(26000).setScale(1.5);
+      if (FX()) FX().estela(S, c, 200);
       let pego = false; const k = { t: 0 };
       son('sword_swing2', 0.7, { rate: 0.7 });
       S.tweens.add({ targets: k, t: 1, duration: 1300, ease: 'Linear',
@@ -226,6 +230,8 @@
       e.play(anim, true); if (cazador) e.anims.timeScale = 2;
       const v = cazador ? 520 : 430, t0 = S.time.now;
       e.body.setVelocity(Math.cos(a) * v, Math.sin(a) * v);
+      son(cazador ? 'ck_silbido' : 'ck_embestida', cazador ? 0.5 : 0.85);
+      if (FX()) FX().rastro(S, e, L / v * 1000 + 300);
       let pego = false, ultimo = { x: e.x, y: e.y, t: t0 };
       const ev = S.time.addEvent({ delay: 30, loop: true, callback: () => {
         if (!vivo(e)) { ev.remove(); return; }
@@ -239,6 +245,7 @@
           ev.remove(); e.body.setVelocity(0, 0); e.anims.timeScale = 1;
           if (quieto && !cazador) {                 // contra la pared: atontado
             polvo(S, e.body.center.x, e.body.bottom, 40); son('bone_hit', 0.8, { rate: 0.5 });
+            if (FX()) { FX().escombros(S, e.body.center.x + (e.flipX ? -20 : 20), e.body.bottom - 10, 34, 12); FX().chispas(S, e.body.center.x, e.body.bottom - 40, 6, 0xffe08a); }
             S.createFloatingText(e.x, e.y - 66, '¡ATONTADO!', 0xfde68a);
             e._ckVulnerable = S.time.now + 2000; e.setTint(0xb0b0b0); e.play('bestia_kragmor_idle', true); e.anims.timeScale = 0.4;
             const est = S.add.text(e.x, e.y - 74, '✦ ✦ ✦', { fontFamily: 'Georgia', fontSize: '13px', color: '#ffe08a', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(26002);
@@ -259,12 +266,13 @@
     marca(S, cx, cy, 40, ROJO, 700);
     S.time.delayedCall(700, () => {
       if (!vivo(e)) return;
-      polvo(S, cx, cy, 50); son('bone_hit', 1, { rate: 0.45 });
+      polvo(S, cx, cy, 50); if (FX()) { FX().grieta(S, cx, cy, 70); FX().escombros(S, cx, cy, 50, 16); } son('ck_pisoton_jefe', 1) || son('bone_hit', 1, { rate: 0.45 });
       [0, 380, 760].forEach((d, i) => S.time.delayedCall(d, () => {
         const ring = S.add.ellipse(cx, cy, 20, 12).setStrokeStyle(5, ROJO, 0.9).setDepth(9), k = { r: 10 }, golpeados = new Set();
         S.tweens.add({ targets: k, r: 190, duration: 900, ease: 'Sine.easeOut',
           onUpdate: () => {
             ring.setSize(k.r * 2, k.r * 1.24); ring.setDisplaySize(k.r * 2, k.r * 1.24); ring.setAlpha(1 - k.r / 220);
+            if (FX() && Math.random() < 0.35) { const aa = R(0, Math.PI * 2); FX().escombros(S, cx + Math.cos(aa) * k.r, cy + Math.sin(aa) * k.r * 0.62, 8, 2); }
             const p = pies(S), d = Math.hypot(p.x - cx, (p.y - cy) / 0.62);
             if (!golpeados.has(i) && Math.abs(d - k.r) < 10) { golpeados.add(i); golpeRojo(S, 1); }
           },
@@ -277,12 +285,13 @@
     empezar(S, e); aviso(S, e, ROJO); e.play('bestia_kragmor_slam', true);
     const p = pies(S), pts = [[p.x, p.y]];
     for (let i = 0; i < 3; i++) pts.push([p.x + R(-110, 110), p.y + R(-60, 60)]);
-    pts.forEach(([x, y]) => marca(S, x, y, 30, ROJO, 1100));
+    pts.forEach(([x, y]) => { marca(S, x, y, 30, ROJO, 1100); if (FX()) FX().sombraCaida(S, x, y, 30, 1280); });
     S.time.delayedCall(1100, () => {
       pts.forEach(([x, y], i) => {
-        const r = S.add.circle(x, y - 160, 9, 0x6b5a4a).setStrokeStyle(2, 0x1b0f0a).setDepth(26000);
+        const r = FX() ? FX().roca(S, x, y - 160) : S.add.circle(x, y - 160, 9, 0x6b5a4a).setStrokeStyle(2, 0x1b0f0a).setDepth(26000);
+        if (FX()) S.tweens.add({ targets: r, angle: R(-200, 200), duration: 220, delay: i * 40 });
         S.tweens.add({ targets: r, y: y - 6, duration: 180, delay: i * 40, ease: 'Quad.easeIn', onComplete: () => {
-          r.destroy(); polvo(S, x, y, 26); son('bone_hit', 0.6, { rate: 0.7 });
+          r.destroy(); polvo(S, x, y, 26); if (FX()) { FX().escombros(S, x, y, 26, 8); FX().grieta(S, x, y, 24); } son('ck_piedra', 0.5, { rate: 0.9 + Math.random() * 0.2 }) || son('bone_hit', 0.6, { rate: 0.7 });
           const q = pies(S); if (Math.hypot((q.x - x) / 30, (q.y - y) / 19) < 1) golpeRojo(S, 1);
         } });
       });
@@ -305,9 +314,9 @@
       [-0.28, 0, 0.28].forEach(d => franja(S, ox + Math.cos(a + d) * 160, oy + Math.sin(a + d) * 160, ox, oy, 6, AMARILLO, 650));
       S.time.delayedCall(650, () => {
         if (!vivo(e)) return;
-        son('bow_shot', 0.8) || son('sword_swing2', 0.6, { rate: 1.8 });
+        son('bow_shot', 0.8) || son('sword_swing2', 0.6, { rate: 1.8 }); S.time.delayedCall(90, () => son('ck_silbido', 0.45));
         [-0.28, 0, 0.28].forEach(d => {
-          const ang = a + d, f = S.add.rectangle(ox, oy, 16, 2, 0xe8d8b0).setStrokeStyle(1, 0x3a2414).setRotation(ang).setDepth(26000);
+          const ang = a + d, f = FX() ? FX().flecha(S, ox, oy, ang) : S.add.rectangle(ox, oy, 16, 2, 0xe8d8b0).setStrokeStyle(1, 0x3a2414).setRotation(ang).setDepth(26000);
           let pego = false; const v = 360, t0 = S.time.now;
           const ev = S.time.addEvent({ delay: 16, loop: true, callback: () => {
             const dt = (S.time.now - t0) / 1000, x = ox + Math.cos(ang) * v * dt, y = oy + Math.sin(ang) * v * dt;
@@ -325,7 +334,7 @@
   const aullido = (S, e) => {
     empezar(S, e); mirar(S, e, S.player.x);
     e.play('cazador_ulrak_aullido', true);
-    S.createFloatingText(e.x, e.y - 70, '¡AUUUUU!', 0xcbd5e1); son('warg_howl', 0.9) || son('necro_cast', 0.6, { rate: 0.6 });
+    S.createFloatingText(e.x, e.y - 70, '¡AUUUUU!', 0xcbd5e1); if (FX()) FX().ondaVoz(S, e.x + (e.flipX ? -26 : 26), e.y - 30, e.flipX); son('warg_howl', 0.9) || son('necro_cast', 0.6, { rate: 0.6 });
     S.cameras.main.shake(300, 0.006);
     S.time.delayedCall(700, () => {
       if (!vivo(e)) return;
@@ -407,7 +416,7 @@
       if (c && c.escudo > this.time.now && !enemy.isDead) {
         const x = sx !== undefined ? sx : this.player.x, frente = enemy.flipX ? x < enemy.x : x > enemy.x;
         if (frente) {
-          this.createFloatingText(enemy.x, enemy.y - 50, '¡BLOQUEA!', 0xcbd5e1); son('sword_hit', 0.7, { rate: 1.6, minGap: 120 });
+          this.createFloatingText(enemy.x, enemy.y - 50, '¡BLOQUEA!', 0xcbd5e1); if (FX()) FX().chispas(this, enemy.x + (enemy.flipX ? -14 : 14), enemy.y - 6, 10); son('sword_hit', 0.7, { rate: 1.6, minGap: 120 });
           return;
         }
         arguments[1] = amount * 2;
@@ -458,5 +467,5 @@
     if (e) { e.zone = S.currentZoneKey ? S.currentZoneKey() : ''; S.alertEnemy(e); }
     return e;
   };
-  window.CK_COLISEO = { JEFES, probar, tribuna, reyMira };
+  window.CK_COLISEO = { JEFES, probar, tribuna, reyMira, hab: { salto, escudo, cuchilla, embestida, sismo, piedras, andanada, cargaHuargo, aullido } };
 })();

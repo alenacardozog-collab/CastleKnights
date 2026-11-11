@@ -6,7 +6,7 @@
      Lo dicho se recuerda en story.flags.gente (no repiten lo mismo enseguida).
    - Mientras charlan con el héroe se quedan quietos y lo miran.
    - Charlas entre vecinos: si dos están cerca y el héroe pasa al lado, se dicen dos o tres cosas en globitos chicos.
-   - Rutina nueva: la siesta. Al mediodía Anselmo, Mirta y Ramón se van a dormir un rato a su casa.
+   - Rutina nueva: la siesta. Al mediodía Anselmo, Mirta y Ramona se van a dormir un rato a su casa.
    - Eventos: con lluvia Mirta convida una torta frita (cura 1); al volver de vencer al Nigromante, Anselmo canta una payada
      en la plaza; de noche en Brumavieja anda la luz mala; de noche en la taberna se juega al truco.
    - Guiños para mirar con T: el tablón de anuncios (cambia con la historia), el mate olvidado en el bebedero, la pava de la
@@ -48,10 +48,10 @@
       noche: [['De noche no corto. El monte de noche es de otros.']],
       lluvia: [['Con lluvia no hay leña seca ni leñero contento.']],
       heroe: { soldier: ['Caballero.', '…', 'Lindo hacha no tenés. Lástima.'] } },
-    npc3: { nombre: 'Doña Eulalia, la yuyera',
-      pres: ['¡Ah, cara nueva! Eulalia, para servirle. Yuyos, ungüentos y consejos; los dos primeros se cobran.', 'Esas pociones de colores que venden en la tienda son agua con azúcar y un poco de fe.'],
+    npc3: { nombre: 'Don Eulalio, el yuyero',
+      pres: ['¡Ah, cara nueva! Eulalio, para servirle. Yuyos, ungüentos y consejos; los dos primeros se cobran.', 'Esas pociones de colores que venden en la tienda son agua con azúcar y un poco de fe.'],
       siempre: [['Para el empacho, té de boldo. Para el mal de amores, también. No cura, pero entretiene.'], ['La peperina se junta a la mañana, cuando todavía tiene rocío. Después ya no tiene gracia.'], ['¿Le duele algo? No me diga. A ver la lengua… no, está bien, era para mirarle la cara.']],
-      chismes: [['Don Ramón viene todas las semanas por un ungüento para la espalda. La espalda la tiene bien; lo que quiere es charlar.'], ['La Clara me pidió algo para que el Tobi se anime a hablarle. Le di manzanilla. Para ella, que está nerviosa.'], ['Mirta dice que mis yuyos son cosa de brujas. Después me pide ruda para la puerta.']],
+      chismes: [['Doña Ramona viene todas las semanas por un ungüento para la espalda. La espalda la tiene bien; lo que quiere es charlar.'], ['La Clara me pidió algo para que el Tobi se anime a hablarle. Le di manzanilla. Para ella, que está nerviosa.'], ['Mirta dice que mis yuyos son cosa de brujas. Después me pide ruda para la puerta.']],
       inicio: [['Si va al castillo, salude a la cocinera de mi parte. Me debe un frasco de miel desde la otra luna.']],
       camino: [['Los que vuelven mordidos del camino vienen todos acá. Lave bien la herida y póngale llantén, aunque arda.']],
       brumavieja: [['Llévese una ramita de ruda para Brumavieja. A los muertos no sé, pero a los vivos les espanta el mal humor.']],
@@ -61,11 +61,11 @@
       noche: [['De noche junto flores de luna. Las de día no sirven para los sueños.']],
       lluvia: [['¡Lluvia! Ahora salen los hongos. Los buenos y los otros. Aprenda a distinguirlos o aprenda a rezar.']],
       heroe: { wizard: ['Usted es mago, ¿no? Entonces sabe que la mitad de la magia es saber qué yuyo poner. La otra mitad es poner cara seria.'] } },
-    npc4: { nombre: 'Don Ramón, el chacarero',
-      pres: ['Ramón, chacarero. Tengo tres vacas, un sembrado de maíz y una espalda que se queja más que mi mujer.', 'Si alguna vez quiere un asado de verdad, avise con tiempo, que la leña la elige Ciriaco.'],
+    npc4: { nombre: 'Doña Ramona, la chacarera',
+      pres: ['Ramona, chacarera. Tengo tres vacas, un sembrado de maíz y una espalda que se queja más que mi marido.', 'Si alguna vez quiere un asado de verdad, avise con tiempo, que la leña la elige Ciriaco.'],
       siempre: [['Este año el maíz viene alto. Si la niebla no lo pudre, choclo para todos.'], ['Una vaca sabe que va a llover antes que el cielo. Se echan todas juntas, mire.'], ['El que no madruga, ordeña tarde. Y la vaca se enoja.']],
-      chismes: [['Anselmo dice que de joven domó un caballo a los gritos. Yo lo conocí: el caballo era sordo.'], ['La yuyera me vende ungüento para la espalda. No me cura, pero me escucha.'], ['El Bruno de los barriles come como tres peones. Lo vi terminarse una olla de carbonada solo.']],
-      inicio: [['El Rey manda llamar gente de armas. Mi hijo quiso ir y la madre lo encerró en el granero. Mejor así.']],
+      chismes: [['Anselmo dice que de joven domó un caballo a los gritos. Yo lo conocí: el caballo era sordo.'], ['El yuyero me vende ungüento para la espalda. No me cura, pero me escucha.'], ['El Beto de los barriles come como tres peones. Lo vi terminarse una olla de carbonada solo.']],
+      inicio: [['El Rey manda llamar gente de armas. Mi hijo quiso ir y lo encerré en el granero. Mejor así.']],
       camino: [['Una noche me faltó una ternera. Las huellas iban para el camino del castillo. Lobos, dicen. Yo digo lobo grande.']],
       brumavieja: [['¿Sabe lo del séptimo hijo varón? Si nace el séptimo, se hace lobizón. En Brumavieja había una familia con siete. Yo no digo nada.']],
       victoria: [['Cuando todo esto pase, asado en la plaza. Usted no paga. Bueno, trae el vino.']],
@@ -90,7 +90,7 @@
       otros: { wizard: [['Hay un mago viejo en el castillo que conocí de moza. Era buen mozo. Ahora es buen viejo.']] },
       pres: ['¡Ay, criatura, qué flac{o/a} que estás! Mirta. Me dicen todos abuela, aunque nietos tengo dos.', 'Si pasás de noche por el campo y ves una lucecita que flota, no la sigas. Es la luz mala.'],
       siempre: [['El agua para el mate no se hierve, criatura. Se calienta hasta que la pava canta bajito. Si hierve, se quema la yerba.'], ['Cuando yo era chica la niebla no bajaba del monte. Algo la está empujando, te digo yo.'], ['Ese fuego lo prendió mi marido hace cuarenta años y nunca se apagó. Bueno, una vez. No se lo digas a nadie.']],
-      chismes: [['Anselmo me corteja desde que teníamos dientes de leche. Le digo que no por costumbre, ya.'], ['La Eulalia vende yuyos que no curan nada. A mí me compra la ruda; yo la ruda la tengo de verdad.'], ['El Tobi perdió el gato otra vez. Ese gato tiene más de siete vidas y se las gasta todas en el granero.']],
+      chismes: [['Anselmo me corteja desde que teníamos dientes de leche. Le digo que no por costumbre, ya.'], ['El Eulalio vende yuyos que no curan nada. A mí me compra la ruda; yo la ruda la tengo de verdad.'], ['El Tobi perdió el gato otra vez. Ese gato tiene más de siete vidas y se las gasta todas en el granero.']],
       inicio: [['¿Al castillo? Llevá algo de comer. En el castillo te dan banquete, pero tardan tanto en servir que se te pasa el hambre.']],
       camino: [['Los lobos bajan cuando tienen hambre o cuando los manda alguien. Estos tienen cara de mandados.']],
       brumavieja: [['En Brumavieja nació mi madre. Si pasás por la capilla, rezá un padrenuestro. Uno solo, que andás apurad{o/a}.'], ['Dicen que el séptimo hijo varón se vuelve lobizón las noches de luna. ¿Viste algo con mucho pelo? Ahí tenés.']],
@@ -102,9 +102,9 @@
       heroe: { swordsman: ['Vos sos la nieta de la Rosaura, la de Brumavieja. ¡Tenés los mismos ojos bravos!', 'Tu abuela me vendía huevos. Los mejores del reino. Y los más caros.'],
         wizard: ['Usted es el mago que pasó por acá cuando yo era moza. No me mire así, que yo sí me acuerdo.'],
         soldier: ['Un caballero sin caballo. Eso sí que no se ve todos los días, criatura.'] } },
-    npc10: { nombre: 'Bruno, el de los barriles',
+    npc10: { nombre: 'Beto, el de los barriles',
       otros: { soldier: [['El caballero ese, Lancent, me ayudó a cargar barriles. Cargó dos y se sentó. Para un caballero, es mucho.']] },
-      pres: ['Bruno. No, el Capitán no. Él es Bruno el de la espada; yo, Bruno el de los barriles.', 'Él manda, yo cargo. A fin de mes los dos cobramos poco.'],
+      pres: ['Beto, el de los barriles. Si algo pesa, me llaman a mí.', 'El Capitán Bruno manda y yo cargo. A fin de mes los dos cobramos poco.'],
       siempre: [['Un barril de vino pesa lo que tres bolsas de harina. Lo sé porque me los hacen cargar juntos.'], ['El mate amargo es para los que madrugan. El dulce, para los que tienen tiempo. Yo no tengo tiempo.'], ['¡Paso, que pesa! Ah, sos vos. Igual pesa.']],
       chismes: [['El Capitán me pidió que no cuente que se cayó del caballo en el desfile. No lo voy a contar. Pero se cayó.'], ['Tobi y yo vamos al pato los domingos. Él juega, yo agarro los caballos. Es como cargar barriles, pero relinchan.'], ['El Mateo me debe tres jarras de las apuestas de truco. Dice que me las paga cuando baje el precio. Nunca baja.']],
       inicio: [['Esta mañana llevé barriles al castillo. En la cocina dicen que el Rey no duerme desde lo de Brumavieja.']],
@@ -119,7 +119,7 @@
     npc12: { nombre: 'Tobi, el del granero',
       pres: ['¡Buenas! Tobi, del granero. Esta horquilla ya espantó tres lobos y un recaudador.', '¿No viste un gato atigrado? Se llama Garufa. Viene cuando lo llamás, o sea, nunca.'],
       siempre: [['El heno no se junta solo. Bueno, con viento sí, pero para cualquier lado.'], ['Si alguna vez jugás al pato, no te pongas delante del caballo. Me pasó. Gané, igual.'], ['Buena tierra la del Roble. Tirás un carozo y al año tenés un durazno.']],
-      chismes: [['La Clara me saluda todas las mañanas. Bueno, saluda a todos. Pero a mí primero, creo.'], ['Mateo dice que vio un dragón. Era la vaca de Don Ramón con un balde en la cabeza.'], ['La abuela Mirta me dio una torta frita una vez y desde entonces la quiero como a una tía.']],
+      chismes: [['La Clara me saluda todas las mañanas. Bueno, saluda a todos. Pero a mí primero, creo.'], ['Mateo dice que vio un dragón. Era la vaca de Doña Ramona con un balde en la cabeza.'], ['La abuela Mirta me dio una torta frita una vez y desde entonces la quiero como a una tía.']],
       inicio: [['¿Vas al castillo? Fijate si ves a Garufa por el camino. A veces se va a cazar ratones a la cocina del Rey.']],
       camino: [['Si limpiás el camino de lobos, el domingo volvemos a jugar al pato en el campo de Anselmo.']],
       brumavieja: [['Garufa volvió ayer con olor a niebla. No sé dónde anduvo. No me quiso contar.']],
@@ -130,11 +130,11 @@
       lluvia: [['¡Cerrá el granero, que se moja el heno! Ah, no, vos no trabajás acá. Perdón.']] },
     npc13: { nombre: 'Mateo',
       otros: { wizard: [['¿Viste al mago viejo de la biblioteca? Dicen que ya estuvo por acá hace cuarenta años. No envejeció nada. Bueno, envejeció todo.']],
-        swordsman: [['La espadachina pelirroja de la taberna le ganó a Bruno pulseando. Bruno dice que se dejó.']],
+        swordsman: [['La espadachina pelirroja de la taberna le ganó a Beto pulseando. Beto dice que se dejó.']],
         soldier: [['Llegó un caballero al castillo que no tiene ni caballo. Dice que lo perdió en una apuesta. Me cae bien.']] },
       pres: ['¡Che, vos sos {el/la} que mandó llamar el Rey! Mateo, un gusto. Si querés saber algo de alguien, preguntame.', 'Si no querés saber, también te cuento, eh.'],
       siempre: [['¿Viste lo que cuesta la cerveza? Cada luna sube un cobre. A este paso vamos a pagar con gallinas.'], ['Mi primo, el de Villa Seca, dice que la niebla la mandan del castillo para cobrar más impuestos. Mi primo dice muchas cosas.'], ['¿Jugás al truco? Los viernes, en la taberna. Traé porotos para anotar y paciencia para perder.']],
-      chismes: [['La Clara y el Tobi se miran como dos gatos en el techo. Ninguno maúlla. Yo ya aposté.'], ['Doña Rosa le pone agua al vino. Poquita. Lo justo para que dure hasta fin de mes.'], ['El Bruno de los barriles dice que le debo tres jarras. Le debo dos. Y media.']],
+      chismes: [['La Clara y el Tobi se miran como dos gatos en el techo. Ninguno maúlla. Yo ya aposté.'], ['Doña Rosa le pone agua al vino. Poquita. Lo justo para que dure hasta fin de mes.'], ['El Beto de los barriles dice que le debo tres jarras. Le debo dos. Y media.']],
       inicio: [['Dicen que en el castillo están desesperados. Si el Rey llama forasteros es porque sus caballeros no quieren ir. Yo tampoco iría.']],
       camino: [['Me contaron que el viajero de la fogata, el Ruy, sabe más de la niebla que el Rey. Y cobra menos.']],
       brumavieja: [['Mi primo vio luces en Brumavieja. La luz mala, dice. Mi primo también vio un dragón. Pero lo de las luces lo vieron otros.']],
@@ -148,7 +148,7 @@
       otros: { swordsman: [['La chica de Brumavieja, Aby, casi no habla. Le lavé la capa y estaba llena de ceniza.']] },
       pres: ['Clara. Lavo la ropa de media aldea: sé quién se cayó al barro, quién se volcó vino encima y quién llora en la almohada.', 'Y no lo cuento. Para eso está Mateo.'],
       siempre: [['La ropa blanca con ceniza y agua de lluvia queda como nueva. La negra también: no se nota la mugre.'], ['La tienda trae pociones nuevas cada tanto. La roja cura, la naranja también, pero cuesta más. Así es la vida.'], ['Cuidate en el camino al castillo. Los lobos no respetan a nadie, ni a los que tienen la ropa limpia.']],
-      chismes: [['El Tobi me trajo flores ayer. Dijo que las encontró en el heno. Las arrancó del jardín de Doña Eulalia, se nota.'], ['Mateo apuesta a todo. Una vez apostó a que no llovía y se le mojó la apuesta.'], ['Doña Rosa, la de la posada, es la que más sabe del pueblo. Pero ella no cuenta nada. Bueno, casi nada.']],
+      chismes: [['El Tobi me trajo flores ayer. Dijo que las encontró en el heno. Las arrancó del jardín de Don Eulalio, se nota.'], ['Mateo apuesta a todo. Una vez apostó a que no llovía y se le mojó la apuesta.'], ['Doña Rosa, la de la posada, es la que más sabe del pueblo. Pero ella no cuenta nada. Bueno, casi nada.']],
       inicio: [['El chasqui del castillo pasó esta mañana corriendo. Iba tan apurado que se le cayó el gorro en mi batea.']],
       camino: [['Lavé la capa de un guardia del castillo. Tenía mordidas de lobo hasta la rodilla. Cuidate.']],
       brumavieja: [['En Brumavieja yo tenía una amiga, la Aurelia. Vivía en la casa del molino. Si ves una cinta azul en la ventana, es la suya.']],
@@ -241,9 +241,9 @@
     l.push('«SE BUSCA gato atigrado. Responde (a veces) a Garufa. Preguntar por Tobi, en el granero.»');
     l.push('«Truco los viernes en la Taberna del Roble. Traer porotos. No se fía.»');
     if (st.step >= 2) l.push('«BANDO DEL REY: se prohíbe andar por el camino del castillo después del anochecer.»');
-    if (st.step >= 4) l.push('«Doña Eulalia ofrece ruda contra aparecidos. Precio de amiga.»');
-    if (st.step >= 7) l.push('«¡Asado en la plaza cuando vuelva la paz! Organiza Don Ramón. Leña: Ciriaco.»');
-    if (c2 >= 1) l.push('«Se buscan brazos para cargar flechas a la frontera. Preguntar por Bruno, el de los barriles.»');
+    if (st.step >= 4) l.push('«Don Eulalio ofrece ruda contra aparecidos. Precio de amigo.»');
+    if (st.step >= 7) l.push('«¡Asado en la plaza cuando vuelva la paz! Organiza Doña Ramona. Leña: Ciriaco.»');
+    if (c2 >= 1) l.push('«Se buscan brazos para cargar flechas a la frontera. Preguntar por Beto, el de los barriles.»');
     if (c2 >= 9) l.push('«El Rey paga bien por noticias de las Torres de Escarcha.»');
     return l.slice(-4);
   };
@@ -277,7 +277,7 @@
       { x: 216, y: 220, r: 32, lines: ['En la puerta de la cabaña, un cartel tallado: «Se vende miel. Golpear fuerte, el apicultor es sordo».'] },
       { x: 755, y: 520, r: 30, lines: ['Una carreta con una rueda rota. En el pescante quedaron un poncho y una bota de vino vacía.'] }],
     ed_biblioteca: [
-      { x: 132, y: 240, r: 26, lines: ['En el atril, «Tratado de yuyos y otras hierbas», de Doña Eulalia. En el margen, con otra letra: «La peperina no cura el mal de ojo. —E.»'] }],
+      { x: 132, y: 240, r: 26, lines: ['En el atril, «Tratado de yuyos y otras hierbas», de Don Eulalio. En el margen, con otra letra: «La peperina no cura el mal de ojo. —E.»'] }],
     ed_bosque_de_la_frontera: [
       { x: 338, y: 584, r: 30, lines: ['Al pie del tocón alguien dejó una botella con agua y una cinta roja. «Para que el que pase no tenga sed», dice un papelito.'] }],
     ed_pueblo_orco: [

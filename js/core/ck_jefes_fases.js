@@ -95,12 +95,14 @@
       g.lineStyle(2, 0xff3b2f, 0.8); g.strokeEllipse(x, y, GRUSHAK.radio * 2, GRUSHAK.radio * 1.2);
       S.tweens.add({ targets: g, alpha: { from: 0.3, to: 1 }, duration: GRUSHAK.aviso, yoyo: false });
       son('beast_growl', 0.7, { rate: 0.5 });
+      if (window.CK_JEFES_FX) CK_JEFES_FX.carga(S, e, 0xff3b2f, GRUSHAK.aviso);
       S.time.delayedCall(GRUSHAK.aviso, () => {
         g.destroy();
         if (!vivo(e)) return;
         if (S.anims.exists('orc_warlord_attack2')) e.play('orc_warlord_attack2');
         if (window.CK_ONDAS) CK_ONDAS.estallido(S, 'tierra', x, y, GRUSHAK.radio, 450);
-        S.cameras.main.shake(300, 0.014); son('sword_hit', 0.9, { rate: 0.5 });
+        if (window.CK_JEFES_FX) { CK_JEFES_FX.grieta(S, x, y, GRUSHAK.radio); CK_JEFES_FX.escombros(S, x, y, GRUSHAK.radio * 0.8, 16); }
+        S.cameras.main.shake(300, 0.014); son('ck_giro_hacha', 0.9) || son('sword_hit', 0.9, { rate: 0.5 }); S.time.delayedCall(160, () => son('ck_pisoton_jefe', 0.6));
         const p = S.player; if (!p || !p.body) return;
         const dx = (p.body.center.x - x) / GRUSHAK.radio, dy = (p.body.center.y - y) / (GRUSHAK.radio * 0.6);
         if (dx * dx + dy * dy <= 1) S.damagePlayer(GRUSHAK.dano);
@@ -116,6 +118,7 @@
     cartel(S, e, '¡GARRA NEGRA RUGE!', 0xfca5a5);
     son('beast_growl', 1, { rate: 0.55 });
     if (window.CK_ONDAS) CK_ONDAS.estallido(S, 'hielo', e.x, e.y + 20, 90, 500);
+    if (window.CK_JEFES_FX) { CK_JEFES_FX.ondaVoz(S, e.x + (e.flipX ? -20 : 20), e.y - 20, e.flipX); CK_JEFES_FX.ondaVoz(S, e.x + (e.flipX ? 20 : -20), e.y - 20, !e.flipX); }
     const p = S.player;
     if (p && p.body) { const a = Phaser.Math.Angle.Between(e.x, e.y, p.x, p.y); p.body.setVelocity(Math.cos(a) * 380, Math.sin(a) * 380); }
     llamar(S, e, ENEMY_TYPES.warg ? 'warg' : 'werewolf', 2);

@@ -5,7 +5,7 @@
    Sólo en partidas nuevas (story.flags.v2). Ocupa el paso 2 de la historia (antes "limpiar el camino"):
    - Después del entrenamiento, el Capitán Bruno manda a buscar a tres vecinos que salieron anoche al campo.
    - Están en los Campos del Roble (al oeste de la aldea), cada uno en un rincón: Juana en la orilla del estanque,
-     Nico escondido junto al tocón hueco y Don Rufino, el pastor, en trance en el círculo de piedras. Se habla con T;
+     Nina escondida junto al tocón hueco y Don Rufino, el pastor, en trance en el círculo de piedras. Se habla con T;
      hay una marca dorada sobre el más cercano. Cada uno cuenta algo de la luz que los llamaba hacia Brumavieja.
    - Cuando aparecen los tres, se vuelve con Bruno (paso 3) y sigue la historia de siempre (Eloy, la taberna, Ruy,
      Brumavieja, el Gran Esqueleto y el Nigromante). Los rescatados quedan en la taberna, contando lo que pasó.
@@ -23,7 +23,7 @@
   const st = S => (S && S._gameMode === 'campaign' && S.story) || null;
   const fl = s => (s.flags = s.flags || {});
   const nueva = s => !!(s && s.flags && s.flags.v2);
-  const enMision = s => nueva(s) && s.step === 2;
+  const enMision = s => nueva(s) && s.step === 2 && !(s.flags && s.flags.limos === 'pendiente');   // (10/11) antes, la noche de los limos (ck_prologo_noche.js)
   const hallados = s => fl(s).desap || (fl(s).desap = {});
 
   // ------------------------------------------------------------------ quiénes y dónde (medidas del mapa como se ve en el juego)
@@ -37,7 +37,7 @@
         'Ya puedo caminar. Me vuelvo a la aldea: decile a Clara que estoy bien.'
       ],
       despues: ['Clara me retó como si yo tuviera diez años. Me lo merezco.', 'Esa luz verde… no la sigas. Te habla sin palabras.'] },
-    { id: 'nico', nombre: 'Nico, el hijo de Ciriaco', tex: 'npc4_villager', zona: ZCAMPOS, x: 168, y: 470, escala: 1.05, flip: false,
+    { id: 'nico', nombre: 'Nina, la hija de Ciriaco', tex: 'npc4_villager', zona: ZCAMPOS, x: 168, y: 470, escala: 1.05, flip: false,
       taberna: [326, 228],
       lineas: [
         '¡No me lleves! Ah… sos de verdad. Perdón.',
@@ -45,7 +45,7 @@
         'Una voz me llamaba por mi nombre, ¡y sonaba igual que mi mamá! Pero mi mamá está en casa.',
         'Ya me voy, ya me voy. ¡Y no le digas a mi papá que lloré!'
       ],
-      despues: ['Mi papá dice que soy un valiente. Yo no le conté lo del llanto.', 'Si vas al norte, llevá sal. Lo dice la abuela Mirta.'] },
+      despues: ['Mi papá dice que soy una valiente. Yo no le conté lo del llanto.', 'Si vas al norte, llevá sal. Lo dice la abuela Mirta.'] },
     { id: 'rufino', nombre: 'Don Rufino, el pastor', tex: 'npc13_villager', zona: ZCAMPOS, x: 248, y: 404, escala: 1.3, flip: false, trance: true,
       taberna: [276, 232],
       lineas: [

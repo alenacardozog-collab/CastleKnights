@@ -217,6 +217,8 @@
       s.placePlayerFeetAt(a.x + cap.x, a.y + cap.y + 30); await esperar(300); await cerrarDialogo(s);
       ok(await hasta(() => s.enemies.getChildren().some(x => x.active && x.type === 'necromancer'), 4000), 'el Nigromante no salió de la capilla');
       await vencer(s, x => x.type === 'necromancer', 1);
+      // (10/11) con ck_libro_sello.js queda de rodillas: se lo sella como lo haría el héroe
+      if (window.CK_LIBRO_SELLO) s.enemies.getChildren().filter(x => x.type === 'necromancer' && x._ckSello).forEach(x => CK_LIBRO_SELLO.sellar(s, x));
       ok(await hasta(() => paso() === 7 && fl().codice, 3000), 'vencer al Nigromante no dio el Códice ni el paso 7 (paso ' + paso() + ')');
       await hablar(s, 'eloy'); ok(fl().codice_ok, 'Eloy no recibió el Códice');
       await hablar(s, 'king'); ok(paso() === 8, 'el Rey no cerró el capítulo (paso ' + paso() + ')');

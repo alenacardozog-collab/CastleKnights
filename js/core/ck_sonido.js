@@ -18,7 +18,8 @@
     aire: { t: 0.35, w: 0.05, d: 0.6 }, bosque: { t: 0.7, w: 0.08, d: 0.5 }, casa: { t: 0.45, w: 0.16, d: 0.35 },
     taberna: { t: 0.8, w: 0.2, d: 0.4 }, granero: { t: 0.9, w: 0.2, d: 0.3 }, piedra: { t: 0.9, w: 0.22, d: 0.8 },
     patio: { t: 1.3, w: 0.16, d: 0.8 }, salon: { t: 2.8, w: 0.34, d: 0.9 }, cocina: { t: 1.1, w: 0.22, d: 0.75 },
-    madera: { t: 0.6, w: 0.14, d: 0.4 }, ruinas: { t: 1.8, w: 0.17, d: 0.6 }
+    madera: { t: 0.6, w: 0.14, d: 0.4 }, ruinas: { t: 1.8, w: 0.17, d: 0.6 },
+    cueva: { t: 3.2, w: 0.32, d: 0.5 }, arena: { t: 1.4, w: 0.14, d: 0.7 }   // (10/11) cueva: eco largo y oscuro; coliseo
   };
   const CASTILLO = { road: 'bosque', courtyard: 'patio', walls: 'patio', garden: 'patio', training: 'patio', throne: 'salon', kitchen: 'cocina', armory: 'piedra', kingroom: 'madera', library: 'madera' };
   function salaDe(s) {
@@ -121,8 +122,8 @@
     [/rey\b|king/i, 'rey'], [/reina|npc9_/i, 'reina'], [/princesa|npc8_/i, 'princesa'],
     [/hermano|priest|monje|sacerdote/i, 'monje'], [/capit|guardia|caballero|soldad|templario|lancero|recluta|arquero|g_\w+_idle/i, 'soldado'],
     [/abuela|anciana|npc7_/i, 'vieja'], [/anciano|abuelo|don |tob[ií]as|ermita|npc6_/i, 'viejo'],
-    [/posadero|cociner|panader|tabern|npc3_/i, 'jovial'], [/paje|niño|chico|npc4_/i, 'joven'],
-    [/dama|boticaria|señora|mujer|campesina|npc5_/i, 'mujer']
+    [/posadero|cociner|panader|tabern|npc3_/i, 'jovial'], [/paje|niño|chico|npc13_/i, 'joven'],
+    [/dama|boticaria|señora|mujer|campesina|aldeana|granjera|chacarera|lavandera|npc5_|npc4_|npc14_/i, 'mujer']
   ];
   S.VOCES = VOCES; // otros archivos suman voces propias (ck_voces_nuevas.js)
   function vozDe(nombre, cara) {

@@ -90,6 +90,8 @@ window.CK_GALERIAS_MINI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWcAAAD
     if (a) {
       registrar();
       ['talkers', 'fx', 'colliders', 'exits'].forEach(k => (a[k] = a[k] || []));
+      // ambiente propio (ElevenLabs): goteo con eco y viento hondo; si falta el mp3 suena el que tenga el mapa
+      a.ambient = [['amb_cueva', 0.55]].concat((a.ambient || []).filter(s => s[0] !== 'amb_cueva').map(s => [s[0], s[1] * 0.4]));
       a.exits.push({ x: 1158, y: 802 - 16, w: 64, h: 16, key: 'walk', to: 'gl_claro', hint: '▼ Claro de las Bestias' });
       a.talkers.push({ x: LUGAR.sumidero.x, y: LUGAR.sumidero.y + 8, r: 40, lines: ['Un sumidero en el piso: raíces gruesas bajan a una oscuridad todavía más honda. De abajo sube olor a bestia… todavía no te animás a bajar'] });
       a.talkers.push({ x: 600, y: 356, r: 48, lines: ['El cráneo de un ciervo enorme, roído hasta el hueso. Lo que vive acá come bien'] });

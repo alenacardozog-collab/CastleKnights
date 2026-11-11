@@ -149,7 +149,7 @@
     if (p >= 8) return ['Desde que volviste de Brumavieja se llenó la posada. Todos quieren ver a ' + (ella(S) ? 'la' : 'el') + ' que bajó al Nigromante.', 'Anselmo ya anda cantando una payada con tu nombre. Rima «' + quien + '» con cualquier cosa, el pobre.'];
     if (p >= 7) return ['¡Volviste! Te dejé la cama hecha y el guiso calentito. El Rey te debe estar esperando, pero primero comé algo.'];
     if (p >= 4) return ['¿Vas para Brumavieja? Ay, criatura. Allá tenía una prima, la Nélida. Si ves una casa con malvones en la ventana, era la de ella.', 'Llevá sal en el bolsillo. Mi abuela decía que a los aparecidos no les gusta la sal.'];
-    if (p >= 2) return ['El camino del castillo anda lleno de lobos. El Bruno de los barriles dice que uno le comió la vianda. Yo creo que se la comió él.', 'Si te lastiman, volvé. Acá siempre hay una cama y un mate.'];
+    if (p >= 2) return ['El camino del castillo anda lleno de lobos. El Beto de los barriles dice que uno le comió la vianda. Yo creo que se la comió él.', 'Si te lastiman, volvé. Acá siempre hay una cama y un mate.'];
     return ['¿Todavía acá? El Rey no espera a nadie, ' + quien + '. Salí por la puerta de abajo, cruzá la aldea y tomá el camino del sur.', 'Y no le hagas caso al Mateo si te para en la puerta. Ése te cuenta la vida de todo el pueblo.'];
   };
   const STORY = () => (typeof STORY_NPCS !== 'undefined' ? STORY_NPCS : null);

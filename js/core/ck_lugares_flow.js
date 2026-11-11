@@ -58,7 +58,7 @@
           // el Capitán Bruno junto a los armeros, un recluta con los muñecos, otro en la arena y una arquera en el tiro
           kit.person(t, 'g_knight_idle', 'g_knight_idle', PA.capitan.x, PA.capitan.y, { scale: 1.2 });
           habla(PA.capitan.x, PA.capitan.y + 4, ['¡Postura firme, recluta! 🛡️', 'Cien golpes al muñeco antes de comer', 'Las armas están en los armeros; cuidadlas'], 44);
-          t.actors.push({ type: 'walker', key: 'g_axeman_idle', idle: 'g_axeman_idle', walk: 'g_axeman_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 30,
+          t.actors.push({ type: 'walker', key: 'g_templar_idle', idle: 'g_templar_idle', walk: 'g_templar_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 30,
             pts: [[470, 140, 2400], [516, 140, 2200], [560, 140, 1400]], lines: ['¡Uno, dos... estocada!', 'Este muñeco no se rinde 😅'] });
           t.actors.push({ type: 'walker', key: 'g_templar_idle', idle: 'g_templar_idle', walk: 'g_templar_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 26,
             pts: [[560, 300, 1200], [640, 300, 1200], [600, 340, 1800]], lines: ['Entrad a la arena si os atrevéis ⚔️', 'Aquí se entrena cuerpo a cuerpo'] });

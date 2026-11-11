@@ -15,7 +15,7 @@
   if (typeof MainGameScene === 'undefined') return;
   const P = MainGameScene.prototype;
   const SIEMPRE = /[?&]pruebas_panel=1/.test(location.search);
-  const SOLDADOS = [['g_knight', 'Caballero'], ['g_lancer', 'Lancero'], ['g_axeman', 'Hachero'], ['g_templar', 'Templario'], ['g_archer', 'Arquero']];
+  const SOLDADOS = [['g_templar', 'Lancero del Rey'], ['g_archer', 'Arquero del Rey'], ['g_axeman', 'Hachero mercenario'], ['g_lancer', 'Jinete mercenario']];   // (10/11) Bruno es el único de espada y escudo
   const NO_GUARDAR = ['castleknight_save_v1', 'castleknight_ranuras_v1'];
   const st = { abierto: false, quietas: false, sinOleadas: true, invencible: false, prueba: false };
   const escena = () => window.activeGameScene || (window.game && game.scene && game.scene.scenes.find(s => s.startCampaign));

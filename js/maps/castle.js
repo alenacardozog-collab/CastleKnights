@@ -110,8 +110,8 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     [98, 162, 280, 360, 478, 542].forEach(x => torch(yard, x, CW - 14));
     [196, 444].forEach(x => putc(yard, 'planter', x, CW + 22, { foot: 0.5 }));
     // guards at the hall door, lions along the avenue
-    person(yard, 'g_knight_idle', 'g_knight_idle', 284, 176, { scale: 1.2 });
-    person(yard, 'g_knight_idle', 'g_knight_idle', 356, 176, { scale: 1.2, flipX: true });
+    person(yard, 'g_templar_idle', 'g_templar_idle', 284, 176, { scale: 1.2 });
+    person(yard, 'g_templar_idle', 'g_templar_idle', 356, 176, { scale: 1.2, flipX: true });
     talker(yard, 320, 182, ['El rey os espera en el Gran Salón 👑', '¡Alto! ...Ah, sois vos. Pasad.', 'Mantened la espada envainada aquí ⚔️'], 46);
     // a guard walks his round about the fountain
     yard.actors.push({ type: 'walker', key: 'g_lancer_idle', idle: 'g_lancer_idle', walk: 'g_lancer_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 24,
@@ -223,7 +223,7 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     // the master-at-arms by the racks, recruits drilling in the pen and in the ring, an archer at the line
     person(training, 'g_knight_idle', 'g_knight_idle', 452, 168, { scale: 1.2 });
     talker(training, 452, 172, ['¡Postura firme, recluta! 🛡️', 'Cien golpes al muñeco antes de comer', 'Las armas están en los armeros; cuidadlas'], 44);
-    training.actors.push({ type: 'walker', key: 'g_axeman_idle', idle: 'g_axeman_idle', walk: 'g_axeman_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 30,
+    training.actors.push({ type: 'walker', key: 'g_templar_idle', idle: 'g_templar_idle', walk: 'g_templar_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 30,
       pts: [[112, 250, 2400], [150, 300, 2200], [112, 302, 1400]], lines: ['¡Uno, dos... estocada!', 'Este muñeco no se rinde 😅'] });
     training.actors.push({ type: 'walker', key: 'g_templar_idle', idle: 'g_templar_idle', walk: 'g_templar_walk', scale: 1.2, ox: 0.5, oy: 0.61, speed: 26,
       pts: [[270, 262, 1200], [314, 262, 1200], [292, 284, 1800]], lines: ['Entrad al círculo si os atrevéis ⚔️', 'Aquí se entrena cuerpo a cuerpo'] });
@@ -289,8 +289,8 @@ INTERIOR_LAYOUTS.castle = function (kit) {
     });
     th.rects.push(R(SIDE + SF, SCR_Y + SCR_H, 190 - SIDE - SF, 4, 0x000000, 0.22), R(290, SCR_Y + SCR_H, 480 - SIDE - SF - 290, 4, 0x000000, 0.22));
     [70, 146, 334, 410].forEach(x => putc(th, 'shields', x, SCR_Y + SCR_H + 1, { solid: false, scale: 0.8, lift: 7 }));
-    person(th, 'g_knight_idle', 'g_knight_idle', 198, 500, { scale: 1.75 });
-    person(th, 'g_knight_idle', 'g_knight_idle', 282, 500, { scale: 1.75, flipX: true });
+    person(th, 'g_axeman_idle', 'g_axeman_idle', 198, 500, { scale: 1.75 });
+    person(th, 'g_axeman_idle', 'g_axeman_idle', 282, 500, { scale: 1.75, flipX: true });
     candle(th, 46, 536); candle(th, 434, 536);
     // a page crosses the hall with messages
     th.actors.push({ type: 'walker', key: 'npc4_villager', idle: 'npc4_idle', walk: 'npc4_walk', scale: 2.0, speed: 30,

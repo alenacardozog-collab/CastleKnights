@@ -17,14 +17,14 @@
   const abierto = s => !!s && (paso(s) >= 3 || !!(s.flags && s.flags.grushak));
   const S0 = () => window.activeGameScene || null;
   const HUECO = { x: 1048, y: 400, w: 36, h: 54 };            // el camino entre las dos hojas
-  const GUARDIAS = [['g_lancer', 1028, 412, true], ['g_knight', 1030, 466, true]];
+  const GUARDIAS = [['g_templar', 1028, 412, true], ['g_archer', 1030, 466, true]];   // (10/11) soldados leales
   const A_UN_LADO = [[1026, 388], [1030, 492]];
   const CAMPO = [['g_archer', 878, 296, false, 'Arquero del Rey', ['Del otro lado de las estacas no queda nada vivo. Ni pájaros.', 'De noche se ven fuegos verdes entre los árboles secos.']],
-    ['g_axeman', 540, 602, true, 'Recluta', ['Me mandaron a cuidar el bosque y terminé cuidando una olla.', 'Dicen que la piedra vieja del claro zumba cuando hay luna llena. Yo no me acerco.']]];
+    ['g_templar', 540, 602, true, 'Recluta', ['Me mandaron a cuidar el bosque y terminé cuidando una olla.', 'Dicen que la piedra vieja del claro zumba cuando hay luna llena. Yo no me acerco.']]];
   const son = (k, v, o) => { try { return sfx.fx(k, v, o); } catch (e) { return false; } };
 
   STORY_NPCS.push({
-    id: 'cabo_cuarentena', x: 1028, y: 412, r: 50, name: 'Cabo de la cuarentena', face: 'g_lancer_idle',
+    id: 'cabo_cuarentena', x: 1028, y: 412, r: 50, name: 'Cabo de la cuarentena', face: 'g_templar_idle',
     get zone() { return st(S0()) ? ZB : '-'; },
     lines: s => abierto(s)
       ? ['El Rey dio la orden: el portón queda abierto para vos.', 'Más allá de las estacas, todo lo que se mueva es enemigo. Volvé entero.']
@@ -100,7 +100,7 @@
         if (b.right > a.x + HUECO.x - 10 && b.center.y > a.y + HUECO.y - 6 && b.center.y < a.y + HUECO.y + HUECO.h + 6 &&
             (!this._ckCuarAviso || this.time.now - this._ckCuarAviso > 3000)) {
           this._ckCuarAviso = this.time.now;
-          const cabo = (this._ckCuar || []).find(o => o && o.texture && o.texture.key === 'g_lancer_idle');
+          const cabo = (this._ckCuar || []).find(o => o && o.texture && o.texture.key === 'g_templar_idle');
           const t = '¡Alto! Sin orden del Rey nadie cruza la cuarentena.';
           if (cabo && E && E.globo) E.globo(this, cabo, t, 2400); else this.createFloatingText(this.player.x, this.player.y - 46, t, 0xfca5a5);
         }

@@ -152,7 +152,7 @@ Object.assign(MainGameScene.prototype, {
         // 3. NPC 3: Near Purple House (left side)
         id: 'npc3',
         texture: 'npc3_villager',
-        name: 'Boticaria Herbolaria',
+        name: 'Boticario Herbolario',
         greetings: [
           'Las hierbas del bosque curan todo 🌱',
           'Cuidado en las tierras salvajes 🧪',
@@ -174,7 +174,7 @@ Object.assign(MainGameScene.prototype, {
         // 4. NPC 4: Near North house & well
         id: 'npc4',
         texture: 'npc4_villager',
-        name: 'Granjero del Norte',
+        name: 'Granjera del Norte',
         greetings: [
           'La cosecha será próspera este año 🌽',
           'El molino funciona sin descanso 🌾',
@@ -229,7 +229,7 @@ Object.assign(MainGameScene.prototype, {
       },
       {
         // 7. Worker: carries goods along the plaza road
-        id: 'npc10', texture: 'npc10_villager', name: 'Bruno el Cargador',
+        id: 'npc10', texture: 'npc10_villager', name: 'Beto el Cargador',
         greetings: ['¡Paso, que pesa!', 'Hoy llegan barriles del castillo', 'Si buscás trabajo, acá sobra', 'Los caminos andan peligrosos'],
         waypoints: [{ x: 449, y: 233 }, { x: 411, y: 250 }, { x: 484, y: 289 }, { x: 528, y: 272 }],
         scale: 1.3, startWaypoint: 3, idleChance: 0.25, speed: 36
