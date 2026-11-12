@@ -14,7 +14,10 @@
   const escena = () => game.scene.scenes.find(s => s.startCampaign);
   const S = () => window.CK_SONIDO || {};
   const hasta = async (cond, ms = 4000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (cond()) return true; await esperar(80); } return false; };
-  const sonaron = desde => (S().log || []).slice(desde);
+  // marca() = cuántos sonidos van; sonaron(marca) = los que sonaron después (el registro guarda sólo los últimos 40, así que
+  // contar por largo dejaba de ver los nuevos cuando ya estaba lleno)
+  const marca = () => S().nlog || 0;
+  const sonaron = desde => { const l = S().log || [], n = marca() - desde; return n > 0 ? l.slice(-n) : []; };
 
   prueba('El juego arranca y la campaña empieza', async () => {
     // el botón de las pruebas aparece mientras el juego todavía carga: esperar a que exista el héroe (en una máquina lenta tarda)
@@ -27,7 +30,7 @@
   prueba('Archivos de música cargados', async () => { const E = music.audioElements, faltan = ['village', 'intro', 'castle', 'ruins', 'boss', 'taberna', 'noche', 'practica'].filter(k => !E[k] || E[k].error); ok(!faltan.length, 'no cargan: ' + faltan.join(', ')); });
   prueba('Sonido del Taller listo (54 sonidos)', async () => { ok(await hasta(() => S().listo, 6000), 'no terminó de cargar'); ok(Object.keys(S().buf).length >= 50, 'faltan sonidos: ' + Object.keys(S().buf || {}).length); });
   prueba('Voz y pluma al hablar con un NPC', async () => {
-    const s = escena(), d = (S().log || []).length; s.openDialog('Rey Aldric', ['Bienvenido a mi reino, valiente guerrero. Hay mucho por hacer en estas tierras.'], null, 'king_idle'); await esperar(1500);
+    const s = escena(), d = marca(); s.openDialog('Rey Aldric', ['Bienvenido a mi reino, valiente guerrero. Hay mucho por hacer en estas tierras.'], null, 'king_idle'); await esperar(1500);
     const l = sonaron(d); ok(l.some(n => n === 'voz_rey'), 'no sonó la voz del rey'); ok(l.filter(n => n.indexOf('pluma') === 0).length > 3, 'casi no sonó la pluma');
     s._dlg.shown = 999; s._dlg.at = 0; s.advanceDialog(); await esperar(300); ok(!s._dlg, 'el diálogo no cerró'); s.dialogOpen = false;
   });
@@ -48,7 +51,7 @@
     ok(await hasta(() => !s.currentInterior, 6000), 'no salió'); await esperar(400);
   });
   prueba('Taberna: puertas, música, ambiente y eco', async () => {
-    const s = escena(), d = (S().log || []).length, puerta = s.children.list.find(o => o._interiorKind === 'bar'); ok(puerta, 'no encontré la puerta de la taberna');
+    const s = escena(), d = marca(), puerta = s.children.list.find(o => o._interiorKind === 'bar'); ok(puerta, 'no encontré la puerta de la taberna');
     const tab = window.CK_SALA_ED && window.CK_SALA_ED.ed_taberna_2 ? 'ed_taberna_2' : 'bar'; // la taberna nueva del Taller, si está
     s.enterInterior(puerta); ok(await hasta(() => s.currentInterior && s.currentInterior.building.kind === tab), 'no entró'); await esperar(600);
     ok(s._zoneMusic === 'taberna', 'música: ' + s._zoneMusic); ok(S().sala === 'taberna', 'eco: ' + S().sala); ok(ambience.want.amb_taberna > 0, 'sin ambiente de taberna');
@@ -59,7 +62,7 @@
     const s = escena(); s.enterCastle(); ok(await hasta(() => s.currentInterior && !s._doorTransition && /^(castle|ed_camino_al_castillo)$/.test(s.currentInterior.building.kind)), 'no entró al castillo'); await esperar(500);
     s.switchInteriorArea('courtyard'); await hasta(() => s.currentInterior.areaName === 'courtyard' && !s._doorTransition); await esperar(500); s.switchInteriorArea('throne'); ok(await hasta(() => s.currentInterior.areaName === 'throne' || s.currentZoneKey() === 'ed_salon_del_trono_3.main'), 'no llegó al salón'); await esperar(500);
     ok(S().sala === 'salon', 'eco: ' + S().sala); ok(s._zoneMusic === 'castle', 'música: ' + s._zoneMusic);
-    const d = (S().log || []).length; sfx.fx('step_stone1', 0.5); ok(sonaron(d).some(n => n.indexOf('step_stone_') === 0), 'el paso de piedra no usa los sonidos nuevos');
+    const d = marca(); sfx.fx('step_stone1', 0.5); ok(sonaron(d).some(n => n.indexOf('step_stone_') === 0), 'el paso de piedra no usa los sonidos nuevos');
   });
   prueba('Camino nuevo al castillo: el puente baja, el portón lleva al patio y el patio vuelve al puente', async () => {
     const s = escena(); if (!window.CK_CAMINO) return;

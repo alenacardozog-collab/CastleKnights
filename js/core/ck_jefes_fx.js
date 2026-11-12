@@ -297,5 +297,5 @@
     });
     return warn;
   };
-  window.CK_JEFES_FX = { carga, flecha, roca, sombraCaida, escombros, grieta, rastro, estela, chispas, ondaVoz, zona, franjaViva, ondaViva, onda, anticipar, soltar, tajo };
+  window.CK_JEFES_FX = { JEFES, carga, flecha, roca, sombraCaida, escombros, grieta, rastro, estela, chispas, ondaVoz, zona, franjaViva, ondaViva, onda, anticipar, soltar, tajo };
 })();

@@ -85,6 +85,8 @@ body.ck-movil #ck-minimapa { transform: scale(.72); transform-origin: 0 0; }
 #ckm .hablar { width: 54px; height: 54px; right: 52px; bottom: 140px; font-size: 12px; border-color: #9fe0ff; }
 #ckm .chico { width: 46px; height: 46px; font-size: 11px; }
 #ckm .arriba { top: 6px; margin-right: -22px; width: 44px; height: 44px; font-size: 18px; border-radius: 10px !important; }
+body.ck-movil input[type="text"], body.ck-movil input:not([type]), body.ck-movil .ckr-input { font-size: 16px !important; }
+body.ck-movil.ck-teclado .modal-overlay { align-items: flex-start !important; }
 #ckm-girar { position: fixed; inset: 0; z-index: 99999; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
   background: #0e0a0b; color: #f3ead9; font-family: var(--ck2-f, 'CK Grenze', Grenze, serif); font-size: 26px; text-align: center; }
 #ckm-girar i { width: 64px; height: 108px; border: 5px solid #f3ead9; border-radius: 12px; animation: ckmGira 1.8s ease-in-out infinite; }
@@ -106,6 +108,61 @@ body.ck-movil #ck-minimapa { transform: scale(.72); transform-origin: 0 0; }
     } catch (e) {}
   };
   document.addEventListener('touchstart', pantallaCompleta, { once: true, passive: true });
+
+  // ------------------------------------------------------------------ (v3, 11/11) paneles que no entran en la pantalla
+  // Pedido: "así se ve en mi celu, no me deja elegir porque no veo los botones" (el libro de héroes es más alto que la
+  // pantalla de un celular acostado). Todo panel de una ventana (.modal-overlay) que no entra se achica entero, sin
+  // deformarse, hasta que entra: se ven el libro completo y sus botones.
+  const altoVisible = () => (window.visualViewport ? visualViewport.height : innerHeight);
+  const firmas = new WeakMap();
+  const encajar = forzar => {
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+      const p = m.querySelector(':scope > .modal-box, :scope > .modal-card'); if (!p) return;
+      const cs = getComputedStyle(m);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity < 0.05 || !m.offsetWidth) { firmas.delete(p); return; }
+      const vw = innerWidth, vh = altoVisible();
+      const firma = vw + 'x' + Math.round(vh) + ':' + p.childElementCount + ':' + p.textContent.length + ':' + (p.querySelector('[data-page]') || p).getAttribute('data-page');
+      if (!forzar && firmas.get(p) === firma) return;
+      firmas.set(p, firma);
+      // (con scale/translate, no con zoom: adentro hay medidas en % y en vh que con zoom volvían a crecer)
+      p.style.scale = ''; p.style.translate = ''; p.style.maxHeight = ''; p.style.overflow = ''; p.style.transformOrigin = '50% 0';
+      // los paneles que ya tienen su propia barra para bajar (Opciones, con la lista de teclas) se dejan así: sólo se
+      // achican si la caja misma no entra
+      const rueda = e => /auto|scroll/.test(getComputedStyle(e).overflowY);
+      const conBarra = rueda(p) || [...p.querySelectorAll('*')].some(e => e.scrollHeight > e.clientHeight + 4 && rueda(e));
+      if (!conBarra) { p.style.maxHeight = 'none'; p.style.overflow = 'visible'; }
+      // alto de verdad: hasta el borde de abajo de lo último que tiene adentro
+      const r = p.getBoundingClientRect(); let abajo = r.bottom; const ancho = r.width;
+      if (!conBarra) p.querySelectorAll('*').forEach(e => { if (!e.offsetWidth || e.closest('[aria-hidden="true"]')) return; const q = e.getBoundingClientRect(); if (q.height && q.bottom > abajo) abajo = q.bottom; });
+      const alto = abajo - r.top, k = Math.min(1, (vh - 10) / alto, (vw - 10) / ancho);
+      if (k < 0.995 || r.top < 0 || abajo > vh) {
+        const kk = Math.max(0.35, k), arriba = Math.max(5, (vh - alto * kk) / 2);
+        p.style.scale = String(kk); p.style.translate = '0 ' + Math.round(arriba - r.top) + 'px'; m.style.overflow = 'hidden';
+      } else { p.style.maxHeight = ''; p.style.overflow = ''; p.style.transformOrigin = ''; }
+    });
+  };
+  setInterval(() => { try { encajar(false); } catch (e) {} }, 300);
+  addEventListener('resize', () => setTimeout(() => encajar(true), 200));
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => setTimeout(() => encajar(true), 120));
+
+  // ------------------------------------------------------------------ (v3) el nombre de la partida y el teclado del celular
+  // Pedido: "la ranura de poner el nombre también anda rara, se desfasa". Al abrirse sola la caja del nombre saltaba el
+  // teclado del celular y corría toda la pantalla. Ahora la caja no se enfoca sola (el nombre ya viene puesto: "Partida 1";
+  // se toca para cambiarlo), la letra es de 16 px (el navegador no hace zoom al tocarla) y, al cerrar el teclado, la
+  // pantalla vuelve a su lugar.
+  let tocoCampo = 0;
+  document.addEventListener('touchstart', e => { if (e.target && e.target.matches && e.target.matches('input, textarea')) tocoCampo = performance.now(); }, { capture: true, passive: true });
+  document.addEventListener('focusin', e => {
+    const t = e.target; if (!t || !t.matches || !t.matches('input[type="text"], input:not([type]), textarea')) return;
+    if (performance.now() - tocoCampo > 700) { try { t.blur(); } catch (er) {} return; }   // se enfocó sola: sin teclado
+    document.body.classList.add('ck-teclado');
+  }, true);
+  const volver = () => {
+    document.body.classList.remove('ck-teclado');
+    try { scrollTo(0, 0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; } catch (e) {}
+    ajustar(); encajar(true);
+  };
+  document.addEventListener('focusout', e => { if (e.target && e.target.matches && e.target.matches('input, textarea')) setTimeout(volver, 250); }, true);
 
   // el juego ocupa toda la pantalla del celular (como en pantalla completa)
   const ajustar = () => { try { window.game && game.scale && game.scale.refresh(); } catch (e) {} };

@@ -76,7 +76,8 @@
 #ckb-jefe .ckb-cab { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 0 6px 3px; }
 #ckb-jefe .ckb-nom { display: flex; align-items: flex-end; filter: drop-shadow(0 2px 0 #000); }
 #ckb-jefe .ckb-nom canvas { image-rendering: pixelated; display: block; }
-#ckb-jefe .ckb-tit { font: 13px 'Pirata One', MedievalSharp, serif; color: #f3e6c8; letter-spacing: .04em; text-shadow: 0 2px 0 #000; opacity: .9; white-space: nowrap; }
+body.ckb-jefe-on #ck-reloj { opacity: 0 !important; }
+#ckb-jefe .ckb-tit { font: 15px 'Pirata One', MedievalSharp, serif; color: #f3e6c8; letter-spacing: .04em; text-shadow: 0 2px 0 #000; opacity: .9; white-space: nowrap; }
 #ckb-jefe .ckb-marco { position: relative; height: 16px; background: #120707; border: 2px solid #000; outline: 2px solid var(--borde); box-shadow: 0 0 0 4px #000, 0 6px 14px rgba(0,0,0,.6), inset 0 2px 0 rgba(0,0,0,.6); }
 #ckb-jefe .ckb-marco::before, #ckb-jefe .ckb-marco::after { content: ''; position: absolute; top: 50%; width: 10px; height: 10px; background: var(--acento); border: 2px solid #000; transform: translateY(-50%) rotate(45deg); z-index: 3; }
 #ckb-jefe .ckb-marco::before { left: -13px; } #ckb-jefe .ckb-marco::after { right: -13px; }
@@ -92,11 +93,17 @@
 `;
     document.head.appendChild(st);
   };
+  // (11/11, "no coloques algo genérico": los jefes que no están en el elenco de las presentaciones tienen igual su nombre
+  // con tipografía propia y su título; Garra Negra, el jefe de los osos, no llevaba boss:true y caía en la barrita chica)
+  const EXTRA = {
+    werebear_jefe: { nombre: 'GARRA NEGRA', titulo: 'Señor de los osos', fuente: 'hueso', colores: ['#fff0d8', '#d08a3a', '#5a2a0a'], contorno: '#1a0c04', col: 'ambar', acento: '#e8902a', borde: '#4a2a10' }
+  };
+  const esJefe = e => !!((e.def && e.def.boss) || EXTRA[e.type] || (window.CK_JEFES_FX && CK_JEFES_FX.JEFES && CK_JEFES_FX.JEFES[e.type]));
   const RELLENO = { rojo: 'linear-gradient(180deg,#ff8a6e,#d8342c 45%,#7a1414)', verde: 'linear-gradient(180deg,#d4ffa8,#79d64e 45%,#2f6b25)', ambar: 'linear-gradient(180deg,#ffd28a,#e8902a 45%,#8a4b10)' };
   let barra = null;
   const crearBarra = (S, e) => {
     css();
-    const pr = PR(), c = pr && pr.POR_TIPO[e.type];
+    const pr = PR(), c = (pr && pr.POR_TIPO[e.type]) || null, x = EXTRA[e.type];
     const el = document.createElement('div'); el.id = 'ckb-jefe';
     const nom = document.createElement('div'); nom.className = 'ckb-nom';
     const tit = document.createElement('div'); tit.className = 'ckb-tit';
@@ -110,15 +117,17 @@
     el.append(cab, marco);
     const def = e.def || {}, nombre = c ? c.nombre : (def.name || def.nombre || 'Jefe').split(',')[0];
     if (pr) {
-      const wb = Math.min(560, innerWidth * 0.46), txt = c ? c.nombre : nombre;
-      const esc = pr.anchoNombre(c ? c.fuente : 'orco', txt.toUpperCase()) * 2 <= wb * 0.62 ? 2 : 1;
-      pr.pintarNombre(nom, c ? c.id : null, txt, esc);
+      const wb = Math.min(560, innerWidth * 0.46), txt = c ? c.nombre : x ? x.nombre : nombre, fu = c ? c.fuente : x ? x.fuente : 'orco';
+      const esc = pr.anchoNombre(fu, txt.toUpperCase()) * 2 <= wb * 0.62 ? 2 : 1;
+      if (c || !x || !pr.nombreEn) pr.pintarNombre(nom, c ? c.id : null, txt, esc);
+      else pr.nombreEn(nom, fu, txt.toUpperCase().replace(/Ñ/g, 'N').replace(/[^A-Z ]/g, ''), x.colores, x.contorno, esc);
     } else { nom.textContent = nombre; nom.style.font = "18px 'Pirata One', MedievalSharp, serif"; nom.style.color = '#ffd6c4'; }
-    tit.textContent = c ? c.titulo : ((def.name || '').split(',')[1] || '').trim();
-    const col = c ? (c.tema === 'niebla' ? 'verde' : c.id === 'kragmor' || c.id === 'ulrak' ? 'ambar' : 'rojo') : (NO_MUERTO.test(e.type) ? 'verde' : BESTIA.test(e.type) ? 'ambar' : 'rojo');
+    tit.textContent = c ? c.titulo : x ? x.titulo : ((def.name || '').split(',')[1] || '').trim();
+    const col = c ? (c.tema === 'niebla' ? 'verde' : c.id === 'kragmor' || c.id === 'ulrak' ? 'ambar' : 'rojo') : x ? x.col : (NO_MUERTO.test(e.type) ? 'verde' : BESTIA.test(e.type) ? 'ambar' : 'rojo');
     el.style.setProperty('--relleno', c && c.tema === 'niebla' && c.id === 'nigro' ? 'linear-gradient(180deg,#e2b8ff,#9b4dde 45%,#4a1a78)' : RELLENO[col]);
-    el.style.setProperty('--acento', c ? c.acento : '#e0483a');
-    el.style.setProperty('--borde', c ? c.banda[1] : '#3a1010');
+    el.style.setProperty('--acento', c ? c.acento : x ? x.acento : '#e0483a');
+    el.style.setProperty('--borde', c ? c.banda[1] : x ? x.borde : '#3a1010');
+    document.body.classList.add('ckb-jefe-on');
     (document.getElementById('game-wrapper') || document.body).appendChild(el);
     barra = { S, e, el, vida, rastro, k: 1, ult: e.hp };
     ubicar();
@@ -136,7 +145,7 @@
   addEventListener('resize', ubicar);
   const quitarBarra = (cae) => {
     if (!barra) return;
-    const el = barra.el; barra = null;
+    const el = barra.el; barra = null; document.body.classList.remove('ckb-jefe-on');
     if (cae) { el.querySelector('.ckb-vida').style.width = '0%'; el.classList.add('cae'); setTimeout(() => el.remove(), 1700); }
     else { el.classList.remove('on'); setTimeout(() => el.remove(), 450); }
   };
@@ -186,12 +195,13 @@
       this.enemies.getChildren().forEach(e => {
         if (!e.active || e.isDead) return;
         const def = e.def || {};
-        if (def.boss) jefes.push(e);
+        const jefe = esJefe(e);
+        if (jefe) jefes.push(e);
         if (e.hpBar) {
-          if (def.boss && barra && barra.e === e) e.hpBar.clear();
+          if (jefe) e.hpBar.clear();            // los jefes nunca llevan la barrita sobre la cabeza: su barra es la grande
           else dibujar(this, e, now);
         }
-        if (e.nameTag) e.nameTag.setVisible(!(barra && barra.e === e));
+        if (e.nameTag) e.nameTag.setVisible(!jefe);
       });
       if (barra) actualizarBarra(this);
       if (!barra && this._gameMode === 'campaign' && this.player) {

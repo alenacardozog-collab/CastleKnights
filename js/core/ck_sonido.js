@@ -72,7 +72,7 @@
   /** Toca un sonido embebido. o: {vol, rate, pan, desde, dura, entra, sale}. Devuelve un control con .parar(seg). */
   function tocar(n, o) {
     o = o || {}; const b = S.buf[n]; if (!b || !S.iniciado || !nivel()) return null;
-    S.log = (S.log || []).slice(-40); S.log.push(n);                    // últimos sonidos (para revisar)
+    S.log = (S.log || []).slice(-40); S.log.push(n); S.nlog = (S.nlog || 0) + 1;   // últimos sonidos y cuántos van (para revisar)
     const ctx = S.ctx, t = ctx.currentTime;
     S.master.gain.setTargetAtTime(nivel(), t, 0.02);
     const src = ctx.createBufferSource(), g = ctx.createGain(); src.buffer = b; src.playbackRate.value = o.rate || 1;

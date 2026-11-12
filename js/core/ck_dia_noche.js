@@ -1,7 +1,7 @@
 'use strict';
 /* Día y noche más largos, luna llena y clima más variado (08/11, pedido del dueño: "que día noche cambie cada 10 minutos",
    "que las estaciones invierno, lluvia y tormenta sean al azar", "que la luna llena potencie a los lobos").
-   - El día dura 10 minutos y la noche otros 10 (contando el atardecer y el amanecer, 1 minuto cada uno). Antes, el día
+   - El día dura 7 minutos y la noche otros 7 (desde el 11/11; antes 10 y 10), contando el atardecer y el amanecer, 1 minuto cada uno. Antes, el día
      entero eran 5 minutos y la noche apenas 1 y medio. Por dentro el reloj sigue igual (dayPhase de 0 a 1, la noche entre
      0,62 y 0,92), así todo lo que mira la hora (luces, fauna, siesta, dormir en la cama) sigue andando sin tocarlo:
      lo que cambia es lo rápido que corre cada tramo.
@@ -17,10 +17,11 @@
   const DIA = 300000;  // un día del reloj de adentro (lo que usa dayPhase)
   // tramos del reloj de adentro y cuánto duran de verdad (ms)
   const TRAMOS = [
-    { hasta: 0.52, real: 540000 },  // día pleno: 9 min
-    { hasta: 0.62, real: 60000 },   // atardecer: 1 min
-    { hasta: 0.92, real: 540000 },  // noche cerrada: 9 min
-    { hasta: 1.0, real: 60000 }     // amanecer: 1 min
+    // (11/11, pedido del dueño: "que el día dure 7 minutos y la noche también"; antes, 10 y 10)
+    { hasta: 0.52, real: 360000 },  // día pleno: 6 min
+    { hasta: 0.62, real: 60000 },   // atardecer: 1 min (día: 7 en total)
+    { hasta: 0.92, real: 360000 },  // noche cerrada: 6 min
+    { hasta: 1.0, real: 60000 }     // amanecer: 1 min (noche: 7 en total)
   ];
   const ritmo = p => {
     let desde = 0;

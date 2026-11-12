@@ -168,7 +168,8 @@
     colocar();
     const ev = S.time.addEvent({ delay: 16, loop: true, callback: colocar });
 
-    // pop desde la colita
+    // pop desde la colita (v3: avisa a quien quiera ponerle sonido, ck_foley.js)
+    try { if (window.CK_GLOBOS && window.CK_GLOBOS.alAparecer) window.CK_GLOBOS.alAparecer(S, sp, texto); } catch (e) {}
     cont.setPosition(cont.x, cont.y);
     S.tweens.add({ targets: cont, scale: 1, alpha: 1, duration: 220, ease: 'Back.easeOut' });
 

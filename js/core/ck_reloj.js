@@ -17,6 +17,8 @@
   const TRAMOS = [[0, 0.52, 7, 18], [0.52, 0.62, 18, 20], [0.62, 0.92, 20, 30], [0.92, 1, 6, 7]];
   const hora = p => { for (const [a, b, h0, h1] of TRAMOS) if (p >= a && p < b) return (h0 + (p - a) / (b - a) * (h1 - h0)) % 24; return 7; };
   const hhmm = h => { const m = Math.floor((h % 1) * 60 / 10) * 10; return Math.floor(h) + ':' + String(m).padStart(2, '0'); };
+  // (11/11, pedido del dueño: "la hora está en números romanos y la representa el reloj solar")
+  const romano = n => { n = Math.floor(n) || 24; let s = ''; [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']].forEach(([v, r]) => { while (n >= v) { s += r; n -= v; } }); return s; };
   const momento = p => p < 0.18 ? 'Mañana' : p < 0.36 ? 'Mediodía' : p < 0.52 ? 'Tarde' : p < 0.62 ? 'Atardecer' : p < 0.92 ? 'Noche' : 'Amanecer';
   const hasta = (h0, h1) => { let d = h1 - h0; if (d < 0) d += 24; const hs = Math.floor(d), ms = Math.round((d - hs) * 60 / 10) * 10; return hs ? (hs + ' h' + (ms ? ' ' + ms + ' min' : '')) : (ms || 10) + ' min'; };
 
@@ -61,10 +63,10 @@
     const ang = ((h - 12) / 12) * 120;          // la sombra gira de -60° (6 h) a +80° (20 h)
     caja.querySelector('i').style.setProperty('--ang', (180 + ang) + 'deg');
     caja.querySelector('i').style.setProperty('--som', sol ? 1 : 0);
-    caja.querySelector('b').innerHTML = (sol ? hhmm(h) : (noche ? 'Noche' : '—')) + '<small>' + (sol ? momento(p) : noche ? '☾' : 'sin sol') + '</small>';
+    caja.querySelector('b').innerHTML = (sol ? 'Hora ' + romano(h) : (noche ? 'Noche' : '—')) + '<small>' + (sol ? momento(p) : noche ? '☾' : 'sin sol') + '</small>';
     // horarios
     const abre = hora(H.ABRE), cierra = hora(H.CIERRA), abierto = p >= H.ABRE || p < H.CIERRA;
-    const a = abierto ? 'Tiendas abiertas hasta las ' + Math.round(cierra) + ' h' : 'Tiendas cerradas · abren a las ' + Math.round(abre) + ' h';
+    const a = abierto ? 'Tiendas abiertas hasta la hora ' + romano(Math.round(cierra)) : 'Tiendas cerradas · abren a la hora ' + romano(Math.round(abre));
     let b = noche ? 'Amanece en ' + hasta(h, 6) : 'Anochece en ' + hasta(h, 20);
     if (S.ckLunaLlena && S.ckLunaLlena()) b = '◯ Luna llena: los lobos andan bravos';
     else if (!noche && p >= 0.45 && S.ckLunaLlena && window.CK_DIA_NOCHE && CK_DIA_NOCHE.lunaHoy && CK_DIA_NOCHE.lunaHoy(S)) b += ' · luna llena';
@@ -103,5 +105,5 @@
     if ((acum += delta || 16) > 400) { acum = 0; try { pintar(this); } catch (e) {} }
     return r;
   };
-  window.CK_RELOJ = { hora, hhmm, momento, pintar };
+  window.CK_RELOJ = { hora, hhmm, romano, momento, pintar };
 })();

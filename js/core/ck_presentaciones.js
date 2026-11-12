@@ -470,7 +470,7 @@ body.ckp-on #ck-dialog, body.ckp-on #ck-prompt { opacity: 0 !important; transiti
   };
 
   window.CK_PRESENTACIONES = {
-    ELENCO, POR_ID, POR_TIPO, mostrar, tapado, cerrar: () => cerrar(true), pintarNombre, anchoNombre, activa: () => !!act,
+    ELENCO, POR_ID, POR_TIPO, mostrar, tapado, cerrar: () => cerrar(true), pintarNombre, anchoNombre, nombreEn, activa: () => !!act,
     olvidar: S => { const v = vistos(S); Object.keys(v).forEach(k => delete v[k]); }
   };
 })();

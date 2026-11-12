@@ -6,7 +6,7 @@
 (function () {
   if (typeof MainGameScene === 'undefined') return;
   const P = MainGameScene.prototype;
-  const PIEZAS = '#ck-quick, #ck-antorcha, #ck-hab-r, .ck2-orbe, .ck2-monedas, .ck2-nombre, #ck-minimapa, #ck-objective, #ckh .med, #ckh .der';
+  const PIEZAS = '#ck-quick, #ck-antorcha, #ck-hab-r, .ck2-orbe, .ck2-monedas, .ck2-nombre, #ck-minimapa, #ck-objective, #ckh .med, #ckh .der, #ckh .ckM-izq, #ckh .ckM-der, #ckh .ckS-abajo, #ck-reloj';
   const MARGEN = 6;   // píxeles de pantalla alrededor del héroe
 
   const css = () => {

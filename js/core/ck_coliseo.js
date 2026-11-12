@@ -233,8 +233,9 @@
     S.time.delayedCall(850, () => {
       if (!vivo(e)) return;
       const anim = cazador ? 'cazador_ulrak_walk' : 'bestia_kragmor_charge';
-      e.play(anim, true); if (cazador) e.anims.timeScale = 2;
       const v = cazador ? 520 : 430, t0 = S.time.now;
+      if (cazador) { andar(S, e, Math.cos(a) * v, Math.sin(a) * v); e.anims.timeScale = 2; }   // el huargo corre mirando hacia donde va
+      else { e.play(anim, true); e.setFlipX(Math.cos(a) < 0); }
       e.body.setVelocity(Math.cos(a) * v, Math.sin(a) * v);
       son(cazador ? 'ck_silbido' : 'ck_embestida', cazador ? 0.5 : 0.85);
       if (FX()) FX().rastro(S, e, L / v * 1000 + 300);
@@ -312,7 +313,7 @@
     empezar(S, e);
     // primero se aleja un poco
     const p = pies(S), a0 = Math.atan2(e.body.bottom - p.y, e.body.center.x - p.x);
-    e.play('cazador_ulrak_walk', true);
+    andar(S, e, Math.cos(a0) * 170, Math.sin(a0) * 170);     // se aleja dándose vuelta, no caminando para atrás
     e.body.setVelocity(Math.cos(a0) * 170, Math.sin(a0) * 170);
     S.time.delayedCall(450, () => {
       if (!vivo(e)) return;
@@ -395,15 +396,28 @@
     if (!vivo(e) || !JEFES[e.type] || !e.body || (e._ckc && e._ckc.ocupado)) return;
     const k = e.anims.currentAnim && e.anims.currentAnim.key, t = e.type;
     if (k !== t + '_walk' && k !== t + '_walk_front' && k !== t + '_walk_back') return;
-    const vx = e.body.velocity.x, vy = e.body.velocity.y;
+    const vx = e.body.velocity.x, vy = e.body.velocity.y, ax = Math.abs(vx), ay = Math.abs(vy), lado = k === t + '_walk';
+    // (11/11, "a veces con la vista de espaldas camina hacia atrás") antes, una vez que se ponía de espaldas o de frente
+    // ya no podía volver a la vista de costado (el play de abajo lo frenaba): seguía de espaldas caminando para el costado
+    // o parado. Ahora la vista sale siempre de hacia dónde se mueve de verdad, y si se queda quieto pasa a estar parado.
+    if (ax < 8 && ay < 8) { if (!lado && !e.isAttacking && S.anims.exists(t + '_idle')) play0.call(e, t + '_idle', true); return; }
     let q = t + '_walk';
-    if (Math.abs(vy) > Math.abs(vx) * 1.3 && Math.abs(vy) > 8) q = t + (vy > 0 ? '_walk_front' : '_walk_back');
-    if (q !== k && S.anims.exists(q)) { e.play(q, true); if (q !== t + '_walk') e.setFlipX(false); }
+    if (ay > ax * (lado ? 1.3 : 0.9)) q = t + (vy > 0 ? '_walk_front' : '_walk_back');
+    if (q !== k && S.anims.exists(q)) play0.call(e, q, true);
+    if (q !== t + '_walk') e.setFlipX(false); else if (ax > 5) { e.facing = vx < 0 ? 'left' : 'right'; e.setFlipX(vx < 0); }
   });
+  // para los movimientos especiales (embestidas, alejarse): la vista que corresponde a esa dirección
+  const andar = (S, e, vx, vy) => {
+    const t = e.type; let q = t + '_walk';
+    if (Math.abs(vy) > Math.abs(vx) * 1.3) q = t + (vy > 0 ? '_walk_front' : '_walk_back');
+    if (!S.anims.exists(q)) q = t + '_walk';
+    play0.call(e, q, true);
+    if (q === t + '_walk') { e.facing = vx < 0 ? 'left' : 'right'; e.setFlipX(vx < 0); } else e.setFlipX(false);
+  };
   // el juego vuelve a poner <tipo>_walk en cada paso; si ya iba de frente o de espaldas, no se corta
   const play0 = Phaser.GameObjects.Sprite.prototype.play;
   Phaser.GameObjects.Sprite.prototype.play = function (key, ignoreIfPlaying) {
-    if (this._ckc && typeof key === 'string' && key === this.type + '_walk') {
+    if (this._ckc && !this._ckc.ocupado && typeof key === 'string' && key === this.type + '_walk') {
       const k = this.anims.currentAnim && this.anims.currentAnim.key;
       if (k === key + '_front' || k === key + '_back') return this;
     }

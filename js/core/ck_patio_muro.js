@@ -342,6 +342,18 @@
     try {
       const on = enMuro(this);
       if (on && !(this._ckMuro && this._ckMuro.on)) { armar(this); mostrarPaisaje(this, true); }
+      // (11/11, "la parte alta del mapa se ve rara, parece un filtro incompleto"): el velo de color del lugar (el que
+      // oscurece y tiñe el mapa) terminaba en el borde de arriba del mapa y el paisaje asoma más arriba (EXTRA): quedaba
+      // una franja sin teñir. Se estira hacia arriba hasta donde llega la cámara.
+      if (on && this._ckMuro && this._ckMuro.velo !== this.currentInterior.area) {
+        const a = this.currentInterior.area, prof = a.y + a.h + 35;
+        this.children.list.forEach(o => {
+          if (o.type !== 'Rectangle' || Math.abs(o.depth - prof) > 0.01 || Math.abs(o.width - a.w) > 1 || o._ckVelo) return;
+          o._ckVelo = true;
+          o.setPosition(a.x, a.y - EXTRA - 60); o.setSize(a.w, a.h + EXTRA + 60); o.setOrigin(0, 0);
+        });
+        this._ckMuro.velo = a;
+      }
       else if (!on && this._ckMuro && this._ckMuro.on) { mostrarPaisaje(this, false); this._ckMuro.off = 0; this.cameras.main.setFollowOffset(0, 0); }
       if (on) {
         // la cámara mira más arriba cuando el héroe está cerca de las almenas (así se ve el paisaje) y baja de a poco

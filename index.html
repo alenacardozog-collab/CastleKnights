@@ -28,6 +28,25 @@
     html.ck-solo-pre #game-canvas-container canvas { width: min(100vw, calc(100vh * 1.6)) !important; height: min(100vh, calc(100vw / 1.6)) !important; }
     html.ck-solo-pre #start-menu-overlay::after, html.ck-solo-pre .ck2-esq { display: none !important; }
   </style>
+  <!-- (11/11) la portada vieja no se ve nunca: mientras cargan los archivos (en un celular tarda), la pantalla queda negra con
+       un rombo dorado que late; la portada aparece recién cuando está la nueva (al terminar de cargar todo). Antes se veía
+       primero el video y el título viejos, con la letra de antes, y después se cambiaban por los nuevos. -->
+  <script>
+    (function () {
+      var h = document.documentElement, listo = function () { h.classList.add('ck-lista'); };
+      addEventListener('load', function () { setTimeout(listo, 250); });
+      setTimeout(listo, 45000);   // seguro: si algo no termina de cargar, se muestra igual
+    })();
+  </script>
+  <style id="ck-cargando-pre">
+    html:not(.ck-lista) #start-menu-overlay { background: #000 !important; }
+    html:not(.ck-lista) #start-menu-overlay > * { visibility: hidden !important; }
+    html:not(.ck-lista) #game-canvas-container canvas { visibility: hidden !important; }
+    html:not(.ck-lista) body::after { content: ''; position: fixed; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px;
+      background: #d9a441; transform: rotate(45deg); z-index: 2147483600; animation: ckLate 1.1s ease-in-out infinite; box-shadow: 0 0 18px rgba(217, 164, 65, .6); }
+    html:not(.ck-lista) body::before { content: ''; position: fixed; inset: 0; background: #000; z-index: 2147483500; }
+    @keyframes ckLate { 0%, 100% { opacity: .25; transform: rotate(45deg) scale(.8); } 50% { opacity: 1; transform: rotate(45deg) scale(1.15); } }
+  </style>
 </head>
 <body>
 
@@ -1007,7 +1026,7 @@
   <script src="js/core/ck_camino_prof.js?v=2"></script>
   <script src="js/core/ck_historia.js?v=3"></script>
   <script src="js/core/ck_partidas.js?v=6"></script>
-  <script src="js/core/ck_minimapa.js?v=6"></script>
+  <script src="js/core/ck_minimapa.js?v=7"></script>
   <script src="js/core/ck_luz.js?v=4"></script>
   <script src="js/core/ck_clima.js?v=3"></script>
   <script src="js/core/ck_nieve.js?v=2"></script>
@@ -1088,7 +1107,7 @@
   <script src="js/core/ck_piezas_arregladas.js?v=1"></script>
   <!-- Patio del Castillo y Muralla nuevos (03/11): dibujo de Flow, gente y puertas en su lugar, paisaje con paralaje desde la muralla. Borrar estas dos líneas vuelve a los de antes. -->
   <script src="js/core/ck_patio_muro_arte.js?v=2"></script>
-  <script src="js/core/ck_patio_muro.js?v=3"></script>
+  <script src="js/core/ck_patio_muro.js?v=4"></script>
   <!-- Frontera Orca (03/11): orcos más grandes, huargos y jabalíes de PixelLab, cerdos que andan, agua y follaje animados. Borrar estas tres líneas lo saca. -->
   <script src="js/core/ck_frontera_bestias_arte.js?v=1"></script>
   <script src="js/core/ck_frontera_bestias.js?v=2"></script>
@@ -1142,7 +1161,7 @@
   <script src="js/core/ck_dificultad.js?v=1"></script>
   <script src="js/core/ck_gamepad.js?v=2"></script>
   <!-- (11/11) modo celular horizontal: palanca, botones táctiles y "girá el celular" (borrar esta línea lo saca) -->
-  <script src="js/core/ck_movil.js?v=2"></script>
+  <script src="js/core/ck_movil.js?v=3"></script>
   <!-- (11/11) sólo el juego en la pantalla: sin cabecera, sin barra de teclas ni marco; pantalla completa con el primer clic (?pagina=1 muestra la página de antes; borrar esta línea vuelve a la de antes) -->
   <script src="js/core/ck_solo_juego.js?v=3"></script>
   <!-- oscuridad como sistema (07/11): zonas oscuras, bestias en la sombra, braseros seguros; lista para la región final. Borrar la línea lo saca -->
@@ -1155,7 +1174,7 @@
   <!-- (10/11) Cueva de Garra Negra, Nivel 1 (Las Galerías): la boca de oso del Claro se abre; cueva oscura (antorcha), braseros, cofre detrás de la barricada. Borrar la línea cierra la boca como antes -->
   <script src="js/core/ck_cueva_galerias.js?v=3"></script>
   <!-- (08/11) día y noche de 10 min cada uno, luna llena, clima que pega en la pelea, gente que se guarda de la lluvia, ojos rojos/limos/antorchas de noche, pantallas de carga, monolito del claro. Cada línea se borra sola -->
-  <script src="js/core/ck_dia_noche.js?v=1"></script>
+  <script src="js/core/ck_dia_noche.js?v=2"></script>
   <script src="js/core/ck_clima_efectos.js?v=1"></script>
   <script src="js/core/ck_lluvia_gente.js?v=1"></script>
   <script src="js/core/ck_noche_viva.js?v=1"></script>
@@ -1174,7 +1193,7 @@
   <!-- Pausa pareja: retrato del libro en el arco, íconos y botones iguales. Borrar esta línea lo deshace. -->
   <script src="js/core/ck_pausa2.js?v=1"></script>
   <!-- El héroe no queda escondido detrás del HUD: la pieza que lo tapa se vuelve casi transparente. Borrar esta línea lo saca. -->
-  <script src="js/core/ck_hud_detras.js?v=2"></script>
+  <script src="js/core/ck_hud_detras.js?v=3"></script>
   <!-- Portada: título animado, "Presioná cualquier botón" bien visible (también con joystick) y recién ahí el menú. Borrar esta línea lo deshace. -->
   <script src="js/core/ck_portada.js?v=4"></script>
   <!-- (10/11) Dash más corto (unos 90 px en vez de 150). Borrar esta línea lo deja como antes. -->
@@ -1182,9 +1201,9 @@
   <!-- (10/11) Monedas de bronce, plata y oro (100 = 1 de la siguiente) y mejores premios en los lugares difíciles. Borrar esta línea lo deshace. -->
   <script src="js/core/ck_monedas.js?v=1"></script>
   <!-- (10/11) Globos de diálogo nuevos: burbuja con colita que apunta al que habla, aparece con un "pop" y letra por letra. Borrar esta línea vuelve al globito de antes. -->
-  <script src="js/core/ck_globos.js?v=2"></script>
+  <script src="js/core/ck_globos.js?v=3"></script>
   <!-- (11/11) cinemáticas sin interfaz: borrar esta línea la vuelve a mostrar -->
-  <script src="js/core/ck_cine_ui.js?v=1"></script>
+  <script src="js/core/ck_cine_ui.js?v=2"></script>
   <!-- (10/11) Partidas nuevas: al empezar sólo caminar y golpe básico; correr y dash en el entrenamiento, la parada, el golpe fuerte y las ranuras por nivel; al principio sólo murciélagos y limos. Borrar esta línea lo saca. -->
   <script src="js/core/ck_progreso.js?v=1"></script>
   <!-- (10/11) Prólogo nuevo: festejo en la taberna, Pipo (el paje) te despierta y te lleva al Rey, y el entrenamiento con Bruno que da el dash. Borrar esta línea vuelve al arranque de antes. -->
@@ -1198,9 +1217,9 @@
   <!-- (11/11) historia nueva, cap. 1: Brumavieja de día (vecinos raros) y de noche (se vuelven esqueletos: emboscada) (borrar esta línea lo saca) -->
   <script src="js/core/ck_brumavieja.js?v=1"></script>
   <!-- (11/11) historia nueva, cap. 1: el gesto del Rey y Aby que interrumpe al volver a la aldea (borrar esta línea lo saca) -->
-  <script src="js/core/ck_capitulo1_nuevo.js?v=1"></script>
+  <script src="js/core/ck_capitulo1_nuevo.js?v=2"></script>
   <!-- (10/11) La Frontera cerrada por soldados hasta terminar el Capítulo 1; del otro lado, soldados caídos y barricadas. Borrar esta línea abre el paso como antes. -->
-  <script src="js/core/ck_frontera_cerrada.js?v=4"></script>
+  <script src="js/core/ck_frontera_cerrada.js?v=5"></script>
   <script src="js/core/ck_cuarentena_arte.js?v=1"></script>
   <script src="js/core/ck_cuarentena.js?v=2"></script>
   <!-- (10/11) 14 notas escondidas con pistas de la historia (T para leer; el diario las cuenta). Borrar esta línea las saca. -->
@@ -1213,9 +1232,12 @@
   <script src="js/core/ck_ui_sutil.js?v=2"></script>
   <!-- (10/11) lo que dicen los NPC solos va en burbuja; con T, el cuadro de antes con la foto. Borrar esta línea lo saca -->
   <script src="js/core/ck_dialogos_npc.js?v=1"></script>
-  <script src="js/core/ck_reloj.js?v=1"></script>
+  <script src="js/core/ck_reloj.js?v=2"></script>
+  <script src="js/core/ck_hud_medallon.js?v=1"></script>
+  <script src="js/core/ck_arbol_arte.js?v=1"></script>
+  <script src="js/core/ck_arbol.js?v=1"></script>
   <script src="js/core/ck_coliseo_arte.js?v=2"></script>
-  <script src="js/core/ck_coliseo.js?v=4"></script>
+  <script src="js/core/ck_coliseo.js?v=5"></script>
   <script src="js/core/ck_coliseo_gradas_arte.js?v=1"></script>
   <script src="js/core/ck_coliseo_gradas.js?v=1"></script>
   <script src="js/core/ck_coliseo_historia.js?v=1"></script>
@@ -1231,16 +1253,28 @@
   <!-- (10/11) terreno que se rompe peleando: estacas, cercas, carretas, barriles del dibujo (borrar esta línea lo saca) -->
   <script src="js/core/ck_terreno_rompible.js?v=1"></script>
   <!-- (10/11) partículas y proyectiles a píxel de las habilidades de los jefes (borrar esta línea vuelve a los dibujos de antes) -->
-  <script src="js/core/ck_jefes_fx.js?v=2"></script>
+  <script src="js/core/ck_jefes_fx.js?v=3"></script>
   <script src="js/core/ck_sendero_orco.js?v=1"></script>
   <script src="js/core/ck_afueras_orcas.js?v=1"></script>
   <!-- (10/11) presentaciones de los personajes principales (retrato en pose, nombre en su tipografía, sonido) y barras de
        vida / nombres con personalidad. Borrar estas líneas deja todo como antes. -->
   <script src="js/core/ck_presentaciones_arte.js?v=1"></script>
-  <script src="js/core/ck_presentaciones.js?v=1"></script>
-  <script src="js/core/ck_barras.js?v=1"></script>
+  <script src="js/core/ck_presentaciones.js?v=2"></script>
+  <script src="js/core/ck_barras.js?v=2"></script>
   <!-- (11/11) cargas medidas por mapa: la pantalla de carga y el fundido duran lo que tarda cada mapa en armarse -->
   <script src="js/core/ck_carga_medida.js?v=1"></script>
+  <!-- (11/11) salidas a la aldea en su lugar: al salir de cada sitio se aparece en su puerta o su camino -->
+  <script src="js/core/ck_salidas.js?v=1"></script>
+  <!-- (11/11) arranque limpio: telón negro al empezar o continuar hasta que el juego está donde tiene que estar -->
+  <script src="js/core/ck_arranque.js?v=1"></script>
+  <!-- (11/11) foley de las cinemáticas: pasos de los que caminan, pop de los globos, roce de ropa -->
+  <script src="js/core/ck_foley.js?v=1"></script>
+  <!-- (11/11) camas: pagar, dormir, guardar y esperar hasta una hora, con el reloj de sol en números romanos -->
+  <script src="js/core/ck_camas.js?v=1"></script>
+  <!-- (11/11) taberna: sin la mesa del cuarto y sin el fogón del medio (la luz queda igual) -->
+  <script src="js/core/ck_taberna_cambios.js?v=1"></script>
+  <!-- (11/11) entrenamiento de Bruno en el campo de práctica, más largo, con teclas y acciones resaltadas en rojo -->
+  <script src="js/core/ck_entrenamiento.js?v=1"></script>
   <script src="js/game.js?v=11.1"></script>
 </body>
 </html>

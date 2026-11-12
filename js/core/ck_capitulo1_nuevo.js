@@ -37,6 +37,7 @@
           this.time.delayedCall(900, async () => {
             if (!rey.active) return;
             this.createFloatingText(rey.x, rey.y - 46, '*se limpia la mano en la capa*', 0xc7b9a6);
+            try { window.CK_FOLEY && CK_FOLEY.ropa(0.6); } catch (e) {}   // (11/11) foley: el roce de la capa
             await E().esperar(1500);
             const merc = cerca(this, /^g_axeman/, rey.x, rey.y);
             await E().globo(this, rey, '(por lo bajo) Vigílenlo. Que no meta la nariz donde no le importa.', 3200, 50);

@@ -601,7 +601,9 @@
     // tras unos segundos sin tocarlo vuelve solo al héroe
     if (mini.libre && performance.now() - mini.sueltoEn > 5000 && !hud.querySelector('.ckm-vista.mueve')) mini.libre = null;
     let cx = mini.libre ? mini.libre.cx : a.x, cy = mini.libre ? mini.libre.cy : a.y;
-    const ajusta = (c, tam, vis) => (tam * s <= vis ? tam / 2 : Math.max(vis / 2 / s, Math.min(tam - vis / 2 / s, c)));
+    // (11/11) con el mapa redondo (ck_hud_medallon.js le pone la clase "redondo") el héroe queda siempre en el centro
+    const red = hud.classList.contains('redondo');
+    const ajusta = (c, tam, vis) => red ? Math.max(0, Math.min(tam, c)) : (tam * s <= vis ? tam / 2 : Math.max(vis / 2 / s, Math.min(tam - vis / 2 / s, c)));
     cx = ajusta(cx, d.w, W); cy = ajusta(cy, d.h, H);
     if (mini.libre) { mini.libre.cx = cx; mini.libre.cy = cy; }
     mini.cx = cx; mini.cy = cy;
