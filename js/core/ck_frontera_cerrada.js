@@ -21,7 +21,9 @@
   // (10/11) el paso se mudó: ya no se baja por la escalera del mirador; se sale por el camino del este, al lado del castillo
   const PASO = { x: 1410, y: 324, w: 26, h: 60 };
   const SOLDADOS = [['g_templar', 1398, 344, true], ['g_archer', 1400, 384, true]];   // (10/11) soldados leales: lanceros y arqueros
-  const A_UN_LADO = [[1396, 296], [1404, 412]];
+  // (13/11) con el paso abierto, los soldados se corren bien lejos de la franja (arriba y abajo de la salida): parados a 1396/296 y
+  // 1404/412 sus pies, con la máscara del borde, dejaban menos de 19 px y el héroe NO LLEGABA a la salida del Bosque
+  const A_UN_LADO = [[1398, 262], [1404, 474]];
   STORY_NPCS.push({
     id: 'sargento_paso', x: 1398, y: 344, r: 48, name: 'Sargento del paso', face: 'g_templar_idle',
     get zone() { const s = st(S0()); return s ? ZC : '-'; },
@@ -78,7 +80,8 @@
       } else {
         L.push(S.add.image(X, a.y + 322, BARR, 'arriba').setOrigin(0.5, 1).setDepth(a.y + 290));
         L.push(S.add.image(X, a.y + 434, BARR, 'abajo').setOrigin(0.5, 1).setDepth(a.y + 400));
-        L.push(cuerpoFijo(S, a.x + 1408, a.y + 278, 28, 44)); L.push(cuerpoFijo(S, a.x + 1408, a.y + 390, 28, 44));
+        // (13/11) las dos mitades abiertas sólo chocan contra el borde (12 px): la franja del camino queda de 36 px, como el resto
+        L.push(cuerpoFijo(S, a.x + 1424, a.y + 278, 12, 44)); L.push(cuerpoFijo(S, a.x + 1424, a.y + 390, 12, 44));
       }
     } else {
       const bx = libre ? 1428 : 1424, by = libre ? 420 : 386;

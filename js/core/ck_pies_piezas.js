@@ -28,9 +28,14 @@
   const MACIZO = /casa|choza|caba|posada|taberna|herreri|capilla|muro|muralla|pared|cerco|valla|empalizada|carpa|tienda|establo|granero|cobertizo|puesto|mausoleo|osario|cripta|santuario|altar|ruina|iglesia|castillo|fortaleza|barricada|estaca|roca|penasco|acantilado|pozo|fuente|carreta|carro|jaula|nido|cama|mesa|mostrador|barra|estante|biblioteca|armario|cofre|baul|barril|tonel|cajon|caja|yunque|fragua|horno|chimenea|hogar|fogon|fogata|tumba|sarcofago|obelisco|bloque|pila|banco|silla|trono|cuna|tina|cuba|parva|fardo|saco|piedra|costillar|calaveras|derrumbe|lapida|mesada|cocina|tocon|monolito|templo|portico|carpa|tienda|yunque|pesebre|abrevadero|cerca|reja_|portal_piedra/;
   const SIN = [
     /^ed_suelo_/,
+    /foso|agua|\brio\b|_rio_|lago|laguna|estanque|charca|puente|canal|cascada|arroyo|pantano|orilla/,   // el agua y los puentes los dibuja la máscara (el foso del castillo tapaba el camino del este)
     /alfombra|tapete|charco|mancha|sombra|sangre|hoja|huella|baldosa|losa|camino|sendero|grieta|musgo|telarana|pasto|hierba|flor|rama|guijarro|polvo|ceniza|agua|nieve|hielo|runa|circulo|marca|rastro|escalon|escalera|peldano|tabla|tablon|puente|rejilla|desague|trampa|placa|luz|rayo|humo|niebla|ventana|tapiz|cortina|porton|arco|entrada|tunel|boca|portal|paso|tronco_caido|hueso|cadena|soga|cuerda|vela|papel|pergamino|plato|vaso|jarra|fruta|pan\b|queso|moneda|llave|cristal_suelo|pluma|libro_suelo|nota|carta|trapo|ropa|bota|barro|lodo|lava|brasa|chispa|resplandor|brillo|halo|magma|raices|raiz|charquito|hoyo|sumidero|boca_de|salida|puerta_abierta|umbral|rastrillo_suelo|paja_suelta|heno_suelto|pisada|reguero|surco/
   ];
-  const QUITAR = {};                            // zona → [[x0, y0, x1, y1], …] (coordenadas del mapa) que se sacan de la máscara
+  const QUITAR = {                              // zona → [[x0, y0, x1, y1], …] (coordenadas del mapa) que se sacan de la máscara
+    // (13/11) Camino al Castillo: dos pedacitos de la máscara en la franja del este (x 1416-1432, y 408-432) angostaban el paso
+    // hacia el Bosque de la Frontera a menos de lo que mide el héroe: con la barricada abierta no se llegaba a la salida
+    'ed_camino_al_castillo.main': [[1412, 404, 1436, 436]]
+  };
   const PONER = {};                             // zona → [[x, y, w, h], …] que se agregan
   const informe = {};                           // zona → piezas que recibieron pie
 
