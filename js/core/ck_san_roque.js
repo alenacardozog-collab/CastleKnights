@@ -143,8 +143,41 @@ window.CK_SAN_ROQUE_MINI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWcAAA
   document.addEventListener('DOMContentLoaded', registrar);
 
   // ------------------------------------------------------------------ el mapa
+  // (13/11, pedido: "hay unas gallinas en San Roque que son PNG: quitalas y meté en ese corral las que habíamos hecho con
+  // código"): las gallinas y los pollitos pintados en el suelo del corral se tapan con pasto del mismo corral (antes de armar
+  // el mapa, sobre la textura del suelo); las de código las pone ck_fauna.js en ese corral
+  // Las gallinas quedaron repartidas entre la capa de objetos (la pieza ed_sr_pinar, que cubre toda la franja izquierda del
+  // mapa) y el suelo: en la pieza se borran (píxel transparente); en el suelo se tapan con pasto del mismo corral.
+  const EN_PINAR = [[268, 631, 24, 28], [353, 650, 23, 24], [289, 674, 17, 14], [328, 605, 22, 18]];
+  const EN_SUELO = [[379, 667, 40, 19], [356, 660, 16, 16], [291, 672, 33, 18], [362, 619, 32, 14], [398, 634, 17, 10], [328, 605, 22, 18]];
+  const FUENTE = [300, 640, 24, 16];                                        // pasto limpio del corral, delante del gallinero
+  const copia = (T, k) => { const src = T.get(k).getSourceImage(); const cv = document.createElement('canvas'); cv.width = src.width; cv.height = src.height; const g = cv.getContext('2d'); g.drawImage(src, 0, 0); return { src, cv, g }; };
+  const taparGallinas = () => {
+    if (taparGallinas.ok) return;
+    const S = window.activeGameScene || (window.game && game.scene && game.scene.keys && game.scene.keys.MainGameScene);
+    const T = S && S.textures, ks = 'ed_suelo_' + ID, kp = 'ed_sr_pinar';
+    if (!T || !T.exists(ks) || !T.exists(kp)) return;
+    taparGallinas.ok = true;
+    try {
+      const s = copia(T, ks);
+      EN_SUELO.forEach(([x, y, tw, th]) => {
+        for (let yy = y; yy < y + th; yy += FUENTE[3]) for (let xx = x; xx < x + tw; xx += FUENTE[2]) {
+          const cw = Math.min(FUENTE[2], x + tw - xx), chh = Math.min(FUENTE[3], y + th - yy);
+          s.g.drawImage(s.src, FUENTE[0], FUENTE[1], cw, chh, xx, yy, cw, chh);
+        }
+      });
+      T.remove(ks); T.addCanvas(ks, s.cv);
+      const it = (D.mapas[ID].items || []).find(i => i[0] === kp), A = D.assets[kp];
+      if (it && A) {
+        const ox = it[1] - A.w / 2, oy = it[2] - A.h, p = copia(T, kp);
+        EN_PINAR.forEach(([x, y, tw, th]) => p.g.clearRect(x - ox, y - oy, tw, th));
+        T.remove(kp); T.addCanvas(kp, p.cv);
+      }
+    } catch (e) { console.warn('[san roque] gallinas', e); }
+  };
   const L0 = INTERIOR_LAYOUTS['ed_' + ID];
   INTERIOR_LAYOUTS['ed_' + ID] = function (kit) {
+    try { taparGallinas(); } catch (e) {}
     const r = L0.apply(this, arguments), a = kit.areas && kit.areas.main;
     if (a) {
       registrar();

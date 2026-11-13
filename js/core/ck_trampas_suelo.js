@@ -23,7 +23,10 @@
   const P = MainGameScene.prototype, ARTE = window.CK_TRAMPAS_SUELO_ARTE, ZONAS = {};
   const CEPO = { radio: [17, 10], agarra: 1200, bestia: 2, bestiaQuieta: 2000, desarmar: 36 };
   const FOSA = { mitad: [21, 17] };
-  const ROCA = { cada: [1600, 2600], sombra: 750, cae: 260, radio: 17 };
+  // (13/11, pedido: "la avalancha también hacé que caiga más aleatoriamente y más cantidad mientras pasamos por allí"):
+  // tandas más seguidas y desparejas (0,5 a 1,6 s), de 3 a 5 piedras, repartidas al azar por todo el tramo agrietado y no
+  // sólo alrededor del héroe (una sigue cayendo adonde él va)
+  const ROCA = { cada: [500, 1600], sombra: 750, cae: 260, radio: 17, tanda: [3, 5] };
   const azar = (a, b) => a + Math.random() * (b - a);
   const son = (k, v, o) => { try { return sfx.fx(k, v, o); } catch (e) { return false; } };
   const facil = () => { try { return window.CK_DIFICULTAD && CK_DIFICULTAD.actual() === 'facil'; } catch (e) { return false; } };
@@ -106,8 +109,27 @@
   };
 
   // ------------------------------------------------------------------ cepo
+  // (13/11, pedido: "las trampas de las galerías dejá que suenen y después activen, así el jugador tiene tiempo de esquivarla"):
+  // al pisar un cepo armado o una fosa tapada, primero suena el resorte / crujen las ramas y la trampa tiembla; recién
+  // AVISO ms después se cierra o se hunde, y sólo si el héroe sigue encima. Las bestias caen al instante, como antes.
+  const AVISO = { cepo: 420, fosa: 520 };
+  const avisar = (S, t, fn) => {
+    if (t._aviso) return;
+    t._aviso = S.time.now + AVISO[t.tipo];
+    son(t.tipo === 'cepo' ? 'ck_losa' : 'ck_fosa', 0.55, { rate: t.tipo === 'cepo' ? 1.5 : 1.8 }) || son('ui_click', 0.6, { rate: 0.7 });
+    S.tweens.add({ targets: t.sp, x: t.X + 1, duration: 40, yoyo: true, repeat: Math.round(AVISO[t.tipo] / 80) });
+    if (!S._ckTSuAviso) { S._ckTSuAviso = 1; S.createFloatingText(S.player.x, S.player.y - 50, '¡Click!', 0xfde68a); }
+    S.time.delayedCall(AVISO[t.tipo], () => {
+      t._aviso = 0;
+      if (!S.player || S.isDead) return;
+      const m = t.tipo === 'cepo' ? CEPO.radio : FOSA.mitad;
+      if (dentro(t, pies(S), m)) fn(); else S.createFloatingText(S.player.x, S.player.y - 44, '¡Zafaste!', 0xcbd5e1);
+    });
+  };
   const cerrar = (S, t, quien) => {
-    if (!t.armado) return; t.armado = false;
+    if (!t.armado) return;
+    if (quien === 'heroe' && !t._ya) { avisar(S, t, () => { t._ya = 1; cerrar(S, t, 'heroe'); }); return; }
+    t.armado = false; t._ya = 0;
     const k = tex(S, 'cepo');
     if (k) cuadros(S, t.sp, 1, ARTE.cepo.n - 1, 38);
     S.tweens.add({ targets: t.sp, y: t.Y - 2, duration: 70, delay: 120, yoyo: true });
@@ -125,7 +147,9 @@
   };
   // ------------------------------------------------------------------ fosa
   const hundir = (S, t, quien) => {
-    if (!t.tapada) return; t.tapada = false;
+    if (!t.tapada) return;
+    if (quien === 'heroe' && !t._ya) { avisar(S, t, () => { t._ya = 1; hundir(S, t, 'heroe'); }); return; }
+    t.tapada = false; t._ya = 0;
     cuadros(S, t.sp, 1, ARTE.fosa.n - 1, 70);
     son('ck_fosa', 0.8) || son('sword_hit', 0.7, { rate: 0.6 });
     polvo(S, t.cx, t.cy + 6, 9, 0x6b5a45); S.time.delayedCall(140, () => nube(S, t.cx, t.Y + 2, 0.9));
@@ -184,9 +208,12 @@
             if (!t.aviso) { t.aviso = true; this.createFloatingText(this.player.x, this.player.y - 50, '¡El techo se viene abajo!', 0xfde68a); son('ck_derrumbe', 0.6) || son('bridge_move', 0.5, { rate: 0.6 }); }
             if (now > t.prox) {
               t.prox = now + azar(ROCA.cada[0], ROCA.cada[1]);
-              const v = this.player.body.velocity, n = Phaser.Math.Between(2, 3);
-              piedra(this, t, p.x + v.x * 0.5, p.y + v.y * 0.5);                // una adonde va el héroe
-              for (let i = 1; i < n; i++) { const an = azar(0, Math.PI * 2), d = azar(30, 60); piedra(this, t, p.x + Math.cos(an) * d, p.y + Math.sin(an) * d * 0.45); }
+              const v = this.player.body.velocity, n = Phaser.Math.Between(ROCA.tanda[0], ROCA.tanda[1]);
+              piedra(this, t, p.x + v.x * azar(0.3, 0.7), p.y + v.y * azar(0.3, 0.7));   // una adonde va el héroe
+              for (let i = 1; i < n; i++) {
+                if (Math.random() < 0.5) { const an = azar(0, Math.PI * 2), d = azar(24, 70); piedra(this, t, p.x + Math.cos(an) * d, p.y + Math.sin(an) * d * 0.5); }
+                else { const cj = t.cajas[Math.floor(Math.random() * t.cajas.length)]; piedra(this, t, azar(cj[0] + 8, cj[2] - 8), azar(cj[1] + 8, cj[3] - 8)); }   // en cualquier parte del tramo
+              }
             }
           } else if (t.prox < now) t.prox = now + 500;
         }

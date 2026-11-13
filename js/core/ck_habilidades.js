@@ -459,7 +459,7 @@
   const dirV = S => S.facingV === 'front' ? [0, 1] : S.facingV === 'back' ? [0, -1] : [S.facingDirection === 'left' ? -1 : 1, 0];
   const disparo = (S, key, vel, ck, opt = {}) => {
     const p = S.player, [dx, dy] = opt.dir || dirV(S);
-    const x = p.x + dx * 22, y = p.y + 6 + dy * 18;
+    const x = p.x + dx * 22, y = p.y - 4 + dy * 18;   // (13/11) sale a la altura de la mano, no de la rodilla ("que se tiren desde donde se tenga que tirar")
     const o = S.projectiles.create(x, y, key);
     o.isFireball = false; o._ck = ck;
     o.setScale(opt.escala || 1.2).setRotation(Math.atan2(dy, dx)).setDepth(Math.max(10, Math.round(y + 16)));

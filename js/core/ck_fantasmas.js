@@ -91,7 +91,10 @@
   const mover = (S, f, dt) => {
     if (f.fin || !f.sp.active) return;
     const dx = f.x1 - f.x, dy = f.y1 - f.y, d = Math.hypot(dx, dy), v = 13 * dt / 1000;
-    if (d > 1) { f.x += dx / d * Math.min(v, d); f.y += dy / d * Math.min(v, d); if (Math.abs(dx) > 2) f.sp.setFlipX(dx < 0); }
+    // (13/11) el dibujo de PixelLab mira a la IZQUIERDA: se espeja para ir a la derecha (antes volaban mirando para atrás);
+    // quieto, mira hacia el héroe
+    if (d > 1) { f.x += dx / d * Math.min(v, d); f.y += dy / d * Math.min(v, d); if (Math.abs(dx) > 2) f.sp.setFlipX(dx > 0); }
+    else if (S.player) f.sp.setFlipX(S.player.x > f.x);
     const t = (S.time.now - f.t0) / 1000;
     // con la noche o la penumbra prendidas (CK_LUZ), por encima de la oscuridad (27500): brillan en lo oscuro
     f.sp.setPosition(f.x, f.y - 3 - Math.sin(t * 2.2 + f.fase) * 2.2).setDepth(S._ckFanOscuro ? 27550 + f.y / 10000 : f.y + 4);

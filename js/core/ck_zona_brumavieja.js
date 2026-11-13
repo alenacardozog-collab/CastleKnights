@@ -76,9 +76,13 @@ window.CK_ZONA_BRUMA_MINI = { norte_del_roble: 'data:image/png;base64,iVBORw0KGg
         case 'zb_campos': ir(this, CAMPOS, LLEGA.campos); return;
         case 'zb_bosque': ir(this, BOSQUE, LLEGA.bosqueAbajo); return;
         case 'zb_norte': ir(this, NORTE, LLEGA.norteArriba); return;
-        case 'zb_ruinas': aRuinas(this, LLEGA.rEste); return;
+        // (13/11, pedido: "la entrada al cementerio está mal ubicada: se entra por el este de la capilla, y a Brumavieja se llega
+        // desde el sur, desde el bosque"): el Bosque Embrujado entra y sale por el SENDERO DEL SUR; el camino del ESTE (al lado
+        // de la capilla) baja al Cementerio Real
+        case 'zb_ruinas': aRuinas(this, LLEGA.rSur); return;
         case 'zb_bosque_arriba': ir(this, BOSQUE, LLEGA.bosqueArriba); return;
-        case 'zb_ruinas_sur': aRuinas(this, LLEGA.rSur); return;
+        case 'zb_cementerio': ir(this, CEMENTERIO, LLEGA.cementerio); return;
+        case 'zb_ruinas_sur': aRuinas(this, LLEGA.rEste); return;
         case 'zb_ruinas_capilla': aRuinas(this, LLEGA.rCapilla); return;
         case 'zb_casa_salir': {                                                   // de la casa abandonada, a la puerta de donde se vino
           const d = this._ckZbCasaDe || CASAS[0];
@@ -89,12 +93,12 @@ window.CK_ZONA_BRUMA_MINI = { norte_del_roble: 'data:image/png;base64,iVBORw0KGg
     }
     return sw0.apply(this, arguments);
   };
-  // el sendero del sur de Brumavieja ya no vuelve a los Campos: baja al Cementerio Real
+  // el sendero del sur de Brumavieja ya no vuelve a los Campos: (13/11) vuelve al Bosque Embrujado (por donde se llegó)
   const x0 = P.exitInterior;
   P.exitInterior = function () {
     const c = this.currentInterior;
     if (c && c.building && c.building.kind === 'ruins' && !this._doorTransition && this._gameMode === 'campaign' && this.ckEntrar) {
-      if (this.ckEntrar(CEMENTERIO, LLEGA.cementerio)) return;
+      if (this.ckEntrar(BOSQUE, LLEGA.bosqueArriba)) return;
     }
     return x0.apply(this, arguments);
   };
@@ -147,7 +151,7 @@ window.CK_ZONA_BRUMA_MINI = { norte_del_roble: 'data:image/png;base64,iVBORw0KGg
   // Cementerio Real
   envolver('ed_' + CEMENTERIO, a => {
     a.ambient = [['amb_forest', 0.3]];
-    a.exits.push({ x: 0, y: 395, w: 16, h: 60, key: 'walk', to: 'zb_ruinas_sur', hint: '◀ Brumavieja' });
+    a.exits.push({ x: 0, y: 395, w: 16, h: 60, key: 'walk', to: 'zb_ruinas_sur', hint: '◀ Brumavieja' });   // (13/11) vuelve al camino del este, junto a la capilla
     habla(a, 720, 420, ['Runas verdes talladas en la piedra. Todavía brillan, y están tibias'], 60);
     habla(a, 720, 548, ['El mausoleo de los reyes del Roble: la corona y el roble tallados arriba. La puerta da al otro lado, sellada con cadenas'], 70);
     habla(a, 880, 245, ['El osario: cráneos apilados hasta el techo'], 50);
@@ -197,9 +201,9 @@ window.CK_ZONA_BRUMA_MINI = { norte_del_roble: 'data:image/png;base64,iVBORw0KGg
         v.talkers = (v.talkers || []).filter(t => !(t.lines || []).some(l => /se tragó el camino del este\. No se puede seguir/.test(l)));
         v.colliders = (v.colliders || []).reduce((acc, c) => acc.concat(restar(c, ESTE_R)), []);
         v.colliders.push({ x: ESTE_R.x0, y: ESTE_R.y0 - 6, w: ESTE_R.x1 - ESTE_R.x0, h: 6 }, { x: ESTE_R.x0, y: ESTE_R.y1, w: ESTE_R.x1 - ESTE_R.x0, h: 6 });
-        (v.exits = v.exits || []).forEach(e => { if (e.to === 'outside') e.hint = '▼ Cementerio Real'; });
-        v.exits.push({ x: 944, y: ESTE_R.y0 + 10, w: 14, h: ESTE_R.y1 - ESTE_R.y0 - 20, key: 'walk', to: 'zb_bosque_arriba', hint: '▶ Bosque Embrujado' });
-        v.talkers.push({ x: 905, y: 246, r: 30, lines: ['El camino del este se mete en el Bosque Embrujado'] });
+        (v.exits = v.exits || []).forEach(e => { if (e.to === 'outside') e.hint = '▼ Bosque Embrujado'; });
+        v.exits.push({ x: 944, y: ESTE_R.y0 + 10, w: 14, h: ESTE_R.y1 - ESTE_R.y0 - 20, key: 'walk', to: 'zb_cementerio', hint: '▶ Cementerio Real' });
+        v.talkers.push({ x: 905, y: 246, r: 30, lines: ['El camino del este, al lado de la capilla, baja al Cementerio Real'] });
       }
     } catch (e) { console.warn('[zona bruma] ruinas', e); }
     return r;

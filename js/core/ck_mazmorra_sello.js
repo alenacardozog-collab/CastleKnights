@@ -49,7 +49,7 @@
   const PILARES = [[374, 532, 46, 36], [328, 546, 46, 36], [282, 524, 46, 36]];   // P1 firme, P2 (piedra NE), P3 (piedra SE): al puente
   const ESQUINA = [398, 490, 24, 28];                                               // el pasillo no toca la orilla de arriba
   const SEGURO_LAVA = { x: 446, y: 556 };
-  const DURA_PILAR = 5500;
+  const DURA_PILAR = 8000;   // (13/11) antes 5,5 s: no daba tiempo a prender la segunda piedra y cruzar ("el de magma no tiene coherencia")
   // PUZZLE 3 (en ronda: arriba izq, arriba der, abajo der, abajo izq)
   const RONDA = ['rey_1', 'rey_3', 'rey_4', 'rey_2'];
   const TABLA = { x: 250, y: 330 };
@@ -353,7 +353,18 @@
       bl.empuje += dt;
       if (bl.empuje < 160) return;
       const paso = 78 * dt / 1000, nx = bl.x + dx * paso, ny = bl.yb + dy * paso;
-      if (!libre(S, bl, nx, ny)) return;
+      if (!libre(S, bl, nx, ny)) {
+        // (13/11, pedido: "algunos puzles se traban al no poder usarlos"): si el bloque no puede seguir (una pared, el otro
+        // bloque, un hueso), se avisa cómo destrabarlo en vez de dejar al jugador empujando en vano
+        bl.trabado = (bl.trabado || 0) + dt;
+        if (bl.trabado > 700 && (!M.avisoTrabado || S.time.now - M.avisoTrabado > 4000)) {
+          M.avisoTrabado = S.time.now; bl.trabado = 0;
+          son('ck_rocas_rodar', 0.2, { rate: 0.8 });
+          texto(S, S.player.x, S.player.y - 52, 'El bloque no pasa por ahí. Un golpe a la pila de cráneos los devuelve a su lugar', 0xcbd5e1);
+        }
+        return;
+      }
+      bl.trabado = 0;
       moverBloque(S, bl, nx, ny);
       if (!bl.ruido || S.time.now - bl.ruido > 380) { bl.ruido = S.time.now; son('ck_rocas_rodar', 0.25, { rate: 1.4 }) || son('footstep_stone', 0.5, { rate: 0.6 }); polvo(S, a.x + bl.x - dx * 24, a.y + bl.yb - 4, 2); }
       ['o', 'e'].forEach(lado2 => {
@@ -436,6 +447,12 @@
       const pl = M.pilares[pd.k === 'piedra_ne' ? 1 : 2];
       subirPilar(S, pl);
       S.tweens.add({ targets: pd.rs, alpha: 0.15, duration: DURA_PILAR, ease: 'Quad.easeIn' });
+      // (13/11) se entiende qué pasó: un hilo de luz va de la piedra a SU pilar, y el cartel dice qué falta
+      const a = M.a, g = S.add.graphics().setDepth(a.y + 700).setBlendMode(Phaser.BlendModes.ADD);
+      g.lineStyle(3, 0xffc860, 0.9).lineBetween(pd.sp.x + pd.sp.width / 2, pd.sp.y + pd.sp.height * 0.5, a.x + pl.p[0] + pl.p[2] / 2, a.y + pl.p[1] + pl.p[3] / 2);
+      S.tweens.add({ targets: g, alpha: 0, duration: 900, onComplete: () => g.destroy() });
+      const otro = M.pilares[pd.k === 'piedra_ne' ? 2 : 1];
+      texto(S, S.player.x, S.player.y - 56, otro.arriba ? '¡Los dos pilares arriba! Cruzá ya' : (pd.k === 'piedra_ne' ? 'Sube el pilar del medio. Falta la piedra de abajo' : 'Sube el pilar de la orilla. Falta la piedra de arriba'), 0xfde68a);
       return;
     }
     const k = pd.k === 'piedra_no' ? 'no' : 'so';
@@ -569,6 +586,18 @@
     polvo(S, cx, by - 6, 14, 0x3a2a28);
     const n = (F.obelisco_1 ? 1 : 0) + (F.obelisco_2 ? 1 : 0);
     S.time.delayedCall(700, () => texto(S, S.player.x, S.player.y - 56, `¡Un sello menos! (${n}/2)`, 0xfde68a));
+    // (13/11, pedido: "el cristal y los espejos… debería darme una recompensa el explorar"): al quemar el obelisco con la luz
+    // santa, del pedestal cae un tesoro
+    if (o.k === 'obelisco_2' && !F.premio2) {
+      F.premio2 = 1; guardar(S);
+      S.time.delayedCall(1500, () => {
+        const s = S.story;
+        if (s) { s.inv = s.inv || { potion: 0, elixir: 0 }; s.inv.elixir = (s.inv.elixir || 0) + 1; s.inv.potion = (s.inv.potion || 0) + 2; s.coins = (s.coins || 0) + 80; try { S.updateQuickBar && S.updateQuickBar(); S.updateHUD && S.updateHUD(); } catch (e) {} }
+        son('quest_done', 0.8) || son('book_clasp', 0.7);
+        chispas(S, cx, by - 20, 16, 0xffe08a, 50);
+        texto(S, S.player.x, S.player.y - 56, 'Entre las ruinas del obelisco: +1 ELIXIR · +2 POCIONES · +80 monedas', 0xfde68a);
+      });
+    }
     if (n >= 2) S.time.delayedCall(1600, () => abrirHuesos(S, true));
   };
   const abrirHuesos = (S, anim) => {
@@ -623,7 +652,9 @@
     for (let n = 0; n < 900; n++) {
       x += dx * 2; y += dy * 2;
       if (x < r[0] || x > r[2] || y < r[1] || y > r[3]) { fin = 'pared'; break; }
-      const m = M.espejos.find(e => Math.abs(x - e.cx) < (dx ? 3 : 24) && Math.abs(y - e.cy) < (dy ? 3 : 24) && !(pts.length && pts[pts.length - 1][2] === e.k));
+      // (13/11) el espejo 3 queda 24 px por debajo de la línea del cristal y el margen era "< 24": el rayo pasaba de largo y el
+      // puzzle no se podía resolver nunca ("el cristal y los espejos no llevan a nada"). Ahora el espejo toma el rayo a menos de 30 px
+      const m = M.espejos.find(e => Math.abs(x - e.cx) < (dx ? 3 : 30) && Math.abs(y - e.cy) < (dy ? 3 : 30) && !(pts.length && pts[pts.length - 1][2] === e.k));
       if (m) {
         x = dx ? m.cx : x; y = dy ? m.cy : y;
         pts.push([x, y, m.k]);
@@ -744,6 +775,13 @@
       if (dentro(q, SALAS.salon) || (q.y > 420 && q.y < 640 && q.x > 440 && q.x < 1000)) empujar(S, dt);
       // PUZZLE 2: los pilares bajan; cruzar los deja firmes
       M.pilares.forEach(pl => { if (pl.arriba && !pl.firme && pl.hasta && now > pl.hasta) bajarPilar(S, pl); });
+      // (13/11) la primera vez que se para en la losa firme, se explica el puzzle
+      if (!F.lava && !M.avisoLava && q.x > 420 && q.x < 470 && q.y > 520 && q.y < 600) {
+        M.avisoLava = 1;
+        nota('Las dos piedras rúnicas de esta orilla levantan un pilar cada una, un rato. Pegales (de cerca o de lejos), encendé las dos y cruzá por los pilares');
+      }
+      // los pilares que van a bajar titilan en los últimos 2 s
+      M.pilares.forEach(pl => { if (pl.arriba && !pl.firme && pl.hasta) { const falta = pl.hasta - now; pl.sp.setAlpha(falta < 2000 ? (Math.floor(now / 120) % 2 ? 0.45 : 1) : 1); } });
       if (!F.lava && q.x < 290 && q.x > 200 && q.y < 600 && q.y > 470 && M.pilares[2].arriba) pilaresFirmes(S);
       // PUZZLE 4: el rayo
       if (!M.rayoProx || now > M.rayoProx) { M.rayoProx = now + 120; M.quema = rayo(S); }

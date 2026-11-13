@@ -22,7 +22,7 @@ window.CK_GALERIAS_MINI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWcAAAD
   if (!D || !D.mapas || !D.mapas[ID] || !INTERIOR_LAYOUTS['ed_' + ID]) return;
   const Z = 'ed_' + ID + '.main', ZC = 'ed_' + CLARO + '.main';
   const LUGAR = { entrada: { x: 1190, y: 742 }, sumidero: { x: 217, y: 214 }, cofre: { x: 1122, y: 268 }, campamento: { x: 890, y: 665 } };
-  const LLEGA = { cueva: { x: 1190, y: 742 }, claro: { x: 344, y: 254 } };
+  const LLEGA = { cueva: { x: 1190, y: 772 }, claro: { x: 344, y: 254 } };   // (13/11) se llega al pie de la boca, entre los colmillos (al sur de la luz), y se entra caminando hacia la cueva
   const BRASEROS = [[968, 668], [306, 206]];
   // la penumbra de la cueva (fija: adentro no hay día ni noche); bestias y héroe se tiñen con la luz que tienen cerca
   const PENUMBRA = [30, 28, 46];

@@ -45,11 +45,44 @@
   const ZB = 'ed_bosque_de_la_frontera.main', ZT = 'ed_tierras_orcas.main', ZP = 'ed_pueblo_orco.main', ZF = 'ed_fortaleza_orca.main';
   if (typeof ZONE_ENEMIES !== 'undefined' && ARTE && ARTE.cuadros) {
     const sumar = (z, l) => { if (ZONE_ENEMIES[z]) ZONE_ENEMIES[z] = ZONE_ENEMIES[z].concat(l.filter(q => ENEMY_TYPES[q[0]])); };
-    sumar(ZB, [['warg', 1250, 420, 40], ['boar', 330, 690, 36], ['warg', 1330, 200, 40, 'night']]);   // (10/11) bosque grande
+    sumar(ZB, [['warg', 1250, 420, 40], ['boar', 1210, 690, 36], ['warg', 1330, 200, 40, 'night']]);   // (10/11) bosque grande; (13/11) el jabalí, del lado orco
     sumar(ZT, [['warg', 380, 380, 40], ['warg', 820, 200, 40], ['boar', 560, 470, 30], ['warg', 300, 200, 40, 'night']]);
     sumar(ZP, [['boar', 760, 430, 30], ['warg', 470, 250, 30]]);
     sumar(ZF, [['warg', 420, 470, 30], ['warg', 640, 460, 30]]);
   }
+  // (13/11, pedido: "en la frontera orca salen orcos del lado de los humanos"): en el Bosque de la Frontera la empalizada
+  // corta el mapa en x = 1048 (ck_cuarentena.js). Ninguna bestia de tierra nace ni se queda del lado de los humanos (al oeste):
+  // la que aparece ahí (refuerzos del cuerno, bestias que llegan corriendo) se corre al lado orco, y la que cruza por el portón
+  // persiguiendo al héroe vuelve a su lado. Los murciélagos vuelan y no cuentan.
+  const LIMITE_X = 1048, VUELA = /^(bat|fantasma|ghost|wisp|cuervo)$/;
+  const enBosque = S => S.currentZoneKey && S.currentZoneKey() === ZB && S.currentInterior && S.currentInterior.area;
+  const sp0 = P.spawnEnemy;
+  P.spawnEnemy = function (x, y, tipo) {
+    try {
+      if (enBosque(this) && !VUELA.test(tipo)) {
+        const a = this.currentInterior.area;
+        if (x < a.x + LIMITE_X + 10) x = a.x + LIMITE_X + 40 + Math.random() * 60;
+        arguments[0] = x;
+      }
+    } catch (e) {}
+    return sp0.apply(this, arguments);
+  };
+  const upB = P.update;
+  P.update = function (t) {
+    const r = upB.apply(this, arguments);
+    try {
+      if (!enBosque(this) || !this.enemies || (this._ckFbProx && t < this._ckFbProx)) return r;
+      this._ckFbProx = t + 250;
+      const a = this.currentInterior.area, lim = a.x + LIMITE_X;
+      this.enemies.getChildren().forEach(e => {
+        if (!e.active || e.isDead || VUELA.test(e.type) || !e.body || e.x >= lim) return;
+        e.body.reset(lim + 30, e.y); e.body.setVelocity(0, 0);
+        if (e.home) { e.home.x = Math.max(e.home.x, lim + 60); }
+        e.target = null; e.alerted = false; e.state = e.state === 'chase' ? 'return' : e.state;
+      });
+    } catch (e) {}
+    return r;
+  };
 
   // los orcos quietos de los mapas (Gorak y los que miran) al mismo tamaño
   ['ed_bosque_de_la_frontera', 'ed_tierras_orcas', 'ed_pueblo_orco', 'ed_fortaleza_orca'].forEach(k => {

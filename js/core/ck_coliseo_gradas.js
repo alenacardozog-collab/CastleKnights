@@ -11,7 +11,9 @@
 (function () {
   if (typeof MainGameScene === 'undefined' || !window.CK_COLISEO_GRADAS_ARTE) return;
   const P = MainGameScene.prototype, A = window.CK_COLISEO_GRADAS_ARTE, G = A.GRADAS;
-  const COL = 'ed_coliseo_orco.main', W = 1436, ESC = 0.55;
+  // (13/11, pedido: "los espectadores están muy pequeños y mal puestos con la perspectiva"): los grupos se dibujan casi al tamaño
+  // del dibujo (0,92: un orco sentado mide como el héroe) y van pegados uno al lado del otro a lo largo de cada banco
+  const COL = 'ed_coliseo_orco.main', W = 1436, ESC = 0.92, ANCHO_GRUPO = 82;
   const GRUPOS = ['frente', 'frente2', 'espalda'];
   const PUERTA = {                    // de dónde sale (adentro de lo oscuro) y hasta dónde camina (ya en la arena)
     izq: { de: [342, 334], a: [356, 382] },
@@ -44,6 +46,31 @@
     return r;
   };
 
+  // (13/11, pedido: "al abrirse las rejas borrá lo negro que queda, o que aparezca la entrada negra y no la silueta de las
+  // rejas"): el hueco de cada reja se rehace como una boca oscura pareja (la unión de lo que tapan el hueco y los barrotes,
+  // rellena de negro con un leve degradé), así al subir la reja queda la entrada negra y no quedan dibujados los barrotes
+  const huecoLleno = (S, n, R, H) => {
+    const k = 'ckg_hueco_' + n + '_lleno';
+    if (S.textures.exists(k)) return k;
+    try {
+      const T = S.textures, w = H.w, h = H.h;
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const g = cv.getContext('2d', { willReadFrequently: true });
+      const pinta = (key, dx, dy) => { const fr = T.getFrame(key); const src = fr.source.image || fr.source.canvas; g.drawImage(src, fr.cutX, fr.cutY, fr.cutWidth, fr.cutHeight, dx, dy, fr.cutWidth, fr.cutHeight); };
+      pinta('ckg_hueco_' + n, 0, 0); pinta('ckg_reja_' + n, R.x - H.x, R.y - H.y);
+      const d = g.getImageData(0, 0, w, h), px = d.data;
+      // la unión de lo opaco, rellena: cada columna, del primer píxel opaco al último (las rayas entre barrotes también)
+      for (let x = 0; x < w; x++) {
+        let y0 = -1, y1 = -1;
+        for (let y = 0; y < h; y++) if (px[(y * w + x) * 4 + 3] > 30) { if (y0 < 0) y0 = y; y1 = y; }
+        for (let y = 0; y < h; y++) { const i = (y * w + x) * 4; const dentro = y0 >= 0 && y >= y0 && y <= y1; const t = h > 1 ? y / (h - 1) : 0; px[i] = 9 + 6 * t; px[i + 1] = 6 + 4 * t; px[i + 2] = 12 + 6 * t; px[i + 3] = dentro ? 255 : 0; }
+      }
+      g.putImageData(d, 0, 0);
+      T.addCanvas(k, cv);
+      return k;
+    } catch (e) { return 'ckg_hueco_' + n; }
+  };
+
   // ------------------------------------------------------------------ armar el coliseo
   const armar = S => {
     const a = S.currentInterior.area, objs = a.objs || (a.objs = []);
@@ -52,12 +79,13 @@
     ['izq', 'der', 'arr', 'aba'].forEach(n => {
       const R = A['reja_' + n], H = A['hueco_' + n];
       if (!R || !S.textures.exists('ckg_reja_' + n)) return;
-      const hu = S.add.image(a.x + H.x, a.y + H.y, 'ckg_hueco_' + n).setOrigin(0, 0).setDepth(8);
+      const kh = huecoLleno(S, n, R, H);
+      const hu = S.add.image(a.x + H.x, a.y + H.y, kh).setOrigin(0, 0).setDepth(8);
       const re = S.add.image(a.x + R.x, a.y + R.y, 'ckg_reja_' + n).setOrigin(0, 0).setDepth(9);
       // los barrotes sólo se ven dentro del hueco (al subir se meten en la piedra, no asoman por encima del arco)
       try {
         if (S.renderer && S.renderer.type === Phaser.WEBGL) {
-          const mk = S.make.image({ x: a.x + H.x, y: a.y + H.y, key: 'ckg_hueco_' + n, add: false }).setOrigin(0, 0);
+          const mk = S.make.image({ x: a.x + H.x, y: a.y + H.y, key: kh, add: false }).setOrigin(0, 0);
           re.setMask(mk.createBitmapMask()); re._ckgMk = mk;
         }
       } catch (e) {}
@@ -68,7 +96,7 @@
     const gente = S._ckgGente = [];
     let semilla = 7; const azar = () => ((semilla = (semilla * 16807) % 2147483647) / 2147483647);
     ['frente', 'espalda'].forEach(lado => (G[lado] || []).forEach(([x0, x1, y0, y1]) => [false, true].forEach(espejo => {
-      const n = Math.max(1, Math.floor((x1 - x0) / 46));
+      const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / ANCHO_GRUPO));
       for (let i = 0; i < n; i++) {
         const t = (i + 0.5) / n; let x = x0 + (x1 - x0) * t; const y = y0 + (y1 - y0) * t;
         if (espejo) x = W - x;

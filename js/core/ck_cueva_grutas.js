@@ -120,6 +120,9 @@ window.CK_GRUTAS_MINI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWcAAADIC
     S._ckGrPozo = null;
     if (zona(S) !== Z || !S.currentInterior) return;
     const a = S.currentInterior.area, x = a.x + LUGAR.pozo.x, y = a.y + LUGAR.pozo.y;
+    // (13/11) el agujero de PixelLab (ck_cueva_grutas_arte.js): un pozo negro con el borde de roca partida y raíces; el centro
+    // del agujero queda donde estaba el de antes. Si el arte no cargó, queda el dibujado
+    if (S.textures.exists('ckgr_pozo')) { S._ckGrPozo = S.add.image(x, y + 2, 'ckgr_pozo').setOrigin(0.5, 0.56).setScale(0.9).setDepth(7); return; }
     const g = S.add.graphics().setDepth(7);
     g.fillStyle(0x2a2018, 1).fillEllipse(x, y, 66, 26);
     g.fillStyle(0x120c09, 1).fillEllipse(x, y + 1, 56, 20);
@@ -128,10 +131,19 @@ window.CK_GRUTAS_MINI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWcAAADIC
     [[-24, -6, -14, 4], [18, -7, 10, 3], [-6, -10, -2, 2], [26, -2, 16, 6]].forEach(([x0, y0, x1, y1]) => { g.beginPath(); g.moveTo(x + x0, y + y0); g.lineTo(x + x1, y + y1); g.strokePath(); });
     S._ckGrPozo = g;
   };
+  // el arte del pozo se carga apenas se puede (es un PNG embebido)
+  const cargarArte = S => {
+    const A = window.CK_GRUTAS_ARTE;
+    if (!A || !A.pozo || S.textures.exists('ckgr_pozo') || cargarArte.pedido) return;
+    cargarArte.pedido = true;
+    const im = new Image(); im.onload = () => { if (!S.textures.exists('ckgr_pozo')) { S.textures.addImage('ckgr_pozo', im); if (zona(S) === Z) pozo(S); } }; im.src = A.pozo;
+  };
+  const pr0 = P.preload;
+  P.preload = function () { if (pr0) pr0.apply(this, arguments); try { cargarArte(this); } catch (e) {} };
   const ms0 = P.onAreaShown;
   P.onAreaShown = function () {
     const r = ms0 ? ms0.apply(this, arguments) : undefined;
-    try { if (zona(this) === Z) cofresFijos(this); pozo(this); } catch (e) { console.warn('[grutas]', e); }
+    try { cargarArte(this); if (zona(this) === Z) cofresFijos(this); pozo(this); } catch (e) { console.warn('[grutas]', e); }
     return r;
   };
   const u0 = P.update;

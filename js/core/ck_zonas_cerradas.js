@@ -39,6 +39,20 @@
     return cambiar0.apply(this, arguments);
   };
 
+  // (13/11) la salida del sur de Brumavieja (la que va al bosque) se cierra igual que las otras cuando termina el Capítulo 1
+  const salir0 = P.exitInterior;
+  P.exitInterior = function () {
+    try {
+      const c = this.currentInterior, s = st(this);
+      if (c && c.building && c.building.kind === 'ruins' && s && cap1(s) && !this._doorTransition && !(window.CK_LIBRE && CK_LIBRE())) {
+        if (!this._ckZcAviso || this.time.now - this._ckZcAviso > 2500) { this._ckZcAviso = this.time.now; this.createFloatingText(this.player.x, this.player.y - 46, CIERRES.zb_bosque[1], 0xfca5a5); }
+        try { if (this.player && this.player.body) this.player.body.reset(this.player.x, this.player.y - 14); } catch (e) {}
+        return;
+      }
+    } catch (e) {}
+    return salir0.apply(this, arguments);
+  };
+
   // ------------------------------------------------------------------ lo que se ve en cada salida cerrada
   const NIEBLA = 'ckzc_niebla';
   const textura = S => {
@@ -75,8 +89,9 @@
       S._ckZc.push(cuerpo(S, a.x + 664, a.y + 70, 116, 40));
     }
     if (z === 'ruins.village' && cap1(s)) {
-      const sal = (a.exits || []).find(e => e.to === 'zb_bosque_arriba');
-      if (sal) { banco(S, { x: 0, y: 0 }, sal.x - 70, sal.y - 10, 90, sal.h + 20, 12); S._ckZc.push(cuerpo(S, sal.x - 22, sal.y, 22, sal.h)); }
+      // (13/11) el Bosque Embrujado ahora entra y sale por el sendero del SUR de Brumavieja (ck_zona_brumavieja.js)
+      const sal = (a.exits || []).find(e => e.to === 'outside');
+      if (sal) { banco(S, { x: 0, y: 0 }, sal.x - 10, sal.y - 30, sal.w + 20, 60, 12); S._ckZc.push(cuerpo(S, sal.x, sal.y - 8, sal.w, 10)); }
     }
     if (z === 'ed_bosque_de_la_frontera.main' && cap2(s)) {
       const B = 'ck_barricada_paso';

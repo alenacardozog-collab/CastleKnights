@@ -82,7 +82,10 @@
     try {
       if (this._gameMode !== 'campaign' || !enemy || !def || !def.coins || !this.player) return r;
       texturas(this);
-      const n = Math.max(1, Math.min(5, def.coins)), pl = this.player;
+      // (13/11, pedido: "quitá los íconos de monedas que salen arriba de algunas criaturas"): ya no saltan monedas dibujadas
+      // sobre la bestia vencida; queda el aviso de "+N monedas" y el sonido
+      const n = 0, pl = this.player;
+      if (typeof sfx !== 'undefined') sfx.fx('coin', 0.35, { minGap: 120 });
       for (let i = 0; i < n; i++) {
         const m = this.add.image(enemy.x, enemy.y - 6, 'ckg_moneda').setDepth(29999);
         const dx = R(-22, 22), alto = R(18, 30), espera = 260 + i * 50;

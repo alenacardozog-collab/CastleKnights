@@ -96,6 +96,12 @@ window.CK_FOSA_ARTE = { rocas: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAH
       for (let i = 0; i < 13; i++) { const a = Math.max(0, 3 - Math.floor(i / 4)); r(g, '#1b1b22', 3 - a, 51 + i, a * 2 + 1, 1); if (a) r(g, '#c9ccd6', 3 - a + 1, 51 + i, a * 2 - 1, 1); }
       r(g, '#ffffff', 3, 52, 1, 5);
     });
+    // (13/11) una flecha para abajo (la de los agujeros de la pared): asta, plumas arriba y punta de hierro
+    lienzo('ckfo_flecha', 5, 22, g => {
+      r(g, '#3a2414', 2, 0, 1, 17); r(g, '#8a6a3a', 2, 1, 1, 10);
+      r(g, '#b8b0a0', 0, 0, 2, 5); r(g, '#b8b0a0', 3, 0, 2, 5); r(g, '#8a8070', 1, 1, 1, 3); r(g, '#8a8070', 3, 1, 1, 3);
+      r(g, '#1b1b22', 1, 16, 3, 3); r(g, '#cdd2dc', 2, 16, 1, 4); r(g, '#1b1b22', 2, 20, 1, 2);
+    });
     // una púa (para la placa y el pozo)
     lienzo('ckfo_pua', 5, 11, g => { for (let i = 0; i < 11; i++) { const a = Math.floor(i / 4); r(g, '#1b1b22', 2 - a, i, a * 2 + 1, 1); if (a) r(g, '#cdd2dc', 2 - a + 1, i, a * 2 - 1, 1); } r(g, '#ffffff', 2, 1, 1, 3); });
     const A = window.CK_FOSA_ARTE || {};
@@ -142,6 +148,24 @@ window.CK_FOSA_ARTE = { rocas: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAH
       registrar();
       ['talkers', 'fx', 'colliders', 'exits'].forEach(k => (a[k] = a[k] || []));
       a.ambient = [['amb_cueva', 0.55]].concat((a.ambient || []).filter(s => s[0] !== 'amb_cueva').map(s => [s[0], s[1] * 0.4]));
+      // (13/11, pedido: "en la fosa las camas son gigantes; si bien Garra Negra es grande, es exagerado"): las camas de paja a
+      // 0,6 y el nido a 0,72 (siguen siendo cuchas de lobo grande, pero ya no son tres héroes de largo). La máscara del mapa
+      // que tapaba las camas enteras se saca de abajo de ellas y ck_pies_piezas.js les pone el pie nuevo, del tamaño nuevo
+      const CHICOS = { ed_fos_cama_de_paja: 0.6, ed_fos_cama_de_paja_2: 0.6, ed_fos_cama_de_paja_3: 0.6, ed_fos_cama_de_paja_4: 0.6, ed_fos_nido_de_garra_negra: 0.72 };
+      const SACAR = [];
+      (a.items || []).forEach(it => {
+        const f = CHICOS[it.key]; if (!f) return;
+        const sz = (D.assets[it.key] || {}), w = sz.w || 0, h = sz.h || 0;
+        it.scale = (it.scale || 1) * f;
+        SACAR.push([Math.round(it.x - w / 2 + 6), Math.round(it.baseY - h + 6), Math.round(it.x + w / 2 - 6), Math.round(it.baseY)]);
+      });
+      if (SACAR.length) {
+        const restar = (c, b) => { const out = [], cx1 = c.x + c.w, cy1 = c.y + c.h; if (c.x >= b[2] || cx1 <= b[0] || c.y >= b[3] || cy1 <= b[1]) return [c];
+          if (c.y < b[1]) out.push({ x: c.x, y: c.y, w: c.w, h: b[1] - c.y }); if (cy1 > b[3]) out.push({ x: c.x, y: b[3], w: c.w, h: cy1 - b[3] });
+          const y0 = Math.max(c.y, b[1]), y1 = Math.min(cy1, b[3]); if (c.x < b[0]) out.push({ x: c.x, y: y0, w: b[0] - c.x, h: y1 - y0 }); if (cx1 > b[2]) out.push({ x: b[2], y: y0, w: cx1 - b[2], h: y1 - y0 });
+          return out.filter(q => q.w > 0 && q.h > 0); };
+        a.colliders = a.colliders.reduce((acc, c) => acc.concat(SACAR.reduce((cs, b) => cs.reduce((o, cc) => o.concat(restar(cc, b)), []), [c])), []);
+      }
       a.exits.push({ x: 1262, y: 802 - 16, w: 72, h: 16, key: 'walk', to: 'fo_grutas', hint: '▼ Las Grutas' });
       a.talkers.push({ x: LUGAR.nido.x, y: LUGAR.nido.y + 30, r: 50, lines: ['El nido de Garra Negra: paja, cueros arrancados y huesos roídos. Todavía está tibio'] });
       a.talkers.push({ x: 300, y: 470, r: 44, lines: ['Zarpazos en la roca, hondos como surcos. Acá adentro manda él'] });
@@ -234,7 +258,7 @@ window.CK_FOSA_ARTE = { rocas: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAH
       const p = S.add.image(a.x + POZO.x + dx, a.y + POZO.y + dy + 4, 'ckfo_pua').setOrigin(0.5, 1).setDepth(a.y + POZO.y + 6).setScale(1.3, 0.05).setAlpha(0);
       T.pozo.push(p);
     });
-    T.prox = { puas: S.time.now + 1500, pozo: S.time.now + 2200 };
+    T.prox = { puas: S.time.now + 1500, pozo: S.time.now + 2200 }; T.puasEst = 0; T.puasCd = 0;
     ponerRocas(S);
   };
   const quitar = S => {
@@ -257,7 +281,33 @@ window.CK_FOSA_ARTE = { rocas: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAH
     } });
     S.tweens.add({ targets: sp, scaleY: 0.1, delay: 420, duration: 260, ease: 'Quad.easeIn', onComplete: () => { try { sp.destroy(); } catch (e) {} T.lanzas = T.lanzas.filter(o => o !== sp); } });
   };
-  const subir = (S, lista, arriba, esc) => lista.forEach((p, i) => S.tweens.add({ targets: p, scaleY: arriba ? esc : 0.05, alpha: arriba ? 1 : 0, duration: arriba ? 90 : 220, delay: arriba ? i * 6 : 0, ease: arriba ? 'Back.easeOut' : 'Quad.easeIn' }));
+  const subir = (S, lista, arriba, esc) => lista.forEach((p, i) => S.tweens.add({ targets: p, scaleY: arriba ? esc : 0.05, alpha: arriba ? 1 : 0, duration: arriba ? 90 : 220, delay: arriba ? i * 6 : 0, ease: arriba ? 'Quad.easeIn' : 'Quad.easeIn' }));
+  // (13/11, pedido: "la trampa de flechas: que al pasar por los agujeros de la pared de la fosa lancen flechas hacia el frente y
+  // rompan con la pared de enfrente, y que tengan aleatoriedad así podemos esquivar"): una flecha de verdad que cruza el
+  // pasillo desde el agujero hasta la pared de abajo, a 420 px/s; si toca los pies del héroe o de una bestia, hiere; al
+  // llegar a la pared se parte (astillas) y suena
+  const flecha = (S, x, y0, y1, carril) => {
+    const T = S._ckFo; if (!T) return;
+    son('bow_shot', 0.5, { rate: 1.3 }) || son('ck_lanzas', 0.4, { rate: 1.6 });
+    polvo(S, x, y0 - 2, 2, 0x5a5048);
+    const sp = S.add.image(x, y0, 'ckfo_flecha').setOrigin(0.5, 1).setDepth(y1 + 3).setScale(1.25);
+    T.lanzas.push(sp);
+    let dio = false;
+    S.tweens.add({ targets: sp, y: y1 + 6, duration: Math.max(80, (y1 - y0) / 420 * 1000), ease: 'Linear',
+      onUpdate: () => {
+        if (dio || !S.player || S.isDead) return;
+        const p = pies(S), ya = sp.y;
+        if (Math.abs(p.x - x) < carril && p.y > ya - 14 && p.y < ya + 6) { dio = true; herir(S, 1, '¡FLECHAS!'); }
+        else S.enemies && S.enemies.getChildren().forEach(e => { if (dio || !vivo(e)) return; const q = { x: e.body ? e.body.center.x : e.x, y: e.body ? e.body.bottom : e.y }; if (Math.abs(q.x - x) < carril && q.y > ya - 14 && q.y < ya + 6) { dio = true; try { S.damageEnemy(e, 2, x, q.y); } catch (er) {} } });
+        if (dio) { sp.setAlpha(0.35); }
+      },
+      onComplete: () => {
+        if (!dio) { son('arrow_hit', 0.5, { rate: 1.2 }) || son('bone_hit', 0.4, { rate: 1.4 }); polvo(S, x, y1 + 4, 4, 0x8a7a5a); }
+        // se parte: dos astillas que caen al piso y se van
+        for (let i = 0; i < 2; i++) { const a = S.add.rectangle(x + (i ? 2 : -2), y1 + 2, 2, 6, 0x8a6a3a).setDepth(y1 + 4).setAngle(i ? 40 : -40); S.tweens.add({ targets: a, y: y1 + 8, x: a.x + (i ? 6 : -6), alpha: 0, duration: 500, onComplete: () => a.destroy() }); }
+        try { sp.destroy(); } catch (e) {} T.lanzas = T.lanzas.filter(o => o !== sp);
+      } });
+  };
   const u0 = P.update;
   P.update = function (time, delta) {
     const r = u0.apply(this, arguments);
@@ -277,23 +327,37 @@ window.CK_FOSA_ARTE = { rocas: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAH
           if (!this._ckFoAvisoLosa) { this._ckFoAvisoLosa = 1; this.createFloatingText(this.player.x, this.player.y - 50, '¡Click!', 0xfde68a); }
         }
       });
-      // los agujeros de la pared del pasillo del medio: uno y otro, cuando el héroe anda cerca
+      // los agujeros de la pared del pasillo del medio: flechas, a intervalos desparejos y de cualquiera de los dos agujeros,
+      // mientras el héroe anda por el pasillo (13/11: antes salían lanzas, una y otra, cada 1,3 s fijos)
       const cerca = p.x > a.x + 900 && p.x < a.x + 1120 && p.y > a.y + 400 && p.y < a.y + 520;
       if (cerca && now > (T.agProx || 0)) {
-        const h = AGUJEROS[T.fase % AGUJEROS.length]; T.fase++;
-        T.agProx = now + 1300;
-        polvo(this, a.x + h.x, a.y + h.y0 - 4, 3, 0x5a5048);
-        this.time.delayedCall(280, () => lanza(this, a.x + h.x, a.y + h.y0, a.y + h.y1, 15));
+        const h = AGUJEROS[Math.random() < 0.5 ? 0 : 1];
+        T.agProx = now + 450 + Math.random() * 1100;
+        const doble = Math.random() < 0.25;                                 // a veces las dos seguidas
+        flecha(this, a.x + h.x, a.y + h.y0, a.y + h.y1, 9);
+        if (doble) this.time.delayedCall(220, () => this._ckFo && flecha(this, a.x + AGUJEROS[h === AGUJEROS[0] ? 1 : 0].x, a.y + h.y0, a.y + h.y1, 9));
       }
-      // la placa de púas: 0,9 s arriba cada 2,4 s
-      if (now > T.prox.puas) {
-        T.puasArr = !T.puasArr;
-        T.prox.puas = now + (T.puasArr ? 900 : 1500);
-        const lejos = Math.hypot(p.x - (a.x + 1166), p.y - (a.y + 390)) > 320;
-        if (T.puasArr && !lejos) son('ck_puas', 0.6) || son('sword_hit', 0.4, { rate: 1.6 });
-        subir(this, T.puas, T.puasArr, 1);
+      // la placa de púas (13/11, pedido: "se activa sola; tiene que ser activada por pisarla"): quieta hasta que alguien la
+      // pisa; entonces se oye el chasquido, 0,35 s después suben las púas (hieren a quien siga encima), bajan a los 0,9 s y
+      // la placa descansa 0,8 s antes de poder saltar otra vez
+      const enPlaca = q => q.x > a.x + PUAS.x0 && q.x < a.x + PUAS.x1 && q.y > a.y + PUAS.y0 + 4 && q.y < a.y + PUAS.y1 + 4;
+      if (!T.puasEst && now > (T.puasCd || 0)) {
+        const pisa = enPlaca(p) || (this.enemies && this.enemies.getChildren().some(e => vivo(e) && enPlaca({ x: e.body ? e.body.center.x : e.x, y: e.body ? e.body.bottom : e.y })));
+        if (pisa) {
+          T.puasEst = 1; T.puasT = now + 350;
+          son('ck_losa', 0.7, { rate: 1.4 }) || son('ui_click', 0.6, { rate: 0.6 });
+          if (!this._ckFoAvisoPuas) { this._ckFoAvisoPuas = 1; this.createFloatingText(this.player.x, this.player.y - 50, '¡Click!', 0xfde68a); }
+        }
+      } else if (T.puasEst === 1 && now > T.puasT) {
+        T.puasEst = 2; T.puasT = now + 900; T.puasArr = 1;
+        son('ck_puas', 0.6) || son('sword_hit', 0.4, { rate: 1.6 });
+        subir(this, T.puas, true, 1);
+      } else if (T.puasEst === 2 && now > T.puasT) {
+        T.puasEst = 0; T.puasArr = 0; T.puasCd = now + 800;
+        subir(this, T.puas, false);
       }
-      if (T.puasArr && p.x > a.x + PUAS.x0 && p.x < a.x + PUAS.x1 && p.y > a.y + PUAS.y0 + 4 && p.y < a.y + PUAS.y1 + 4) herir(this, 1, '¡PÚAS!');
+      if (T.puasArr && enPlaca(p)) herir(this, 1, '¡PÚAS!');
+      if (T.puasArr && this.enemies && (!T.puasUlt || now - T.puasUlt > 600)) this.enemies.getChildren().forEach(e => { if (vivo(e) && enPlaca({ x: e.body ? e.body.center.x : e.x, y: e.body ? e.body.bottom : e.y })) { T.puasUlt = now; try { this.damageEnemy(e, 2, e.x, e.y); } catch (er) {} } });
       // el pozo: lanzas desde adentro cada 2,8 s (avisa con polvo)
       if (now > T.prox.pozo) {
         T.prox.pozo = now + 2800;

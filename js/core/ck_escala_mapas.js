@@ -38,16 +38,23 @@
     if (a._ckTaller === undefined) a._ckTaller = (a.objs || []).some(o => o && o.texture && /^ed_suelo_/.test(o.texture.key));
     return a._ckTaller;
   };
-  const AGRANDAR = false;                            // (v3) apagado: tamaños de antes en todos lados
+  // (13/11, v4, pedido: "hay mapas donde las casas son gigantes y los personajes pequeños y otras donde vienen bien… que cada
+  // mapa se ajuste el personaje, NPC y enemigos a la necesidad del mapa, medido; los interiores sí podemos vernos del tamaño
+  // que está hecho ahora"): escala POR MAPA, medida contra las puertas, pozos, barriles y cercos de cada dibujo, con los Campos
+  // del Roble (que el dueño dio por buenos) como 1. Los mapas grandes de Nano Banana (1436×802) dibujan todo una vez y media
+  // más grande, así que ahí el héroe, la gente y las bestias crecen; los de 958×534 y todos los interiores quedan en 1.
+  Object.assign(MAPA, {
+    norte_del_roble: 1.4, san_roque: 1.4, bosque_embrujado: 1.4, cementerio_real: 1.45, claro_de_las_bestias: 1.35,
+    cueva_galerias: 1.3, cueva_grutas: 1.3, cueva_fosa: 1.3, mazmorra_sello: 1.35, coliseo_orco: 1.25,
+    camino_al_castillo: 1.15, bosque_de_la_frontera: 1.2
+  });
+  const AGRANDAR = true;                             // (v4) prendido, pero sólo en los mapas de la tabla
   const factor = S => {
     if (!AGRANDAR) return 1;
     const c = S && S.currentInterior, k = c && c.building && c.building.kind;
-    if (!k || !(k.indexOf('ed_') === 0 || delTaller(c.area))) return 1;
-    const id = k.indexOf('ed_') === 0 ? k.slice(3) : k + '.' + c.areaName;
-    // sólo el castillo (sus mapas del Taller y sus salas armadas con uno) y los interiores
-    const vale = k.indexOf('ed_') === 0 ? CASTILLO.test(id) || INTERIOR.test(id) : (k === 'castle' || /^(bar|tienda|casa|granero)$/.test(k));
-    if (!vale) return 1;
-    return MAPA[id] !== undefined ? MAPA[id] : ESCALA;
+    if (!k || k.indexOf('ed_') !== 0) return 1;
+    const f = MAPA[k.slice(3)];
+    return f === undefined ? 1 : f;
   };
   // agranda el dibujo y achica la caja en la misma proporción (el pie queda igual en el mundo)
   const agrandar = (o, f, base) => {

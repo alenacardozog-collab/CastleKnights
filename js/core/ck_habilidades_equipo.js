@@ -272,8 +272,12 @@
       const ev = S.time.addEvent({ delay: 30, loop: true, callback: () => {
         const E = S._ckEscudo;
         if (!E || E.golpes <= 0 || S.time.now > E.hasta || !p.active) { ev.remove(); g.destroy(); if (S._ckEscudoG === g) S._ckEscudoG = null; if (E && S.time.now > E.hasta) S._ckEscudo = null; return; }
-        g.clear().setDepth(p.depth + 1); const r = 22 + Math.sin(S.time.now / 140) * 1.5;
-        g.lineStyle(2, 0xd8a0ff, 0.55 + 0.2 * E.golpes); g.strokeEllipse(p.x, p.y - 2, r * 2, r * 2.2); g.fillStyle(0xb070ff, 0.12); g.fillEllipse(p.x, p.y - 2, r * 2, r * 2.2);
+        // (13/11, pedido: "si es un escudo como el de Horos, que cubra todo su cuerpo"): la burbuja se mide sobre el dibujo del
+        // héroe (su caja de carne, con la escala del mapa) y lo envuelve entero, de los pies a la cabeza, con un margen
+        let cx = p.x, cy = p.y - 2, rw = 22, rh = 24;
+        try { const C = window.CK_HITBOXES && CK_HITBOXES.carne(S, p); if (C) { cx = (C.x0 + C.x1) / 2; cy = (C.y0 + C.y1) / 2; rw = (C.x1 - C.x0) / 2 + 9; rh = (C.y1 - C.y0) / 2 + 8; } } catch (e) {}
+        g.clear().setDepth(p.depth + 1); const lat = 1 + Math.sin(S.time.now / 140) * 0.04;
+        g.lineStyle(2, 0xd8a0ff, 0.55 + 0.2 * E.golpes); g.strokeEllipse(cx, cy, rw * 2 * lat, rh * 2 * lat); g.fillStyle(0xb070ff, 0.12); g.fillEllipse(cx, cy, rw * 2 * lat, rh * 2 * lat);
       } });
       return 150;
     },

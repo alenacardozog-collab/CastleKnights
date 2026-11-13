@@ -806,7 +806,7 @@ Object.assign(MainGameScene.prototype, {
   shootArrow() {
     const isLeft = this.facingDirection === 'left';
     const spawnX = isLeft ? this.player.x - 24 : this.player.x + 24;
-    const spawnY = this.player.y + 6;
+    const spawnY = this.player.y - 4;          // (13/11) from the bow hand, not the knee
 
     const arrow = this.projectiles.create(spawnX, spawnY, 'arrow');
     arrow.isFireball = false;
@@ -833,7 +833,7 @@ Object.assign(MainGameScene.prototype, {
     const isLeft = this.facingDirection === 'left';
     const v = this.facingV;                    // 'front' / 'back' when Horos looks down / up
     const spawnX = v ? this.player.x : (isLeft ? this.player.x - 26 : this.player.x + 26);
-    const spawnY = v ? this.player.y + (v === 'front' ? 30 : -22) : this.player.y + 4;
+    const spawnY = v ? this.player.y + (v === 'front' ? 30 : -22) : this.player.y - 6;   // (13/11) from the staff hand
 
     const fireball = this.projectiles.create(spawnX, spawnY, 'wizard_fireball');
     fireball.isFireball = true;

@@ -26,7 +26,16 @@
     'castle.garden': { aves: 1, mariposas: 9, luciernagas: 12, peces: 3, ranas: 2 },
     'castle.training': { aves: 1, murcielagos: 2 },
     'castle.walls': { murcielagos: 5, cuervos: 1 },
-    'ruins.village': { cuervos: 3, murcielagos: 6 }
+    'ruins.village': { cuervos: 3, murcielagos: 6 },
+    'ed_san_roque.main': { gallinas: 5 }           // (13/11) las gallinas del corral de San Roque, las de código (las pintadas se taparon)
+  };
+  // (13/11) corrales fuera de la aldea (coordenadas del mapa; se llevan al mundo al usarlos)
+  const CORRALES = { 'ed_san_roque.main': { corral: [[296, 598, 156, 84]], gallinero: [300, 636] } };   // el corral cercado, delante del gallinero
+  const corralDe = (S, zona) => {
+    if (zona === 'village') return ALDEA;
+    const C = CORRALES[zona]; if (!C) return null;
+    const A = areaDe(S);
+    return { corral: C.corral.map(r => [A.x + r[0], A.y + r[1], r[2], r[3]]), gallinero: [A.x + C.gallinero[0], A.y + C.gallinero[1]] };
   };
   // aldea: dónde andan las gallinas y dónde duerme el gato (píxeles de la aldea)
   const ALDEA = {
@@ -306,9 +315,10 @@
         const s = S.add.sprite(x, y, texRana(S), 0).setOrigin(0.5, 1).setScale(1.3).setDepth(y).setFlipX(Math.random() < 0.5);
         out.push({ tipo, s, estado: 'quieta', croa: R(2000, 9000), t: 0 });
       }
-    } else if (tipo === 'gallinas' && zona === 'village') {
+    } else if (tipo === 'gallinas' && corralDe(S, zona)) {
+      const C = corralDe(S, zona);
       for (let i = 0; i < cant; i++) {
-        const r = UNO(ALDEA.corral); let x = R(r[0], r[0] + r[2]), y = R(r[1], r[1] + r[3]);
+        const r = UNO(C.corral); let x = R(r[0], r[0] + r[2]), y = R(r[1], r[1] + r[3]);
         for (let k = 0; k < 20 && !pisa(S, x, y); k++) { x = R(r[0], r[0] + r[2]); y = R(r[1], r[1] + r[3]); }
         const s = S.add.sprite(x, y, texGallina(S, i % 2 === 1), 0).setOrigin(0.5, 1).setScale(1.3).setDepth(y);
         out.push({ tipo, s, corral: r, estado: 'pica', t: R(500, 2000), vx: 0, vy: 0, ani: 0 });
@@ -442,7 +452,7 @@
         const resguardo = hayLluvia || M.noche;
         b.t -= dt;
         if (resguardo) {
-          const [gx, gy] = libreCerca(S, ALDEA.gallinero), d = Math.hypot(gx - b.s.x, gy - b.s.y);
+          const [gx, gy] = libreCerca(S, (corralDe(S, zona) || ALDEA).gallinero), d = Math.hypot(gx - b.s.x, gy - b.s.y);
           if (d > 14 + (b.s.frame.name % 3) * 4) { if (S.navFollow) S.navFollow(b.nav || (b.nav = {}), b.s, gx, gy, 26, dt); else { b.s.x += (gx - b.s.x) / d * 26 * dt / 1000; b.s.y += (gy - b.s.y) / d * 26 * dt / 1000; } b.s.setFlipX(gx < b.s.x).setFrame(Math.floor(t / 160) % 2 ? 2 : 0); }
           else b.s.setFrame(0);
         } else if (cerca(h, b.s.x, b.s.y, h && h.apura ? 70 : 38) && b.estado !== 'huye') {

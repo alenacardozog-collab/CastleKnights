@@ -13,7 +13,8 @@
   const P = MainGameScene.prototype;
   const OJOS = /^(werewolf|warg|orc|orc_armored|orc_elite|orc_rider|orc_warlord)$/;
   const CUATRO_PATAS = /^warg$/;  // la cabeza va adelante, no arriba
-  const CABEZA = { orc_rider: [0.42, 0.17] };  // dónde está la cabeza en la caja del dibujo, cuando lo de arriba no la encuentra
+  const CABEZA = { orc_rider: [0.46, 0.22] };  // dónde está la cabeza en la caja del dibujo, cuando lo de arriba no la encuentra
+  const OJO_ALTO = { orc_corneta: 0.33, orc_warlord: 0.3 };   // (13/11) qué tan abajo de la cabeza van los ojos (cabezas grandes)
   const SOLDADO = /^g_(knight|templar|lancer|axeman|archer)_/;
   const afuera = S => (window.CK_AFUERA ? window.CK_AFUERA(S) : !S.currentInterior || S.currentInterior.area.outdoor);
   const oscuro = S => {
@@ -49,8 +50,13 @@
         col.forEach((v, x) => { if (v >= mx * 0.55) { if (x < c0) c0 = x; if (x > c1) c1 = x; } });
         let cy = y1;
         for (let y = 0; y < h && cy === y1; y++) for (let x = c0; x <= c1; x++) if (d[(y * w + x) * 4 + 3] >= 60) { cy = y; break; }
+        // (13/11) la CABEZA: las columnas llenas de la franja de arriba del cuerpo (el 38 % de arriba), sin el arma ni el escudo
+        const ch = y1 - cy + 1, hb = Math.max(2, Math.round(ch * 0.38)), hcol = new Array(w).fill(0);
+        for (let y = cy; y < cy + hb; y++) for (let x = x0; x <= x1; x++) if (d[(y * w + x) * 4 + 3] >= 60) hcol[x]++;
+        const hm = Math.max(...hcol); let h0 = x1, h1 = x0;
+        hcol.forEach((v, x) => { if (v >= hm * 0.5) { if (x < h0) h0 = x; if (x > h1) h1 = x; } });
         r = { x0, y0, x1, y1, w: x1 - x0 + 1, h: y1 - y0 + 1, fw: w, fh: h, c: [R / n, G / n, B / n],
-          cx0: c0, cx1: c1, cw: c1 - c0 + 1, cy0: cy, ch: y1 - cy + 1 };
+          cx0: c0, cx1: c1, cw: c1 - c0 + 1, cy0: cy, ch, hx0: h0, hx1: h1, hw: h1 - h0 + 1 };
       }
     } catch (e) { r = null; }
     return (cajas[k] = r);
@@ -152,7 +158,10 @@
         const patas = CUATRO_PATAS.test(e.type);
         // la cabeza: arriba del cuerpo, corrida hacia donde mira (los de cuatro patas, adelante)
         const fija = CABEZA[e.type];
-        const o = fija ? alMundo(e, b.x0 + b.w * fija[0], b.y0 + b.h * fija[1]) : patas ? alMundo(e, b.x0 + b.w * 0.88, b.y0 + b.h * 0.24) : alMundo(e, b.cx0 + b.cw * 0.68, b.cy0 + b.ch * 0.1);
+        // (13/11) los ojos van a la altura de los ojos (un cuarto de la cabeza para abajo, en el frente de la cabeza), no en
+        // la punta del casco: medido sobre los dibujos (orcos de 17 a 35 px de alto, el orco del cuerno con cabezota)
+        const fo = OJO_ALTO[e.type] || 0.27;
+        const o = fija ? alMundo(e, b.x0 + b.w * fija[0], b.y0 + b.h * fija[1]) : patas ? alMundo(e, b.x0 + b.w * 0.86, b.y0 + b.h * 0.36) : alMundo(e, b.hx0 + b.hw * 0.72, b.cy0 + b.ch * fo);
         const a = k * (Math.floor(this.time.now / 1900 + e.x * 0.01) % 9 === 0 ? 0.15 : 1) * Math.max(0.35, e.alpha);
         const s = Math.max(1, Math.round(e.scaleX)), dx = e.flipX ? -1 : 1;
         g.fillStyle(0xff2a1a, a * 0.22); g.fillCircle(o.x, o.y, 1.9 * s);
