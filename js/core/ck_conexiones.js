@@ -66,5 +66,18 @@
     if (d) { if (!this._doorTransition && this.ckEntrar) this.ckEntrar(d[0], d[1]); return; }
     return s0.apply(this, arguments);
   };
+  // (13/11) Bosque de la Frontera: la salida del oeste ("Volver al camino") quedaba arriba del camino y medio afuera del mapa,
+  // y no se podía volver caminando (lo encontró la revisión del modo prueba). Ahora está sobre el camino y lleva al Camino al
+  // Castillo, al lado del paso del este (por donde se vino).
+  DESTINO.ck_frontera_camino = ['camino_al_castillo', { x: 1382, y: 354 }];
+  const LF = INTERIOR_LAYOUTS.ed_bosque_de_la_frontera;
+  if (LF) INTERIOR_LAYOUTS.ed_bosque_de_la_frontera = function (kit) {
+    const r = LF.apply(this, arguments);
+    try {
+      const a = kit.areas && kit.areas.main;
+      ((a && a.exits) || []).forEach(e => { if (e.to === 'outside' && e.x < 20) Object.assign(e, { x: 0, y: 394, w: 18, h: 78, to: 'ck_frontera_camino', hint: '◀ Camino al Castillo' }); });
+    } catch (e) {}
+    return r;
+  };
   window.CK_CONEXIONES = { unir, LISTA, DESTINO, OPUESTO };
 })();

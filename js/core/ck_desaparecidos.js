@@ -213,7 +213,7 @@
   if (CAP) {
     const l0 = CAP.lines;
     CAP.lines = function (s, hero) {
-      if (nueva(s) && s.step === 2) return ['Los tres salieron anoche al campo, al oeste de la aldea. Buscalos en los Campos del Roble.', 'Y si ves luces en la niebla, no las sigas.'];
+      if (nueva(s) && s.step === 2) return ['Los tres salieron anoche al campo. Buscalos en los Campos del Roble.', 'Y si ves luces en la niebla, no las sigas.'];
       if (nueva(s) && s.step === 3 && !fl(s).h) return [
         '¿Los tres? ¿Vivos? Bien hecho, recluta. Muy bien hecho.',
         'Pero lo que cuentan me hiela la sangre: una luz que llama por el nombre, y todos caminando hacia Brumavieja.',

@@ -81,6 +81,13 @@
 #ck-habilidades .ar-cab .pts { padding: 2px 8px; background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.12); }
 #ck-habilidades .ar-cab .pts.hay { animation: arPts 1s ease-in-out infinite alternate; }
 @keyframes arPts { to { box-shadow: 0 0 10px 2px var(--ar-glow); } }
+/* (12/11) celular: la ventana a lo ancho (se desliza para abajo) y una rama por vez con solapas */
+#ck-habilidades.arbol.ar-movil { overflow-y: auto !important; align-items: flex-start !important; -webkit-overflow-scrolling: touch; }
+#ck-habilidades.arbol.ar-movil .ck-win { margin: 6px auto 10px; }
+#ck-habilidades .ar-tabr { position: absolute; transform: translate(-50%, -50%); font-weight: 700; font-size: 25px; line-height: 1; white-space: nowrap; padding: 8px 16px 9px; cursor: pointer;
+  color: var(--ar-tinta); text-shadow: 0 2px 0 #000; background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 2px rgba(255,255,255,.12); opacity: .75; }
+#ck-habilidades .ar-tabr small { display: block; margin-top: 3px; font-size: 16px; font-weight: 600; color: var(--ar-glow); text-align: center; }
+#ck-habilidades .ar-tabr.sel { opacity: 1; background: rgba(0,0,0,.55); box-shadow: inset 0 0 0 2px var(--ar-glow), 0 0 14px var(--ar-glow); }
 #ck-habilidades .ar-titulo { position: absolute; transform: translate(-50%, -100%); font-weight: 700; font-size: 14px; letter-spacing: .5px; white-space: nowrap; text-shadow: 0 2px 0 #000, 0 0 6px #000; opacity: .9; }
 #ck-habilidades .ar-titulo.fila { transform: translate(0, -50%); text-align: left; white-space: nowrap; line-height: 1.05; font-size: 15px; }
 #ck-habilidades .ar-titulo.fila small { text-align: left; }
@@ -190,7 +197,10 @@ body:has(#ck-habilidades.on) #ck-ayuda, body:has(#ck-habilidades.on) #ck-nota { 
     cab.querySelector('.pts').classList.toggle('hay', pts > 0);
     // posiciones
     // la escala: que entre entero en la pantalla, sin pasarse de 1,3 (en pantallas grandes crece un poco)
-    const k = Math.max(0.4, Math.min(1.3, w.clientWidth * 0.97 / 1000, w.clientHeight * 0.96 / 751));
+    // (12/11) en el celular (pantalla baja) el árbol quedaba chiquito: ahí va a lo ancho (se desliza para abajo) y una rama por vez
+    const movil = document.body.classList.contains('ck-movil') || (w.clientHeight < 560 && w.clientHeight * 0.96 / 751 < 0.66);
+    w.classList.toggle('ar-movil', movil);
+    const k = movil ? Math.max(0.4, Math.min(1.3, w.clientWidth * 0.97 / 1000)) : Math.max(0.4, Math.min(1.3, w.clientWidth * 0.97 / 1000, w.clientHeight * 0.96 / 751));
     w.style.setProperty('--ar-k', k.toFixed(4));
     const caja = ar.querySelector('.ar-arbol'), W = caja.clientWidth, Hh = caja.clientHeight;
     const nodos = ar.querySelector('.ar-nodos'); nodos.innerHTML = '';
@@ -198,11 +208,14 @@ body:has(#ck-habilidades.on) #ck-ayuda, body:has(#ck-habilidades.on) #ck-nota { 
     const maxN = Math.max(...ramas.map(r => r.nodos.length));
     // (11/11, "que todo encaje, se aprovechen los espacios y quede centrado") las ramas van en FILAS: el título a la izquierda y
     // los nodos de izquierda a derecha; arriba el medallón con las de base a los lados; un tronco baja por la izquierda
-    const titW = 112, yEmb = 42, yRamas = 96;
-    const rowH = (Hh - yRamas) / nr, sep = (W - titW - 8) / maxN;
-    const T_ = Math.round(Math.max(40, Math.min(74, Math.min(rowH * 0.74, sep * 0.76))));
+    // en el celular: sólo la rama elegida, en dos filas de nodos grandes, y arriba una solapa por rama
+    const ramaV = Math.min(selR, nr - 1), cols = movil ? Math.ceil(maxN / 2) : maxN;
+    const titW = movil ? 0 : 112, yEmb = 42, yRamas = movil ? 150 : 96;
+    const rowH = movil ? (Hh - yRamas) / 2 : (Hh - yRamas) / nr, sep = (W - titW - 8) / cols;
+    const T_ = Math.round(Math.max(40, Math.min(movil ? 104 : 74, Math.min(rowH * 0.74, sep * 0.76))));
     nodos.style.setProperty('--t', T_ + 'px');
-    const xDe = ni => titW + 8 + sep * (ni + 0.5), yDe = ri => Math.round(yRamas + rowH * (ri + 0.5));
+    const xDe = ni => titW + 8 + sep * ((movil ? ni % cols : ni) + 0.5), yDe = ri => Math.round(yRamas + rowH * (ri + 0.5));
+    const yNodo = (ri, ni) => (movil ? yDe(Math.floor(ni / cols)) : yDe(ri));
     const emb = document.createElement('div'); emb.className = 'ar-emb'; emb.style.left = W / 2 + 'px'; emb.style.top = yEmb + 'px';
     const retrato = w.ownerDocument.querySelector('#ckh .vent img.c1');
     emb.innerHTML = `<div class="f">${retrato && retrato.src ? `<img src="${retrato.src}" alt="" onerror="this.remove()">` : ''}</div><div class="m" style="background-image:url('${AT['emb_' + a] || ''}')"></div>`;
@@ -220,14 +233,23 @@ body:has(#ck-habilidades.on) #ck-ayuda, body:has(#ck-habilidades.on) #ck-nota { 
       lineas.push({ x0: W / 2 + lado * 40, y0: y, x1: x - lado * T_ / 2, y1: y, on: true });
     });
     // el tronco: del medallón baja hasta la última rama
-    lineas.push({ x0: W / 2, y0: yEmb + 42, x1: xTronco, y1: yDe(nr - 1), on: true, tronco: true });
+    if (!movil) lineas.push({ x0: W / 2, y0: yEmb + 42, x1: xTronco, y1: yDe(nr - 1), on: true, tronco: true });
     ramas.forEach((rama, ri) => {
-      const cy = yDe(ri), g = HB.gastados(S, h, rama.id);
-      const tit = document.createElement('div'); tit.className = 'ar-titulo fila'; tit.style.left = '4px'; tit.style.top = cy + 'px';
-      tit.innerHTML = `${rama.nombre}<small>${g} punto${g === 1 ? '' : 's'}</small>`; nodos.appendChild(tit);
-      let prevOn = true, prevX = xTronco;
+      const g = HB.gastados(S, h, rama.id);
+      if (movil) {
+        const tb = document.createElement('div'); tb.className = 'ar-tabr' + (ri === ramaV ? ' sel' : '');
+        tb.style.left = Math.round(W * (ri + 0.5) / nr) + 'px'; tb.style.top = '104px';
+        tb.innerHTML = `${rama.nombre}<small>${g} punto${g === 1 ? '' : 's'}</small>`;
+        tb.onclick = () => { const b = w.querySelector('.hb-base.sel'); if (b) b.click(); const hid = w.querySelector(`.hb-nodo[data-r="${ri}"][data-i="0"]`); if (hid) hid.click(); else pintar(S); };
+        nodos.appendChild(tb);
+        if (ri !== ramaV) return;
+      } else {
+        const tit = document.createElement('div'); tit.className = 'ar-titulo fila'; tit.style.left = '4px'; tit.style.top = yDe(ri) + 'px';
+        tit.innerHTML = `${rama.nombre}<small>${g} punto${g === 1 ? '' : 's'}</small>`; nodos.appendChild(tit);
+      }
+      let prevOn = true, prevX = movil ? null : xTronco, prevY = yDe(ri);
       rama.nodos.forEach((n, ni) => {
-        const es = estado(S, h, rama, n), r = HB.rg(S, n.id, h) || 0, cx = Math.round(xDe(ni));
+        const es = estado(S, h, rama, n), r = HB.rg(S, n.id, h) || 0, cx = Math.round(xDe(ni)), cy = yNodo(ri, ni);
         const el = document.createElement('div'); el.className = `ar-nodo ${es}${selR === ri && selI === ni && !baseSel ? ' sel' : ''}`;
         el.style.left = cx + 'px'; el.style.top = cy + 'px'; el.title = n.n;
         const ic = (window.CK_ICONOS_HEROE && window.CK_ICONOS_HEROE[n.ic]) || HB.icono(n.ic, rama.color);
@@ -243,8 +265,13 @@ body:has(#ck-habilidades.on) #ck-ayuda, body:has(#ck-habilidades.on) #ck-nota { 
         if (ultRangos[k] !== undefined && r > ultRangos[k]) { el.classList.add('subio'); chispas(el, es === 'completo' ? 16 : 10); }
         ultRangos[k] = r;
         nodos.appendChild(el);
-        lineas.push({ x0: ni === 0 ? xTronco : prevX + T_ / 2, y0: cy, x1: cx - T_ / 2, y1: cy, on: r > 0 && prevOn });
-        prevOn = r > 0; prevX = cx;
+        if (!movil) lineas.push({ x0: ni === 0 ? xTronco : prevX + T_ / 2, y0: cy, x1: cx - T_ / 2, y1: cy, on: r > 0 && prevOn });
+        else if (ni > 0 && cy === prevY) lineas.push({ x0: prevX + T_ / 2, y0: cy, x1: cx - T_ / 2, y1: cy, on: r > 0 && prevOn });
+        else if (ni > 0) {   // cambio de fila: baja, cruza y vuelve a bajar (en ángulo recto, sin cruzar el dibujo en diagonal)
+          const ym = Math.round((prevY + cy) / 2), on = r > 0 && prevOn;
+          lineas.push({ x0: prevX, y0: prevY + T_ / 2, x1: prevX, y1: ym, on }, { x0: prevX, y0: ym, x1: cx, y1: ym, on }, { x0: cx, y0: ym, x1: cx, y1: cy - T_ / 2, on });
+        }
+        prevOn = r > 0; prevX = cx; prevY = cy;
       });
     });
     // las líneas, en el lienzo
@@ -258,11 +285,11 @@ body:has(#ck-habilidades.on) #ck-ayuda, body:has(#ck-habilidades.on) #ck-nota { 
     if (sel) {
       ficha.innerHTML = `<h4>${sel.n}${sel.nueva ? ' <small style="font-size:10px;letter-spacing:1px;color:#fff;background:#7a2418;padding:0 3px;vertical-align:3px">NUEVA</small>' : ''}</h4><div class="rama">${sel.rama}${sel.max ? ` · rango ${sel.r}/${sel.max}` : ''}</div><p>${sel.d}</p>` +
         (sel.sig ? `<p class="sig">Siguiente rango: ${sel.sig}</p>` : '') + (sel.es === 'cerrado' ? `<p class="cand">Se abre con ${sel.req} punto${sel.req > 1 ? 's' : ''} en ${sel.rama}.</p>` : '') +
-        (sel.equipable ? `<p class="sig">Apretá <b>Q, E, R o F</b> (o tocá una ranura) para ponerla ahí.</p>` : '');
+        '';
     } else ficha.innerHTML = '<p>Elegí un nodo del árbol.</p>';
     // las ranuras
     const ran = ar.querySelector('.ar-ran'), PRO = window.CK_PROGRESO, lista = !!(sel && sel.equipable);
-    ran.querySelector('.t').textContent = lista ? 'Poner ' + sel.n + ' en:' : 'Ranuras';
+    ran.querySelector('.t').textContent = lista ? 'Poner ' + sel.n + ' en Q, E, R o F:' : 'Ranuras';
     ran.querySelector('.cuerpo').innerHTML = ranuras.map((id, i) => {
       const bl = PRO && !pr && PRO.bloqueado && PRO.bloqueado(S, TECLAS[i].toLowerCase()), nv = bl && PRO.NIVEL ? PRO.NIVEL[TECLAS[i].toLowerCase()] : '';
       return `<div class="ar-r${lista ? ' lista' : ''}${id ? '' : ' vacia'}${bl && !id ? ' bloq' : ''}" data-i="${i}" data-nv="Nv ${nv}" title="${id ? (EQ.def(h, id) || {}).n : 'Vacía'}"><div class="fo"></div>${id ? `<img src="${EQ.icono(h, id)}" alt="">` : ''}<b>${TECLAS[i]}</b></div>`;

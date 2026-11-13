@@ -9,6 +9,8 @@
   P.toggleDevMode = function () { };
   P.toggleStudio = function () { };
   P.openMapEditor = function () { };
+  // (12/11, pedido del dueño: "quitá que con la P se activen las hitboxes") la vista de colisiones tampoco se ofrece
+  P.toggleCollisionDebug = function () { };
   // Las 4 casas de la aldea y sus puertas no aceptan ajustes viejos del Estudio (guardados en el navegador):
   // si una casa quedaba agrandada o corrida, la puerta real seguía en su lugar original y no se podía entrar.
   const aplicar0 = P.studioApplyMoves;
@@ -26,8 +28,8 @@
   if (window._pendingAutoStart === 'editor') window._pendingAutoStart = false;
   ['btn-dev-toggle', 'btn-menu-editor'].forEach(id => { const e = document.getElementById(id); if (e) e.remove(); });
   // fuera de la lista de teclas configurables
-  try { const i = KEYBIND_DEFINITIONS.findIndex(d => d.id === 'devMode'); if (i >= 0) KEYBIND_DEFINITIONS.splice(i, 1); } catch (e) { }
+  try { ['devMode', 'hitboxes'].forEach(id => { const i = KEYBIND_DEFINITIONS.findIndex(d => d.id === id); if (i >= 0) KEYBIND_DEFINITIONS.splice(i, 1); }); } catch (e) { }
   // fuera de la tira de controles del pie
-  const limpiar = () => document.querySelectorAll('.control-pill').forEach(p => { if (/MODO DEV/i.test(p.textContent)) p.remove(); });
+  const limpiar = () => document.querySelectorAll('.control-pill').forEach(p => { if (/MODO DEV|HITBOX/i.test(p.textContent)) p.remove(); });
   limpiar(); new MutationObserver(limpiar).observe(document.body, { childList: true, subtree: true });
 })();

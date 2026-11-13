@@ -15,7 +15,7 @@
 (function () {
   if (typeof MainGameScene === 'undefined') return;
   const P = MainGameScene.prototype;
-  window.CK_PROF_ENTEROS = /^ed_(cr|to|br|pc2|cc2|op_c2|of_c2|pfo|so|afo|fg|cb|gl)_/;   // (10/11) + Claro de las Bestias (cb) y la cueva, Nivel 1 (gl)
+  window.CK_PROF_ENTEROS = /^ed_(cr|to|br|pc2|cc2|op_c2|of_c2|pfo|so|afo|fg|cb|gl|jr2)_/;   // (10/11) + Claro de las Bestias (cb) y la cueva, Nivel 1 (gl); (13/11) + Jardín Real (jr2)
   //   // (10/11) + Camino (cc2), Pueblo Orco (op_c2) y Fortaleza (of_c2) rehechos como el patio
   try {
     const R = window.CK_PIEZAS_RECORTE;

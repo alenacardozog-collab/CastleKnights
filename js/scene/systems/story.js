@@ -290,7 +290,7 @@ Object.assign(MainGameScene.prototype, {
       const v = this.campaignNPCs.filter(n => n.sprite && n.sprite.active && dOf(n) < 48).sort((a, b) => dOf(a) - dOf(b))[0];
       if (v && v.id === 'npc2') { this.openShop(); return; }
       if (v) {
-        const hint = this.story.step === 0 ? 'Dicen que el Rey busca gente de armas. El castillo queda por el camino del sur.' :
+        const hint = this.story.step === 0 ? 'Dicen que el Rey busca gente de armas.' :
           this.story.step < 4 ? 'De noche se ve una luz fría hacia el norte. Nadie quiere ir a mirar.' :
           this.story.step < 7 ? 'Brumavieja era una aldea como esta… Tené cuidado allá arriba.' : '¡La niebla se fue del camino! Gracias a vos dormimos tranquilos.';
         this.openDialog(v.name, [Phaser.Utils.Array.GetRandom(v.greetings).replace(/[^\wáéíóúñÁÉÍÓÚÑ¡!¿?,.… ]/g, '').trim(), hint], null, v.textureKey);

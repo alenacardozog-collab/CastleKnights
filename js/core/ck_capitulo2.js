@@ -54,7 +54,7 @@
     if (typeof nombre === 'string' && VA[nombre]) {
       if (this._doorTransition) return;
       // el portón del norte del pueblo está trancado hasta que Gorak lo abre
-      if (nombre === 'c2_fortaleza' && paso(this.story) < 6) {
+      if (nombre === 'c2_fortaleza' && paso(this.story) < 6 && !(window.CK_LIBRE && CK_LIBRE())) {
         if (!this._c2Tranca || this.time.now - this._c2Tranca > 3000) {
           this._c2Tranca = this.time.now;
           this.createFloatingText(this.player.x, this.player.y - 46, 'El portón está trancado desde adentro', 0xfca5a5);

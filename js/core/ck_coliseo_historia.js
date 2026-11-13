@@ -51,7 +51,7 @@
   const cambiar0 = P.switchInteriorArea;
   P.switchInteriorArea = function (nombre) {
     if (typeof nombre === 'string' && !this._doorTransition) {
-      if (nombre === 'c2_fortaleza' && paso(this.story) >= 6) { this.ckEntrar(PATIO, LLEGA.patio); return; }
+      if (nombre === 'c2_fortaleza' && (paso(this.story) >= 6 || (window.CK_LIBRE && CK_LIBRE()))) { this.ckEntrar(PATIO, LLEGA.patio); return; }
       if (nombre === 'col_pueblo') { this.ckEntrar(PUEBLO, LLEGA.pueblo); return; }
       if (nombre === 'col_fortaleza') { this.ckEntrar(FORT, LLEGA.fort); return; }
       if (nombre === 'col_salida') { this.ckEntrar(FORT, LLEGA.fortTrono); return; }

@@ -150,7 +150,7 @@
     if (p >= 7) return ['¡Volviste! Te dejé la cama hecha y el guiso calentito. El Rey te debe estar esperando, pero primero comé algo.'];
     if (p >= 4) return ['¿Vas para Brumavieja? Ay, criatura. Allá tenía una prima, la Nélida. Si ves una casa con malvones en la ventana, era la de ella.', 'Llevá sal en el bolsillo. Mi abuela decía que a los aparecidos no les gusta la sal.'];
     if (p >= 2) return ['El camino del castillo anda lleno de lobos. El Beto de los barriles dice que uno le comió la vianda. Yo creo que se la comió él.', 'Si te lastiman, volvé. Acá siempre hay una cama y un mate.'];
-    return ['¿Todavía acá? El Rey no espera a nadie, ' + quien + '. Salí por la puerta de abajo, cruzá la aldea y tomá el camino del sur.', 'Y no le hagas caso al Mateo si te para en la puerta. Ése te cuenta la vida de todo el pueblo.'];
+    return ['¿Todavía acá? El Rey no espera a nadie, ' + quien + '. El camino al castillo lo tenés marcado.', 'Y no le hagas caso al Mateo si te para en la puerta. Ése te cuenta la vida de todo el pueblo.'];
   };
   const STORY = () => (typeof STORY_NPCS !== 'undefined' ? STORY_NPCS : null);
   if (STORY() && !STORY().some(n => n.id === 'rosa'))
@@ -202,7 +202,7 @@
         '¡Arriba, ' + q + ', que el gallo ya cantó tres veces y el mate se enfría!',
         propio,
         'Esta mañana pasó un chasqui del castillo preguntando por vos. El Rey Aldric te espera en el Gran Salón.',
-        'Salís por la puerta de abajo, cruzás la aldea y tomás el camino del sur. Y comé algo antes, que con la panza vacía no se pelea.'
+        'Y comé algo antes, que con la panza vacía no se pelea.'
       ], 'ck_rosa');
       await E.caminar(S, rosa, PUERTA_CUARTO[0], PUERTA_CUARTO[1], 46);
       await E.caminar(S, rosa, ROSA[0] + 27, PUERTA_CUARTO[1] + 60, 46);

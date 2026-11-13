@@ -13,6 +13,8 @@
      del suelo avisan; corriendo (o con dash) se pasa.
    - BARRICADA { tipo: 'barricada', id, x, y, golpes, choque: [x, y, w, h], rotaEn: [x, y] }: troncos y estacas de los
      orcos que cierran el paso. Se rompe a golpes (J, K, giro, magia, flechas); rota queda rota en la partida.
+   (12/11, v4) La barricada puede traer su propio dibujo (tex: clave de una textura ya cargada), sin restos al romperse
+   (sinRota), con astillas de otro color (astilla) y otro cartel (msg): así es el derrumbe de piedras de la Fosa.
    Animaciones de PixelLab: el cepo que se cierra (7 cuadros), la fosa que se hunde (7) y la nube de polvo de cada
    golpe contra el piso (piedras, fosa, barricada). El arte está en ck_trampas_suelo_arte.js. Borrar las dos líneas de index.html saca las trampas (los mapas quedan igual,
    sin trampas ni barricada). */
@@ -84,7 +86,7 @@
         t.rota = false;
         if (rotas[t.id]) { ponerRota(S, t, a); t.rota = true; }
         else {
-          const k = tex(S, 'barricada'); if (!k) return;
+          const k = d.tex && S.textures.exists(d.tex) ? d.tex : tex(S, 'barricada'); if (!k) return;   // (12/11) d.tex: dibujo propio (el derrumbe de la Fosa)
           t.sp = S.add.image(t.X, t.Y, k).setOrigin(0.5, 1).setDepth(t.Y);
           const [cx, cy, cw, ch] = d.choque;
           t.zona = S.add.zone(a.x + cx + cw / 2, a.y + cy + ch / 2, cw, ch);
@@ -98,7 +100,8 @@
     });
   };
   const ponerRota = (S, t, a) => {
-    const k = tex(S, 'barricada_rota'), [rx, ry] = t.rotaEn || [t.X - a.x, t.Y - a.y];
+    if (t.sinRota) return;
+    const k = (t.texRota && S.textures.exists(t.texRota)) ? t.texRota : tex(S, 'barricada_rota'), [rx, ry] = t.rotaEn || [t.X - a.x, t.Y - a.y];
     if (k) t.sp = S.add.image(a.x + rx, a.y + ry, k).setOrigin(0.5, 1).setDepth(8);
   };
 
@@ -225,7 +228,7 @@
     S.tweens.add({ targets: t.sp, x: t.X + 3, duration: 40, yoyo: true, repeat: 2, onComplete: () => { if (t.sp.active) t.sp.x = t.X; } });
     const cx = (t.caja.x0 + t.caja.x1) / 2, cy = t.caja.y1 - 10;
     for (let i = 0; i < 6; i++) {
-      const g = S.add.rectangle(cx + azar(-20, 20), cy - azar(10, 40), Phaser.Math.Between(2, 5), 2, 0x7a5230).setDepth(t.Y + 1);
+      const g = S.add.rectangle(cx + azar(-20, 20), cy - azar(10, 40), Phaser.Math.Between(2, 5), t.astilla ? 3 : 2, t.astilla || 0x7a5230).setDepth(t.Y + 1);
       S.tweens.add({ targets: g, x: g.x + azar(-26, 26), y: cy + azar(-4, 6), angle: azar(-180, 180), duration: azar(260, 420), ease: 'Quad.easeOut' });
       S.tweens.add({ targets: g, alpha: 0, delay: 900, duration: 400, onComplete: () => g.destroy() });
     }
@@ -237,7 +240,7 @@
     const a = S.currentInterior.area; ponerRota(S, t, a);
     polvo(S, cx, cy, 8); nube(S, cx - 24, cy + 8, 1.1); nube(S, cx + 20, cy + 4, 1); S.cameras.main.shake(200, 0.008);
     son('ck_barricada', 0.8) || son('door_gate', 0.7, { rate: 0.8 });
-    S.createFloatingText(cx, cy - 50, '¡La barricada se vino abajo!', 0xfde68a);
+    S.createFloatingText(cx, cy - 50, t.msg || '¡La barricada se vino abajo!', 0xfde68a);
     const st = S.story; if (st) { st.flags.barricadas = st.flags.barricadas || {}; st.flags.barricadas[t.id] = true; S.saveStory && S.saveStory(); }
   };
   const rectoHeroe = (S, extra) => {

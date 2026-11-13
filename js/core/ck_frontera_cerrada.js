@@ -14,7 +14,7 @@
   const P = MainGameScene.prototype, E = window.CK_ESCENA;
   const ZC = 'ed_camino_al_castillo.main', ZB = 'ed_bosque_de_la_frontera.main';
   const st = S => (S && S._gameMode === 'campaign' && S.story) || null;
-  const abierto = s => !!(s && s.step >= 8);
+  const abierto = s => !!(s && s.step >= 8) || !!(window.CK_LIBRE && CK_LIBRE());   // (13/11) en la prueba con todo abierto, abierto
   const S0 = () => window.activeGameScene || null;
 
   // ------------------------------------------------------------------ el paso (camino al castillo, borde este)
