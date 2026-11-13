@@ -103,10 +103,53 @@ window.CK_ZONA_BRUMA_MINI = { norte_del_roble: 'data:image/png;base64,iVBORw0KGg
     return x0.apply(this, arguments);
   };
 
+  // ------------------------------------------------------------------ la niebla pintada del Bosque Embrujado se saca
+  // (13/11, pedido del dueño: "la niebla pintada del bosque embrujado sacala, la del PNG, usá sólo la niebla que generamos por
+  // código"). El dibujo del suelo trae manchones de niebla blancuzca. Antes de armar el mapa, sobre la textura del suelo, cada
+  // píxel claro y sin color (niebla) se rellena con el promedio del suelo de alrededor que no es niebla; queda sólo la niebla
+  // viva de código (a.fx 'fog'). Una vez por partida; si falla, el suelo queda como está.
+  const SIN_NIEBLA = { k: 'ed_suelo_' + BOSQUE, satMax: 0.22, luzMin: 0.42 };
+  const sinNieblaPintada = () => {
+    if (sinNieblaPintada.ok) return;
+    const S = window.activeGameScene || (window.game && game.scene && game.scene.keys && game.scene.keys.MainGameScene);
+    const T = S && S.textures, k = SIN_NIEBLA.k;
+    if (!T || !T.exists(k)) return;
+    sinNieblaPintada.ok = true;
+    try {
+      const src = T.get(k).getSourceImage(), w = src.width, h = src.height;
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(src, 0, 0);
+      const im = g.getImageData(0, 0, w, h), d = im.data, fog = new Uint8Array(w * h), fog2 = new Uint8Array(w * h);
+      for (let i = 0; i < w * h; i++) {
+        const r = d[i * 4] / 255, gg = d[i * 4 + 1] / 255, b = d[i * 4 + 2] / 255;
+        const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), l = (mx + mn) / 2, s = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1));
+        if (s < SIN_NIEBLA.satMax && l > SIN_NIEBLA.luzMin) fog[i] = 1;
+      }
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {              // el borde suave de cada mancha también
+        if (!fog[y * w + x]) continue;
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < w && yy < h) fog2[yy * w + xx] = 1; }
+      }
+      const out = new Uint8ClampedArray(d), R = 18, ST = 3;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const i = y * w + x; if (!fog2[i]) continue;
+        let sr = 0, sg = 0, sb = 0, c = 0;
+        for (let rad = R; rad <= R * 3 && !c; rad += R) for (let dy = -rad; dy <= rad; dy += ST) for (let dx = -rad; dx <= rad; dx += ST) {
+          const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
+          const j = yy * w + xx; if (fog2[j]) continue;
+          sr += d[j * 4]; sg += d[j * 4 + 1]; sb += d[j * 4 + 2]; c++;
+        }
+        if (c) { out[i * 4] = sr / c; out[i * 4 + 1] = sg / c; out[i * 4 + 2] = sb / c; }
+      }
+      im.data.set(out); g.putImageData(im, 0, 0);
+      T.remove(k); T.addCanvas(k, cv);
+    } catch (e) { console.warn('[zona bruma] niebla pintada', e); }
+  };
+
   // ------------------------------------------------------------------ armado de cada mapa
   const envolver = (k, fn) => {
     const L0 = INTERIOR_LAYOUTS[k]; if (!L0) return;
     INTERIOR_LAYOUTS[k] = function (kit) {
+      if (k === 'ed_' + BOSQUE) { try { sinNieblaPintada(); } catch (e) {} }
       const r = L0.apply(this, arguments);
       try { const a = kit.areas && (kit.areas.main || kit.areas.village); if (a) { ['talkers', 'fx', 'colliders', 'exits', 'items', 'actors'].forEach(q => (a[q] = a[q] || [])); fn(a, kit); } }
       catch (e) { console.warn('[zona bruma]', k, e); }

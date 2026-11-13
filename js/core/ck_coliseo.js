@@ -454,9 +454,11 @@
     const c = S.currentInterior, ox = c ? c.area.x : 0, oy = c ? c.area.y : 0, objs = c ? (c.area.objs || (c.area.objs = [])) : [];
     if (S._ckcRey && S._ckcRey.active) S._ckcRey.destroy();
     if (S._ckcPrin && S._ckcPrin.active) S._ckcPrin.destroy();
-    const rey = S.add.sprite(ox + x, oy + y, 'ckc_rey_idle').setOrigin(0.5, 0.9).setScale(0.75).setDepth(oy + y);
-    S.tweens.add({ targets: rey, scaleY: 0.765, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });   // respira
-    const pr = S.add.image(ox + x + 40, oy + y + 2, 'ckc_princesa').setOrigin(0.5, 1).setScale(1.05).setDepth(oy + y + 1);
+    // (13/11) el caudillo sentado en su trono de huesos, al tamaño de la gente del coliseo (el héroe va a 1,25 acá), y la
+    // princesa con su dibujo chico de siempre, a la misma escala que los demás personajes del mapa
+    const rey = S.add.sprite(ox + x, oy + y, 'ckc_rey_idle').setOrigin(0.5, 0.9).setScale(0.92).setDepth(oy + y);
+    S.tweens.add({ targets: rey, scaleY: 0.935, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });   // respira
+    const pr = S.add.image(ox + x + 46, oy + y + 2, 'ckc_princesa').setOrigin(0.5, 1).setScale(1.25).setDepth(oy + y + 1);
     S.tweens.add({ targets: pr, y: pr.y - 1, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     objs.push(rey, pr);
     S._ckcRey = rey; S._ckcPrin = pr;
