@@ -383,7 +383,7 @@
     const r = ar0.apply(this, arguments);
     const lv = rg(this, 'lluvia');
     if (lv && this.lastRainTime !== antes) {
-      const p = this.player, cx = p.body ? p.body.center.x : p.x, cy = p.body ? p.body.bottom : p.y + 12;
+      const p = this.player, c0 = this._ckRainCenter, cx = c0 ? c0.x : p.body ? p.body.center.x : p.x, cy = c0 ? c0.y : p.body ? p.body.bottom : p.y + 12;   // (13/11) la misma zona de adelante
       this.time.delayedCall(1150, () => lluviaExtra(this, cx, cy, lv * 5, 58 + lv * 18));
     }
     return r;
@@ -459,7 +459,8 @@
   const dirV = S => S.facingV === 'front' ? [0, 1] : S.facingV === 'back' ? [0, -1] : [S.facingDirection === 'left' ? -1 : 1, 0];
   const disparo = (S, key, vel, ck, opt = {}) => {
     const p = S.player, [dx, dy] = opt.dir || dirV(S);
-    const x = p.x + dx * 22, y = p.y - 4 + dy * 18;   // (13/11) sale a la altura de la mano, no de la rodilla ("que se tiren desde donde se tenga que tirar")
+    const kH = Math.abs(p.scaleX) / 1.2;             // (13/11) en los mapas donde el héroe está agrandado, la mano también se corre
+    const x = p.x + dx * 22 * kH, y = p.y + (-4 + dy * 18) * kH;   // (13/11) sale a la altura de la mano, no de la rodilla ("que se tiren desde donde se tenga que tirar")
     const o = S.projectiles.create(x, y, key);
     o.isFireball = false; o._ck = ck;
     o.setScale(opt.escala || 1.2).setRotation(Math.atan2(dy, dx)).setDepth(Math.max(10, Math.round(y + 16)));

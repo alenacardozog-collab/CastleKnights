@@ -12,6 +12,7 @@
      Para soltarlo hacen falta las dos cosas: la llave y Garra Negra vencido (sale al hablarle a Urso, como antes, con su
      manada). Urso, al hablarle, cuenta dónde está la llave.
    - ck_heroe_oso.js (v9) usa este arte para la jaula esté donde esté (también en el Claro, si no está la Fosa).
+   (14/11) Los cráneos de la sala se rompen (ck_terreno_rompible.js v3): si se rompe el que tapa la llave, la llave aparece sola.
    Va DESPUÉS de ck_cueva_fosa.js y ANTES de ck_heroe_oso.js. Borrar su línea de index.html deja todo como antes (la jaula
    dibujada por código y Urso encadenado al poste de la Fosa, con la llave en manos de Garra Negra). */
 (function () {
@@ -85,6 +86,13 @@
       const txt = pr && !this.dialogOpen && cerca(this) ? 'T · Revolver los huesos' : '';
       if (txt && (!pr.classList.contains('on') || this._ckLlPr)) { pr.textContent = txt; pr.classList.add('on'); this._ckLlPr = txt; }
       else if (!txt && this._ckLlPr && pr) { if (pr.textContent === this._ckLlPr) pr.classList.remove('on'); this._ckLlPr = ''; }
+      // (14/11) los cráneos de la Fosa se rompen (ck_terreno_rompible.js v3): si se rompe el que tapa la llave, aparece sola
+      if (aqui(this) && falta(this) && this._ckTerr) {
+        const a = this.currentInterior.area, kx = a.x + LLAVE.x, ky = a.y + LLAVE.y;
+        const n = this._ckTerr.filter(r => r.forzar && !r.roto && kx >= r.caja.x0 - 4 && kx <= r.caja.x1 + 4 && ky >= r.caja.y0 - 6 && ky <= r.caja.y1 + 8).length;
+        if (n > 0) this._ckLlTapan = n;
+        else if (this._ckLlTapan > 0) { this._ckLlTapan = 0; this.createFloatingText(kx, ky - 30, 'Algo cayó de entre los huesos…', 0xfde68a); hallar(this); }
+      }
       if (aqui(this) && falta(this) && this.time.now > (this._ckLlBrillo || 0)) {
         this._ckLlBrillo = this.time.now + 2600 + Math.random() * 1800;
         const a = this.currentInterior.area, x = a.x + LLAVE.x + (Math.random() - 0.5) * 6, y = a.y + LLAVE.y - 3 - Math.random() * 4, p = pies(this);
@@ -109,5 +117,5 @@
     });
   };
   const ms0 = P.onAreaShown;
-  P.onAreaShown = function () { const r = ms0 ? ms0.apply(this, arguments) : undefined; try { luz(); this._ckLlLuz = null; } catch (e) {} return r; };
+  P.onAreaShown = function () { const r = ms0 ? ms0.apply(this, arguments) : undefined; try { luz(); this._ckLlLuz = null; this._ckLlTapan = 0; } catch (e) {} return r; };
 })();

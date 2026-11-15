@@ -3,7 +3,8 @@
    cinemáticas en momentos clave"; "me falta solo el final, cuando el monolito se corrompe y nos toque cambiar el mapa a un
    caos infernal"; guion "CastleKnight — Historia y guion").
    - EL CRISTAL ROJO: al caer Grushak en el coliseo suelta el cristal rojo y, malherido, le dice al héroe por lo bajo
-     "No la devuelvas con él" (story.flags.cristales.rojo).
+     "No la devuelvas con él" (story.flags.cristales.rojo). (14/11, nota 130 del dueño: "nos tira algo q no entendemos, pero
+     no tan explicito sobre la historia pero si sobre la princesa": ahora habla de la sangre de la chica, sin nombrar al Rey)
    - LA EXPULSIÓN (cierre del Capítulo 2, paso 8 → 9): el Rey no da recompensa; Sir Gaspar pide las dos piedras, los
      mercenarios rodean al héroe, se las quitan y lo echan. Aparece en el Camino, frente al portón, y el castillo queda
      cerrado (los mercenarios no lo dejan pasar). Las partidas que ya tenían el Capítulo 2 completo siguen desde acá.
@@ -160,7 +161,7 @@
         sonar('heal', 0.5, { rate: 0.7 });
         S.createFloatingText(S.player.x, S.player.y - 52, '◆ CRISTAL ROJO ◆', 0xfca5a5);
         if (E()) await E().correr(S, async () => {
-          await E().dialogo(S, 'Grushak, malherido', ['…Humano. Escuchá… lo que te digo.', 'La chica… No la devuelvas… con él.', '…Él no la quiere de hija. La quiere de llave.'], 'orc_warlord_idle');
+          await E().dialogo(S, 'Grushak, malherido', ['…Humano… escuchá…', 'La chica… no es como las otras. Su sangre… abre lo que está cerrado.', 'Cuidala… de los que más la esperan.'], 'orc_warlord_idle');
           await E().globo(S, S.player, '¿De qué habla…?', 2200);
         });
       } catch (e) { console.warn('[capítulo 3]', e); }
@@ -443,7 +444,8 @@
     const L = ZONAS[z], out = [];
     L.grupos.forEach((g, i) => { out.push({ k: 'g' + i + 'a', x: g[0] - 46, y: g[1] - 10, t: 'demonio_menor' }, { k: 'g' + i + 'b', x: g[0] + 44, y: g[1] + 8, t: 'demonio_menor' }); });
     (L.sueltos || []).forEach((q, i) => out.push({ k: 's' + i, x: q[0], y: q[1], t: q[2] === 'b' ? 'demonio_bruto' : 'demonio_menor' }));
-    return out;
+    // (15/11) ck_reino_criaturas.js reparte las criaturas del pack por lugar y suma el jefe (casilla con jefe: true)
+    return window.CK_C3_CASILLAS ? (window.CK_C3_CASILLAS(z, out, L) || out) : out;
   };
   const salvadosZ = (s, z) => { const e = (fl(s).inf || {})[z]; const g = e ? (Array.isArray(e) ? e : e.g || []) : []; return g.reduce((t, i) => t + ((ZONAS[z].grupos[i] || [0, 0, 0])[2]), 0); };
   const salvados = salvadosZ;
@@ -551,7 +553,8 @@
     });
     // los demonios que quedan (por casilla: los vencidos no vuelven)
     const vivos = new Set((S.enemies ? S.enemies.getChildren() : []).filter(e => e.active && !e.isDead && e._c3z === z && e._c3slot).map(e => e._c3slot));
-    casillas(z).filter(c => E3.m.indexOf(c.k) < 0 && !vivos.has(c.k)).forEach((c, i) => ponerDemonio(S, I, c, llegada, llegada ? 1400 + i * R(350, 600) : R(200, 1100)));
+    // (el jefe no: sale solo, de su grieta, cuando no queda nadie más; lo hace ck_reino_criaturas.js)
+    casillas(z).filter(c => !c.jefe && E3.m.indexOf(c.k) < 0 && !vivos.has(c.k)).forEach((c, i) => ponerDemonio(S, I, c, llegada, llegada ? 1400 + i * R(350, 600) : R(200, 1100)));
     // y gente que sale corriendo para los refugios (la que no quedó acorralada)
     if (llegada && window.CK_INFIERNO_VIVO && window.CK_INFIERNO_VIVO.vecino && L.refugio) {
       const v = S.cameras.main.worldView;
@@ -624,7 +627,8 @@
     if (E3.ok) { h.textContent = '✔ ' + L.n.toUpperCase() + ' · LIBRE DE DEMONIOS' + reino; h.style.borderColor = '#65a30d'; }
     else {
       const dem = casillas(I.z).filter(c => E3.m.indexOf(c.k) < 0).length, tot = L.grupos.reduce((u, g) => u + g[2], 0);
-      h.textContent = '🔥 ' + L.n.toUpperCase() + ' · DEMONIOS ' + dem + (tot ? ' · A SALVO ' + salvadosZ(s, I.z) + '/' + tot : '') + reino;
+      const dt = window.CK_C3_HUD_DEM ? window.CK_C3_HUD_DEM(S, I.z, E3, dem) : null;
+      h.textContent = '🔥 ' + L.n.toUpperCase() + ' · ' + (dt || 'DEMONIOS ' + dem) + (tot ? ' · A SALVO ' + salvadosZ(s, I.z) + '/' + tot : '') + reino;
       h.style.borderColor = '#c2410c';
     }
     h.style.display = '';

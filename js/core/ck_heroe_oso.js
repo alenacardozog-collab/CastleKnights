@@ -20,6 +20,17 @@
    barrotes de adelante encima); en la Fosa vuelve a estar en una jaula (al lado del poste) y la llave de hueso no la tiene
    Garra Negra: está escondida en la sala de las calaveras. Para abrir hacen falta la llave (flags.oso_llave) y Garra Negra
    vencido (flags.oso_garra); con las dos, st = 2. Sin ese archivo, todo como en la v8.
+   (14/11, v10, nota del dueño 89: "al querer liberar a urso nos pedira una llave de hueso q esta escondida en uno de los 3
+   niveles, por si no la encontramos hay q buscarla, luego de q liberemos a urso una cinematica escuchamos un rugido de oso a
+   lo lejos y pasos pesados venir luego aparece garra negra y lo enfrentamos con ayuda de urso"):
+   - Hablarle a Urso ya no hace salir a Garra Negra: pide la llave de hueso, escondida en algún lugar de la cueva. Si se le
+     vuelve a hablar sin la llave, da pistas cada vez más claras (la sala de las calaveras de la Fosa, debajo de la antorcha).
+   - Con la llave (st = 2), T en la jaula: se abre y Urso sale. Cinemática: un rugido lejano que hace temblar la cueva,
+     Urso «¿Oíste eso?», pasos pesados que se acercan (tiembla más y cae polvo), la cámara mira al nido y aparece Garra
+     Negra rugiendo. Se pelea con Urso al lado: pelea solo contra las bestias (como los guardias, a veces pega doble) y a Garra
+     Negra se le duplica la vida. Si el héroe cae o se va, al volver Urso sigue afuera y Garra Negra vuelve a salir.
+   - Al vencerlo: Urso se suma (st = 3, queda en el Libro de Héroes) y se abre el túnel de la Fosa.
+   - Sin el nombre flotante sobre Garra Negra (ya tiene la barra grande de jefe abajo).
    Borrar sus 2 líneas de index.html lo saca del libro (y la jaula queda vacía y abierta). */
 (function () {
   if (typeof MainGameScene === 'undefined' || typeof HEROES === 'undefined' || !window.CK_HABILIDADES || !window.CK_EQUIPO) return;
@@ -87,7 +98,7 @@
     if (S.setPlayerIndoorScale) S.setPlayerIndoorScale(S.player.scaleX > 1.5);
   };
   // el oso es una bestia: un poco más grande que los otros héroes (el pie queda igual)
-  const GRANDE = 1.15;
+  const GRANDE = 1.38;                 // (15/11, pedido del dueño: "Urso y los osos parecidos un 20 % más grandes"; antes 1,15)
   const es0 = P.setPlayerIndoorScale;
   if (es0) P.setPlayerIndoorScale = function () {
     const r = es0.apply(this, arguments);
@@ -483,7 +494,7 @@
   const ponerSt = (S, v) => { if (S.story) { S.story.flags.oso = v; S.saveStory && S.saveStory(); } };
   const nota = t => { try { window.CK_SIN_CARTELES_API && window.CK_SIN_CARTELES_API.nota(t); } catch (e) {} };
   const enPueblo = S => !!(S.currentZoneKey && S.currentZoneKey() === ZP + '.main' && S.currentInterior && S.currentInterior.area);
-  const abierta = S => st(S) >= 3 || S.playerHero === OSO;
+  const abierta = S => st(S) >= 3 || S.playerHero === OSO || !!(S.story && S.story.flags && S.story.flags.oso_suelto);
   // (12/11, v9) con ck_jaula_hueso.js: la jaula de troncos y huesos de PixelLab (con su frente, para que Urso quede adentro)
   // y, en la Fosa, la llave de hueso escondida en la sala de las calaveras (ya no la tiene Garra Negra)
   const JH = window.CK_JAULA_HUESO || null;
@@ -538,7 +549,7 @@
   };
   // ¿ya están las dos cosas (la llave y Garra Negra vencido)? entonces st = 2 (listo para abrir)
   const revisarListo = S => {
-    if (!MODO_LLAVE || st(S) < 1 || st(S) >= 2 || !tieneLlave(S) || !garraVencido(S)) return false;
+    if (!MODO_LLAVE || st(S) < 1 || st(S) >= 2 || !tieneLlave(S)) return false;     // (v10) basta la llave
     ponerSt(S, 2);
     if (osoEnJaula && ancla) ponerMarca(S, ancla[0], ancla[1]);
     nota('Tenés la llave de hueso: volvé a la jaula de Urso y apretá T');
@@ -550,21 +561,23 @@
     if (!enPueblo(S)) return;
     const a = S.currentInterior.area, j = spriteJaula(S);
     if (j && abierta(S)) j.setTexture('ck_jaula_abierta');
+    // (v10) la jaula ya se abrió pero Garra Negra no cayó: Urso espera afuera y Garra Negra vuelve a salir
+    if (MODO_LLAVE && st(S) < 3 && fl(S).oso_suelto && !garraVencido(S)) { S.time.delayedCall(700, () => { try { if (enPueblo(S)) pelea(S, false); } catch (e) {} }); return; }
     if (abierta(S)) return;
     const x = a.x + JAULA.x, y = a.y + JAULA.y;
     if (JH && !SIN_JAULA && j) {
       // adentro de la jaula de huesos: la jaula, Urso (pisa adentro, del lado de la reja) y los barrotes de adelante
       const mira = !!(FOSA && FOSA.mira), ox = mira ? -1.7 : 1.7;
-      osoEnJaula = S.add.sprite(x + JH.OSO[0] - ox, y + JH.OSO[1], OSO + '_idle').setOrigin(0.5, 0.6).setScale(1.15).setFlipX(mira).setDepth(j.depth + 0.2);
+      osoEnJaula = S.add.sprite(x + JH.OSO[0] - ox, y + JH.OSO[1], OSO + '_idle').setOrigin(0.5, 0.6).setScale(1.38).setFlipX(mira).setDepth(j.depth + 0.2);
       if (S.textures.exists(JH.KEY.frente)) frente = S.add.image(j.x, j.y, JH.KEY.frente).setOrigin(j.originX, j.originY).setDepth(j.depth + 0.4);
     } else {
-      osoEnJaula = S.add.sprite(x, y - 5, OSO + '_idle').setOrigin(0.5, 0.6).setScale(1.15).setDepth((j ? j.depth : y) - 0.5);
+      osoEnJaula = S.add.sprite(x, y - 5, OSO + '_idle').setOrigin(0.5, 0.6).setScale(1.38).setDepth((j ? j.depth : y) - 0.5);
       if (SIN_JAULA) { osoEnJaula.setFlipX(!!FOSA.mira); osoEnJaula.setDepth(y); if (FOSA.cadenas) FOSA.cadenas(S, osoEnJaula); }
     }
     if (S.anims.exists(OSO + '_idle')) osoEnJaula.play(OSO + '_idle');
     ponerMarca(S, x, y);
     if (st(S) === 0 && !S._ckOsoAviso) { S._ckOsoAviso = true; S.time.delayedCall(1500, () => nota(FOSA && FOSA.aviso ? FOSA.aviso : CLARO ? 'Se oye un gruñido que viene de una jaula, en el campamento orco destrozado…' : 'Se oye un gruñido que viene de una jaula, junto al camino del norte…')); }
-    if (st(S) === 1) { if (!revisarListo(S)) carcelero(S); }
+    if (st(S) === 1) { if (!revisarListo(S) && !MODO_LLAVE) carcelero(S); }     // (v10) con la jaula de huesos ya no sale solo
   };
   // los carceleros: Garra Negra, el jefe de la manada (con la llave), dos hombres oso oscuros y un hombre lobo
   const carcelero = S => {
@@ -579,9 +592,7 @@
     const e = S.spawnEnemy(bx + J[0], by + J[1], ENEMY_TYPES.werebear_jefe ? 'werebear_jefe' : 'werebear');
     if (e && FOSA && FOSA.alSalir) { try { FOSA.alSalir(S, e); } catch (er) {} }
     if (!e) return;
-    e._ckCarcelero = true;
-    const t = S.add.text(e.x, e.y - 50, 'Garra Negra', { fontFamily: "'CK Grenze', serif", fontSize: '14px', fontStyle: 'bold', color: '#ffe08a', stroke: '#1b0f0a', strokeThickness: 4 }).setOrigin(0.5).setDepth(30000);
-    const ev = S.time.addEvent({ delay: 30, loop: true, callback: () => { if (!e.active || e.isDead) { t.destroy(); ev.remove(); return; } t.setPosition(e.x, e.y - 56); t.setVisible(!e._ckSombra); } });
+    e._ckCarcelero = true;      // (v10) sin el nombre flotante: Garra Negra ya tiene la barra grande de jefe abajo
   };
   const ms0 = P.onAreaShown;
   P.onAreaShown = function () { const r = ms0 ? ms0.apply(this, arguments) : undefined; try { prepararJaula(this); } catch (e) { console.warn('[jaula]', e); } return r; };
@@ -589,7 +600,9 @@
   P.damageEnemy = function (enemy) {
     const r = dm0.apply(this, arguments);
     try {
-      if (MODO_LLAVE && enemy && enemy._ckCarcelero && (enemy.isDead || !enemy.active) && st(this) === 1) {
+      if (MODO_LLAVE && enemy && enemy._ckGarraFinal && (enemy.isDead || !enemy.active)) {
+        enemy._ckGarraFinal = false; victoria(this, enemy);
+      } else if (MODO_LLAVE && enemy && enemy._ckCarcelero && (enemy.isDead || !enemy.active) && st(this) === 1) {
         // (v9) Garra Negra no tiene la llave: está escondida en la sala de las calaveras
         enemy._ckCarcelero = false; fl(this).oso_garra = 1; this.saveStory && this.saveStory();
         this.createFloatingText(enemy.x, enemy.y - 40, '¡GARRA NEGRA CAYÓ!', 0xffe08a);
@@ -613,21 +626,23 @@
         if (Phaser.Math.Distance.Between(b.center.x, b.bottom, a.x + JAULA.x, a.y + JAULA.y + 6) < (SIN_JAULA ? 64 : 58)) {
           const cara = OSO + '_idle';
           if (MODO_LLAVE && st(this) < 2) {
-            // (v9) la jaula de huesos de la Fosa: la llave está escondida; Garra Negra sale igual (la primera vez)
-            const garraVivo = this.enemies.getChildren().some(e => e.active && !e.isDead && e._ckCarcelero);
-            if (st(this) === 0) {
+            // (v10) Urso pide la llave de hueso; Garra Negra no sale todavía. Cada vez que se le vuelve a hablar, una pista más
+            if (tieneLlave(this)) { ponerSt(this, 1); revisarListo(this); }
+            else if (st(this) === 0) {
               this.openDialog('Urso', [
                 '¡Eh, vos! No me mires así: no soy como ellos.',
                 'Me llamo Urso. Vengo de los hielos del norte. Mi propia raza, la manada de Garra Negra, me tiene en esta jaula de huesos porque no quise pelear para ellos.',
-                tieneLlave(this) ? '¿Esa llave de hueso…? ¡Es la de mi jaula! Pero ¡shh!… ya te olió. ¡Ahí viene Garra Negra! Sacátelo de encima y abrime.'
-                  : 'La llave es de hueso: Garra Negra la talló él mismo y la esconde entre las calaveras de la sala de la antorcha. ¡Shh!… ya te olió. ¡Ahí viene!'
-              ], () => { if (st(this) < 1) ponerSt(this, 1); carcelero(this); nota(tieneLlave(this) ? 'Misión: el oso de la jaula. Vencé a Garra Negra' : 'Misión: el oso de la jaula. Vencé a Garra Negra y buscá la llave de hueso'); }, cara);
-            } else if (tieneLlave(this) && (garraVivo || !garraVencido(this))) {
-              this.openDialog('Urso', ['¡Tenés la llave! Pero Garra Negra sigue en pie… ¡primero él!'], () => carcelero(this), cara);
+                'La jaula se abre con una llave tallada en hueso. Garra Negra la esconde en algún lugar de la cueva: arriba, en las Grutas, en las Galerías o acá abajo, en la Fosa. Buscala… y que no te huela.'
+              ], () => { if (st(this) < 1) ponerSt(this, 1); nota('Misión: el oso de la jaula. Buscá la llave de hueso en la cueva'); }, cara);
+              return;
             } else {
-              this.openDialog('Urso', ['La llave de hueso está entre las calaveras, en la sala de la antorcha, arriba a la derecha.', 'Revolvé bien: la esconde abajo de todo, entre los cráneos de debajo de la antorcha.'], null, cara);
+              const f = fl(this), n = f.oso_pista = (f.oso_pista || 0) + 1;
+              const pista = n === 1 ? ['¿Nada todavía? Garra Negra guarda sus trofeos entre calaveras. Buscá donde haya montones de cráneos.']
+                : n === 2 ? ['Pensá como él: lo que más quiere lo esconde donde más huesos junta… acá abajo, en la Fosa. Romper los cráneos no le va a gustar, pero sirve.']
+                  : ['La sala de las calaveras, la de la antorcha, arriba a la derecha de la Fosa. Abajo de todo, entre los cráneos de debajo de la antorcha.'];
+              this.openDialog('Urso', pista, null, cara);
+              return;
             }
-            return;
           }
           if (st(this) < 2) {
             this.openDialog('Urso', [
@@ -638,7 +653,9 @@
                 : 'Ahora se pelean con los orcos por estas tierras y me quieren de carnada. La llave la tiene Garra Negra, el jefe: anda cerca, con sus lobos. Vencelo y traémela.'
             ], () => { if (st(this) < 1) ponerSt(this, 1); carcelero(this); nota(SIN_JAULA ? 'Misión: el oso encadenado. Vencé a Garra Negra y traé la llave' : 'Misión: el oso de la jaula. Vencé a Garra Negra y traé la llave'); }, cara);
           } else {
-            this.openDialog('Urso', [
+            if (MODO_LLAVE && !garraVencido(this)) {
+              this.openDialog('Urso', ['¡La llave de hueso! Sabía que no eras como los demás.', '…Rápido, abrí. Antes de que vuelva.'], () => abrirYPelear(this), cara);
+            } else this.openDialog('Urso', [
               '¡La llave! Sabía que no eras como los demás.',
               '…¡Libre, por fin! Esta deuda no la olvido: cuando me necesites, voy a estar.',
               '(Urso ya se puede elegir en el Libro de Héroes)'
@@ -670,7 +687,132 @@
     nota('¡Urso se suma! Ya lo podés elegir en el Libro de Héroes');
   };
 
+  // ------------------------------------------------------------------ (v10) abrir la jaula, la cinemática y la pelea con Urso
+  const sn = (k, v, o) => { try { return sfx.fx(k, v, o); } catch (e) { return false; } };
+  let aliado = null;
+  const sacarAliado = S => {
+    if (!aliado) return;
+    try { const a = S.currentInterior && S.currentInterior.area; if (a && a.actors) a.actors = a.actors.filter(t => t !== aliado); } catch (e) {}
+    try { aliado.sprite.destroy(); } catch (e) {}
+    aliado = null;
+  };
+  // Urso pelea al lado del héroe con el sistema de los guardias (rol 'guard': va contra la bestia más cercana)
+  const ponerAliado = (S, x, y, sp0) => {
+    const a = S.currentInterior.area;
+    sacarAliado(S);
+    const sp = sp0 || S.add.sprite(x, y, OSO + '_idle');
+    sp.setOrigin(0.5, 0.6).setScale(1.38).setFlipX(false).setAlpha(1).setDepth(y);   // (ck_escala_mapas lo agranda como a los demás)
+    if (S.anims.exists(OSO + '_idle')) sp.play(OSO + '_idle', true);
+    aliado = { type: 'walker', sprite: sp, pts: [[x, y, 600000], [x + 1, y, 600000]], i: 0, wait: 0, speed: 36, idle: OSO + '_idle', walk: OSO + '_walk',
+      lines: ['¡Por los hielos del norte!', '¡Esta vez no me encierran!', '¡GRRR!'], talkAt: 0, moving: false, role: 'guard', hp: 14, maxHp: 14, _ckUrso: true, _ckAliado: true };
+    a.actors = a.actors || []; a.actors.push(aliado);
+    if (Array.isArray(S.currentInterior.objects)) S.currentInterior.objects.push(sp);
+    return aliado;
+  };
+  // Garra Negra de la pelea final: el doble de vida (pelea contra dos)
+  const traerGarra = (S, quieto) => {
+    const a = S.currentInterior.area, J = FOSA && FOSA.jefe ? FOSA.jefe : [JAULA.x + 150, JAULA.y + 20];
+    if (S.enemies.getChildren().some(e => e.active && !e.isDead && e._ckGarraFinal)) return null;
+    const ya = S._ckPermitirBestias; S._ckPermitirBestias = true;
+    let e = null; try { e = S.spawnEnemy(a.x + J[0], a.y + J[1], ENEMY_TYPES.werebear_jefe ? 'werebear_jefe' : 'werebear'); } finally { S._ckPermitirBestias = ya; }
+    if (!e) return null;
+    e._ckGarraFinal = true; e._ckCarcelero = false; e.zone = a.key;
+    e.maxHp = e.hp = Math.round((e.maxHp || 12) * 2);
+    if (quieto) { e.state = 'dormant'; e.setVelocity && e.setVelocity(0, 0); }
+    else e.state = 'chase';
+    return e;
+  };
+  const pelea = (S, conEscena) => {
+    if (!enPueblo(S)) return;
+    const a = S.currentInterior.area, x = a.x + JAULA.x + 46, y = a.y + JAULA.y + 26;
+    if (!aliado || !aliado.sprite.active) ponerAliado(S, x, y);
+    const e = traerGarra(S, false);
+    if (e && !conEscena) { try { if (FOSA && FOSA.alSalir) FOSA.alSalir(S, e); } catch (er) {} }
+    nota('¡Garra Negra! Vencelo con Urso');
+  };
+  const abrirYPelear = S => {
+    const f = fl(S); f.oso_suelto = 1; ponerSt(S, 2);
+    const j = spriteJaula(S); if (j) j.setTexture('ck_jaula_abierta');
+    if (frente) { frente.destroy(); frente = null; }
+    if (marca) { marca.destroy(); marca = null; }
+    sn('door_open', 0.8) || sn('sword_hit', 0.5, { rate: 0.6 });
+    const o = osoEnJaula; osoEnJaula = null;
+    const a = S.currentInterior.area, x = a.x + JAULA.x + 46, y = a.y + JAULA.y + 26;
+    const E = window.CK_ESCENA, FX = window.CK_JEFES_FX;
+    const temblor = (ms, f) => { try { S.cameras.main.shake(ms, f); } catch (e) {} };
+    const polvo = n => { try { const v = S.cameras.main.worldView; if (FX && FX.escombros) for (let i = 0; i < n; i++) FX.escombros(S, v.x + Math.random() * v.width, v.y + 30 + Math.random() * v.height * 0.6, 10, 3); } catch (e) {} };
+    const salir = () => new Promise(r => {
+      if (!o) { r(); return; }
+      o.setDepth(o.y + 30);
+      if (S.anims.exists(OSO + '_walk_front')) o.play(OSO + '_walk_front', true);
+      S.tweens.add({ targets: o, y: y, x: x, duration: 650, onComplete: () => { ponerAliado(S, x, y, o); r(); } });
+    });
+    const escena = async () => {
+      await salir();
+      if (!aliado) ponerAliado(S, x, y);
+      aliado.busyUntil = S.time.now + 60000;                // quieto durante la escena
+      await E.esperar(500);
+      sn('ck_f_rugido_lejos', 0.9) || sn('beast_growl', 0.7, { rate: 0.6 }); temblor(1400, 0.0025); polvo(3);
+      await E.esperar(1500);
+      await E.dialogo(S, 'Urso', ['¿Oíste eso?…', 'Es él. Garra Negra. Olió que me soltaste.'], OSO + '_idle');
+      sn('ck_f_pasos_cueva', 1) || sn('ck_f_paso_jefe', 0.8);
+      for (let i = 0; i < 4; i++) { temblor(220, 0.002 + i * 0.0014); polvo(2 + i); await E.esperar(1050); }
+      const J = FOSA && FOSA.jefe ? FOSA.jefe : [JAULA.x + 150, JAULA.y + 20];
+      await E.camara(S, J[0], J[1] - 10, 900);
+      const e = traerGarra(S, true);
+      if (e) { try { if (FOSA && FOSA.alSalir) FOSA.alSalir(S, e); else { temblor(380, 0.006); sn('ck_f_garra_aullido', 1); } } catch (er) {} }
+      await E.esperar(1500);
+      await E.dialogo(S, 'Urso', ['¡Juntos, humano! Que pague cada barrote de esa jaula.'], OSO + '_idle');
+      E.seguir(S);
+      if (aliado) aliado.busyUntil = 0;
+      const g = S.enemies.getChildren().find(q => q.active && !q.isDead && q._ckGarraFinal); if (g) g.state = 'chase';
+      nota('¡Garra Negra! Vencelo con Urso');
+    };
+    if (E && E.correr) E.correr(S, escena).then(ok => { if (ok === false) pelea(S, false); }).catch(() => pelea(S, false));
+    else { salir().then(() => pelea(S, false)); }
+  };
+  // Garra Negra cayó: Urso se suma
+  const victoria = (S, e) => {
+    const f = fl(S); f.oso_garra = 1; S.saveStory && S.saveStory();
+    S.createFloatingText(e.x, e.y - 40, '¡GARRA NEGRA CAYÓ!', 0xffe08a);
+    S.time.delayedCall(1600, () => {
+      if (!enPueblo(S)) { ponerSt(S, 3); liberar(); delete f.oso_suelto; return; }
+      const fin = () => {
+        ponerSt(S, 3); liberar(); delete f.oso_suelto; S.saveStory && S.saveStory();
+        if (FOSA && FOSA.alSoltar) { try { FOSA.alSoltar(S); } catch (er) {} }
+        const o = aliado && aliado.sprite; sacarAliadoSinSprite(S);
+        if (o && o.active) {
+          S.createFloatingText(o.x, o.y - 40, '¡URSO SE SUMA!', 0xffe0b0);
+          sn('beast_growl', 1, { rate: 0.8 });
+          S.tweens.add({ targets: o, x: o.x + 220, alpha: 0, duration: 1600, onStart: () => S.anims.exists(OSO + '_walk') && o.play(OSO + '_walk'), onComplete: () => o.destroy() });
+        }
+        nota('¡Urso se suma! Ya lo podés elegir en el Libro de Héroes');
+      };
+      S.openDialog('Urso', ['…Se terminó. La manada ya no tiene dueño.', 'Te debo la libertad, humano. Cuando me necesites, voy a estar.', '(Urso ya se puede elegir en el Libro de Héroes)'], fin, OSO + '_idle');
+    });
+  };
+  const sacarAliadoSinSprite = S => {
+    if (!aliado) return;
+    try { const a = S.currentInterior && S.currentInterior.area; if (a && a.actors) a.actors = a.actors.filter(t => t !== aliado); } catch (e) {}
+    aliado = null;
+  };
+  // Urso pega un poco más fuerte que un guardia (a veces 2) y con zarpazo; el que más le saca es el héroe
+  const as0 = P.actorStrike;
+  if (as0) P.actorStrike = function (a, e) {
+    const r = as0.apply(this, arguments);
+    try {
+      if (a && a._ckUrso) {
+        sn('ck_f_zarpazo', 0.6, { minGap: 120, rate: 0.95 + Math.random() * 0.1 });
+        if (Math.random() < 0.3) this.time.delayedCall(140, () => { if (e && e.active && !e.isDead && a.sprite.active && !a.down) this.damageEnemy(e, 1, a.sprite.x, a.sprite.y); });
+      }
+    } catch (er) {}
+    return r;
+  };
+  // al irse de la Fosa, el aliado se va con el mapa
+  const sa0 = P.onAreaShown;
+  P.onAreaShown = function () { aliado = null; return sa0 ? sa0.apply(this, arguments) : undefined; };
+
   // (v9) ck_jaula_hueso.js avisa cuando se encuentra la llave de hueso
-  const llave = S => { fl(S).oso_llave = 1; S.saveStory && S.saveStory(); if (!revisarListo(S) && st(S) === 1 && !garraVencido(S)) nota('Ahora falta Garra Negra'); };
+  const llave = S => { fl(S).oso_llave = 1; S.saveStory && S.saveStory(); if (!revisarListo(S) && st(S) === 0) nota('Una llave de hueso… desde la guarida del fondo se oye un gruñido'); };
   window.CK_OSO = { OSO, ANIMS, libre, liberar, JAULA, st, llave };
 })();

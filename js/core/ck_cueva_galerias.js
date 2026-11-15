@@ -21,8 +21,13 @@ window.CK_GALERIAS_MINI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWcAAAD
   const D = window.EDITOR_DATA, ID = 'cueva_galerias', CLARO = 'claro_de_las_bestias';
   if (!D || !D.mapas || !D.mapas[ID] || !INTERIOR_LAYOUTS['ed_' + ID]) return;
   const Z = 'ed_' + ID + '.main', ZC = 'ed_' + CLARO + '.main';
-  const LUGAR = { entrada: { x: 1190, y: 742 }, sumidero: { x: 217, y: 214 }, cofre: { x: 1122, y: 268 }, campamento: { x: 890, y: 665 } };
-  const LLEGA = { cueva: { x: 1190, y: 772 }, claro: { x: 344, y: 254 } };   // (13/11) se llega al pie de la boca, entre los colmillos (al sur de la luz), y se entra caminando hacia la cueva
+  const LUGAR = { entrada: { x: 1190, y: 640 }, sumidero: { x: 217, y: 214 }, cofre: { x: 1122, y: 268 }, campamento: { x: 890, y: 665 } };
+  // (13/11, v5, pedido: "en las galerías aparecemos desde donde emana la luz, la entrada, y no en el sur"): se llega bajo el arco
+  // por donde entra la luz del día (arriba de la sala de la boca) y por ahí mismo se vuelve al Claro (▲). Los colmillos de abajo
+  // son el marco de la boca: el pasillito entre ellos queda cerrado
+  const LLEGA = { cueva: { x: 1190, y: 648 }, claro: { x: 344, y: 254 } };
+  // (v6) también la aparición del mapa (modo práctica, partida guardada adentro): bajo el arco, no entre los colmillos
+  try { D.mapas[ID].aparicion = { x: LLEGA.cueva.x, y: LLEGA.cueva.y - 8 }; } catch (e) {}
   const BRASEROS = [[968, 668], [306, 206]];
   // la penumbra de la cueva (fija: adentro no hay día ni noche); bestias y héroe se tiñen con la luz que tienen cerca
   const PENUMBRA = [30, 28, 46];
@@ -92,7 +97,8 @@ window.CK_GALERIAS_MINI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWcAAAD
       ['talkers', 'fx', 'colliders', 'exits'].forEach(k => (a[k] = a[k] || []));
       // ambiente propio (ElevenLabs): goteo con eco y viento hondo; si falta el mp3 suena el que tenga el mapa
       a.ambient = [['amb_cueva', 0.55]].concat((a.ambient || []).filter(s => s[0] !== 'amb_cueva').map(s => [s[0], s[1] * 0.4]));
-      a.exits.push({ x: 1158, y: 802 - 16, w: 64, h: 16, key: 'walk', to: 'gl_claro', hint: '▼ Claro de las Bestias' });
+      a.exits.push({ x: 1160, y: 594, w: 60, h: 20, key: 'up', to: 'gl_claro', hint: '▲ Claro de las Bestias' });
+      a.colliders.push({ x: 1146, y: 758, w: 90, h: 44 });
       a.talkers.push({ x: LUGAR.sumidero.x, y: LUGAR.sumidero.y + 8, r: 40, lines: ['Un sumidero en el piso: raíces gruesas bajan a una oscuridad todavía más honda. De abajo sube olor a bestia… todavía no te animás a bajar'] });
       a.talkers.push({ x: 600, y: 356, r: 48, lines: ['El cráneo de un ciervo enorme, roído hasta el hueso. Lo que vive acá come bien'] });
       a.talkers.push({ x: 690, y: 400, r: 44, lines: ['Cuatro zarpazos hondos en el piso de roca. Ninguna espada deja una marca así'] });
@@ -135,7 +141,7 @@ window.CK_GALERIAS_MINI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWcAAAD
       if (MM.L) {
         MM.L[Z] = [{ n: 'Sumidero (bajada)', x: LUGAR.sumidero.x, y: LUGAR.sumidero.y - 20, ic: 'estrella' },
           { n: 'Campamento de los cazadores', x: LUGAR.campamento.x, y: LUGAR.campamento.y - 30, ic: 'estrella' },
-          { n: 'Claro de las Bestias', x: 1190, y: 796, ic: 'flecha', d: 's', va: ZC }];
+          { n: 'Claro de las Bestias', x: 1190, y: 592, ic: 'flecha', d: 'n', va: ZC }];
         const C = MM.L[ZC];
         if (C && !C.some(l => l.va === Z)) C.push({ n: 'Cueva de Garra Negra', x: 344, y: 176, ic: 'flecha', d: 'n', va: Z });
       }

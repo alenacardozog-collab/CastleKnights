@@ -11,7 +11,11 @@
 (function () {
   if (typeof MainGameScene === 'undefined') return;
   const P = MainGameScene.prototype;
-  const OJOS = /^(werewolf|warg|orc|orc_armored|orc_elite|orc_rider|orc_warlord)$/;
+  const OJOS = /^(werewolf|warg|orc|orc_armored|orc_elite|orc_rider|orc_warlord|orc_corneta)$/;   // (v3) + el del cuerno
+  // (13/11, v3) los orcos ya traen los ojos pintados (píxeles rojos en la cara verde): se buscan en cada cuadro y la luz se
+  // pone justo ahí. Así no importa el hacha levantada, la lanza o el casco (los ojos de armored y elite caían sobre el arma).
+  // El caudillo no: su capa roja toca la piel y confunde la búsqueda; sigue con la cabeza medida como antes.
+  const PINTADOS = /^orc(_armored|_elite|_rider|_corneta)?$/;
   const CUATRO_PATAS = /^warg$/;  // la cabeza va adelante, no arriba
   const CABEZA = { orc_rider: [0.46, 0.22] };  // dónde está la cabeza en la caja del dibujo, cuando lo de arriba no la encuentra
   const OJO_ALTO = { orc_corneta: 0.33, orc_warlord: 0.3 };   // (13/11) qué tan abajo de la cabeza van los ojos (cabezas grandes)
@@ -55,11 +59,87 @@
         for (let y = cy; y < cy + hb; y++) for (let x = x0; x <= x1; x++) if (d[(y * w + x) * 4 + 3] >= 60) hcol[x]++;
         const hm = Math.max(...hcol); let h0 = x1, h1 = x0;
         hcol.forEach((v, x) => { if (v >= hm * 0.5) { if (x < h0) h0 = x; if (x > h1) h1 = x; } });
+        // (v3) los ojos pintados: píxeles rojos pegados a piel verde, en la fila más alta donde aparecen (y la de abajo)
+        const verde = o => d[o + 3] >= 60 && d[o + 1] > d[o] + 15 && d[o + 1] > d[o + 2] + 15;
+        const rojo = o => d[o + 3] >= 60 && d[o] > 120 && d[o] > d[o + 1] * 2 && d[o] > d[o + 2] * 1.6;
+        const ojos = []; let ey = -1;
+        for (let y = y0; y <= y1 && (ey < 0 || y <= ey + 1); y++) for (let x = x0; x <= x1; x++) {
+          if (!rojo((y * w + x) * 4)) continue;
+          let v = 0;
+          for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-2, 0], [2, 0], [0, 2]]) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < w && yy < h && verde((yy * w + xx) * 4)) v++; }
+          if (v) { if (ey < 0) ey = y; ojos.push([x, y]); }
+        }
+        const ojosOk = ojos.length && ey <= y0 + (y1 - y0) * 0.5 && Math.max(...ojos.map(q => q[0])) - Math.min(...ojos.map(q => q[0])) <= 8;
+        // (15/11, v5) los lobos también traen los ojos pintados (rojos sobre el pelaje gris): todos los píxeles rojos del cuadro
+        const rojos = [];
+        for (let y = y0; y <= y1 && rojos.length < 12; y++) for (let x = x0; x <= x1; x++) if (rojo((y * w + x) * 4)) rojos.push([x, y]);
+        // (15/11) dónde hay dibujo, a 2 px (para saber si en este cuadro la cabeza sigue donde estaba)
+        const lw = Math.ceil(w / 2), lleno = new Uint8Array(lw * Math.ceil(h / 2));
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (d[(y * w + x) * 4 + 3] >= 60) lleno[(y >> 1) * lw + (x >> 1)] = 1;
         r = { x0, y0, x1, y1, w: x1 - x0 + 1, h: y1 - y0 + 1, fw: w, fh: h, c: [R / n, G / n, B / n],
-          cx0: c0, cx1: c1, cw: c1 - c0 + 1, cy0: cy, ch, hx0: h0, hx1: h1, hw: h1 - h0 + 1 };
+          cx0: c0, cx1: c1, cw: c1 - c0 + 1, cy0: cy, ch, hx0: h0, hx1: h1, hw: h1 - h0 + 1, ojos: ojosOk ? ojos : null, rojos, lleno, lw };
       }
     } catch (e) { r = null; }
     return (cajas[k] = r);
+  };
+  // (15/11, pedido del dueño: "en las animaciones de los personajes q tienen ojos rojos cuando atacan se descuadran")
+  // Al atacar, el arma levantada, el salto o el giro confundían la búsqueda de la cabeza y los ojos saltaban al hacha o al
+  // brazo. Ahora cada bicho tiene sus ojos de referencia, medidos en el primer cuadro de cuando está quieto (todas sus hojas
+  // son de 100 px con los pies en el mismo lugar): en cada cuadro se usan los ojos pintados si se encuentran cerca de esa
+  // referencia (así siguen al orco cuando salta) y, si no, la referencia; y si en ese cuadro no hay dibujo ahí (el lobo que
+  // se lanza y deja la estela), ese cuadro va sin ojos.
+  const refs = {};
+  const centro = pts => [pts.reduce((t, q) => t + q[0], 0) / pts.length, pts.reduce((t, q) => t + q[1], 0) / pts.length];
+  const pintadosDe = b => {
+    const xs = b.ojos.map(q => q[0]), izq = b.ojos[xs.indexOf(Math.min(...xs))], der = b.ojos[xs.indexOf(Math.max(...xs))];
+    return izq === der ? [izq] : [izq, der];
+  };
+  const puntoCabeza = (t, b) => {
+    const fija = CABEZA[t];
+    if (fija) return [b.x0 + b.w * fija[0], b.y0 + b.h * fija[1]];
+    if (CUATRO_PATAS.test(t)) return [b.x0 + b.w * 0.86, b.y0 + b.h * 0.36];
+    return [b.hx0 + b.hw * 0.72, b.cy0 + b.ch * (OJO_ALTO[t] || 0.27)];
+  };
+  const refOjos = (S, t) => {
+    if (refs[t] !== undefined) return refs[t];
+    let r = null;
+    try {
+      const tx = S.textures.exists(t + '_idle') && S.textures.get(t + '_idle'), f = tx && (tx.get(0) || tx.get());
+      const b = f && caja(S, { frame: f, texture: tx });
+      if (b) r = b.ojos && PINTADOS.test(t) ? { pts: pintadosDe(b).map(q => [q[0] + 0.5, q[1] + 0.5]), pintados: true } : { pts: [puntoCabeza(t, b)], pintados: false };
+      if (r) r.c = centro(r.pts);
+    } catch (e) { r = null; }
+    return (refs[t] = r);
+  };
+  // (15/11, v5, pedido del dueño: "los orcos están bien pero los lobos siguen raros, revisalo minuciosamente"): los lobos
+  // usaban un punto fijo medido quieto, pero sus ojos pintados se mueven en cada cuadro (al morder se van 2 px adelante y 3
+  // abajo; al caminar suben y bajan) y la luz quedaba al lado del ojo de verdad. Ahora se buscan en cada cuadro: el hombre
+  // lobo tiene dos píxeles rojos a 3 px en la misma fila; el huargo, uno (o dos pegados). Si en un cuadro no están (de
+  // espaldas, golpeado y manchado de rojo), ese cuadro va sin ojos.
+  const LOBO = /^(werewolf|warg)$/;
+  const ojosLobo = (t, b) => {
+    const R = b.rojos || []; if (!R.length || R.length > 4) return null;
+    const alto = b.y0 + b.h * 0.65;
+    if (t === 'werewolf') {
+      for (const p of R) {
+        if (p[1] > alto) continue;
+        const q = R.find(o => o !== p && o[1] === p[1] && o[0] - p[0] >= 2 && o[0] - p[0] <= 4);
+        if (q) return [[p[0] + 0.5, p[1] + 0.5], [q[0] + 0.5, q[1] + 0.5]];
+      }
+      return null;
+    }
+    const arriba = R.filter(p => p[1] <= alto); if (!arriba.length || arriba.length > 2) return null;
+    if (arriba.length === 2 && (Math.abs(arriba[0][0] - arriba[1][0]) > 1 || Math.abs(arriba[0][1] - arriba[1][1]) > 1)) return null;
+    const c = centro(arriba);
+    return [[c[0] + 0.5, c[1] + 0.5]];
+  };
+  const hayDibujo = (b, x, y) => {
+    if (!b || !b.lleno) return true;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const cx = (Math.round(x) >> 1) + dx, cy = (Math.round(y) >> 1) + dy;
+      if (cx >= 0 && cy >= 0 && cx < b.lw && b.lleno[cy * b.lw + cx]) return true;
+    }
+    return false;
   };
   /** un punto del cuadro (en píxeles del cuadro, sin espejar) llevado al mundo */
   const alMundo = (sp, fx, fy) => {
@@ -155,14 +235,27 @@
       g.clear();
       ojos.forEach(e => {
         const b = caja(this, e); if (!b) return;
-        const patas = CUATRO_PATAS.test(e.type);
-        // la cabeza: arriba del cuerpo, corrida hacia donde mira (los de cuatro patas, adelante)
-        const fija = CABEZA[e.type];
-        // (13/11) los ojos van a la altura de los ojos (un cuarto de la cabeza para abajo, en el frente de la cabeza), no en
-        // la punta del casco: medido sobre los dibujos (orcos de 17 a 35 px de alto, el orco del cuerno con cabezota)
-        const fo = OJO_ALTO[e.type] || 0.27;
-        const o = fija ? alMundo(e, b.x0 + b.w * fija[0], b.y0 + b.h * fija[1]) : patas ? alMundo(e, b.x0 + b.w * 0.86, b.y0 + b.h * 0.36) : alMundo(e, b.hx0 + b.hw * 0.72, b.cy0 + b.ch * fo);
+        const ref = refOjos(this, e.type);
         const a = k * (Math.floor(this.time.now / 1900 + e.x * 0.01) % 9 === 0 ? 0.15 : 1) * Math.max(0.35, e.alpha);
+        // los pintados de este cuadro, si están cerca de la referencia; si no, los de la referencia
+        let pts = null;
+        if (LOBO.test(e.type)) {
+          pts = ojosLobo(e.type, b);
+          if (!pts) return;                                    // en este cuadro no se le ven los ojos
+        } else if (b.ojos && PINTADOS.test(e.type)) {
+          const p = pintadosDe(b).map(q => [q[0] + 0.5, q[1] + 0.5]), c = centro(p);
+          if (!ref || Math.hypot(c[0] - ref.c[0], c[1] - ref.c[1]) < 12) pts = p;
+        }
+        if (!pts && ref) { if (!hayDibujo(b, ref.c[0], ref.c[1])) return; if (ref.pintados) pts = ref.pts; }
+        if (pts) {
+          const s = Math.max(1, Math.abs(e.scaleX)), w0 = pts.map(q => alMundo(e, q[0], q[1]));
+          const cxm = w0.reduce((t, q) => t + q.x, 0) / w0.length, cym = w0.reduce((t, q) => t + q.y, 0) / w0.length;
+          g.fillStyle(0xff2a1a, a * 0.22); g.fillCircle(cxm, cym, 1.9 * Math.max(1, Math.round(s)));
+          g.fillStyle(0xff3b2f, a); w0.forEach(q => g.fillRect(q.x - s / 2, q.y - s / 2, s, s));
+          return;
+        }
+        // los que no traen los ojos pintados (lobos, huargo, caudillo): la cabeza medida quieto
+        const q = ref ? ref.pts[0] : puntoCabeza(e.type, b), o = alMundo(e, q[0], q[1]);
         const s = Math.max(1, Math.round(e.scaleX)), dx = e.flipX ? -1 : 1;
         g.fillStyle(0xff2a1a, a * 0.22); g.fillCircle(o.x, o.y, 1.9 * s);
         g.fillStyle(0xff3b2f, a); g.fillRect(o.x - 1.5 * s * dx - s / 2, o.y - s / 2, s, s); g.fillRect(o.x + 1.2 * s * dx - s / 2, o.y - s / 2, s, s);
@@ -170,5 +263,5 @@
     } catch (e) { if (!P._ckNvAv) { P._ckNvAv = 1; console.warn('[noche_viva]', e); } }
     return r;
   };
-  window.CK_NOCHE_VIVA = { caja, alMundo, oscuro };
+  window.CK_NOCHE_VIVA = { caja, alMundo, oscuro, refOjos, ojosLobo };
 })();

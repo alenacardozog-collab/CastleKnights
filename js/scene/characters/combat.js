@@ -594,8 +594,13 @@ Object.assign(MainGameScene.prototype, {
     sfx._clip('bow_shot', 0.9, 250);
 
     const k = p.scaleX;
-    const cx = p.body ? p.body.center.x : p.x;
-    const cy = p.body ? p.body.bottom : p.y + 12;
+    // (13/11) "una lluvia de flechas sobre la zona de adelante": el centro va adelante del héroe, hacia donde mira (así cubre a
+    // los que tiene enfrente y él queda en el borde), a la escala del héroe en ese mapa
+    const fvR = this.facingV, dxR = fvR === 'front' || fvR === 'back' ? 0 : (this.facingDirection === 'left' ? -1 : 1), dyR = fvR === 'front' ? 1 : fvR === 'back' ? -1 : 0;
+    const ADEL = RADIUS * 0.85 * Math.abs(k) / 1.2;
+    const cx = (p.body ? p.body.center.x : p.x) + dxR * ADEL;
+    const cy = (p.body ? p.body.bottom : p.y + 12) + dyR * ADEL * SQUASH;
+    this._ckRainCenter = { x: cx, y: cy };
     const cam = this.cameras.main;
     const hasArrow = this.textures.exists('arrow');
 
@@ -806,7 +811,7 @@ Object.assign(MainGameScene.prototype, {
   shootArrow() {
     const isLeft = this.facingDirection === 'left';
     const spawnX = isLeft ? this.player.x - 24 : this.player.x + 24;
-    const spawnY = this.player.y - 4;          // (13/11) from the bow hand, not the knee
+    const spawnY = this.player.y - 4 * Math.abs(this.player.scaleX) / 1.2;          // (13/11) from the bow hand, not the knee (scaled with the hero on each map)
 
     const arrow = this.projectiles.create(spawnX, spawnY, 'arrow');
     arrow.isFireball = false;
@@ -833,7 +838,8 @@ Object.assign(MainGameScene.prototype, {
     const isLeft = this.facingDirection === 'left';
     const v = this.facingV;                    // 'front' / 'back' when Horos looks down / up
     const spawnX = v ? this.player.x : (isLeft ? this.player.x - 26 : this.player.x + 26);
-    const spawnY = v ? this.player.y + (v === 'front' ? 30 : -22) : this.player.y - 6;   // (13/11) from the staff hand
+    const kH = Math.abs(this.player.scaleX) / 1.2;   // (13/11) the hero is bigger on some maps: the hand moves with him
+    const spawnY = v ? this.player.y + (v === 'front' ? 30 : -22) * kH : this.player.y - 6 * kH;   // (13/11) from the staff hand
 
     const fireball = this.projectiles.create(spawnX, spawnY, 'wizard_fireball');
     fireball.isFireball = true;

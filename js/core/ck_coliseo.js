@@ -449,6 +449,27 @@
   };
 
   // ------------------------------------------------------------------ el Rey Orco en la tribuna con la princesa
+  // (14/11) la silla a cuadros del dibujo del mapa, abajo del trono: se tapa con la alfombra roja de abajo (columna por columna)
+  const SILLA = [700, 127, 737, 145];
+  const sinSilla = S => {
+    try {
+      const c = S.currentInterior, a = c && c.area; if (!a) return;
+      const fl = S.children.list.find(o => o.texture && o.depth === 7 && Math.abs(o.x - a.x) < 2 && Math.abs(o.y - a.y) < 2);
+      if (!fl || fl._ckcSinSilla) return;
+      const img = fl.texture.getSourceImage(); if (!img || !img.width) return;
+      const k = 'ckc_suelo_sin_silla_' + (S._ckcSs = (S._ckcSs || 0) + 1);
+      const t = S.textures.createCanvas(k, img.width, img.height), g = t.getContext();
+      g.drawImage(img, 0, 0);
+      const [x0, y0, x1, y1] = SILLA, W = x1 - x0, H = y1 - y0;
+      const im = g.getImageData(x0, y0, W, H + 8), d = im.data;
+      for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
+        const ys = H + (y % 8), i = (y * W + x) * 4, j = (ys * W + x) * 4;
+        d[i] = d[j]; d[i + 1] = d[j + 1]; d[i + 2] = d[j + 2]; d[i + 3] = 255;
+      }
+      g.putImageData(im, x0, y0); t.refresh();
+      fl.setTexture(k); fl._ckcSinSilla = true;
+    } catch (e) { console.warn('[coliseo] silla', e); }
+  };
   /** Pone al Rey Orco sentado y a la princesa encadenada en (x, y) del área actual (la base del trono). */
   const tribuna = (S, x, y) => {
     const c = S.currentInterior, ox = c ? c.area.x : 0, oy = c ? c.area.y : 0, objs = c ? (c.area.objs || (c.area.objs = [])) : [];
@@ -456,10 +477,24 @@
     if (S._ckcPrin && S._ckcPrin.active) S._ckcPrin.destroy();
     // (13/11) el caudillo sentado en su trono de huesos, al tamaño de la gente del coliseo (el héroe va a 1,25 acá), y la
     // princesa con su dibujo chico de siempre, a la misma escala que los demás personajes del mapa
-    const rey = S.add.sprite(ox + x, oy + y, 'ckc_rey_idle').setOrigin(0.5, 0.9).setScale(0.92).setDepth(oy + y);
-    S.tweens.add({ targets: rey, scaleY: 0.935, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });   // respira
-    const pr = S.add.image(ox + x + 46, oy + y + 2, 'ckc_princesa').setOrigin(0.5, 1).setScale(1.25).setDepth(oy + y + 1);
-    S.tweens.add({ targets: pr, y: pr.y - 1, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    // (14/11, nota 129: "ajusta al jefe quita la silla de abajo y la princesa es el modelo que esta en el castillo de aldric"):
+    // el trono apoya en la tarima, entre los colmillos (más abajo y un poco más grande); la silla a cuadros que traía el dibujo
+    // del mapa abajo del trono se tapa con la alfombra; la princesa es la del castillo del Rey (npc8), encadenada al costado.
+    sinSilla(S);
+    const rey = S.add.sprite(ox + x, oy + y + 20, 'ckc_rey_idle').setOrigin(0.5, 0.9).setScale(1.2).setDepth(oy + y + 20);   // (15/11) +20 %
+    S.tweens.add({ targets: rey, scaleY: 1.218, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });   // respira
+    let pr;
+    if (S.textures.exists('npc8_villager')) {
+      pr = S.add.sprite(ox + x + 56, oy + y + 22, 'npc8_villager').setOrigin(0.5, 1).setScale(1.55).setFlipX(true).setDepth(oy + y + 22);
+      if (S.anims.exists('npc8_idle')) pr.play('npc8_idle');
+      const cad = S.add.graphics().setDepth(oy + y + 22.5);     // la cadena, del tobillo a la argolla del trono
+      cad.lineStyle(1, 0x6b6f7a, 1);
+      for (let i = 0; i < 6; i++) cad.strokeEllipse(ox + x + 50 - i * 3, oy + y + 20 - (i % 2), 3, 2);
+      objs.push(cad);
+    } else {
+      pr = S.add.image(ox + x + 46, oy + y + 2, 'ckc_princesa').setOrigin(0.5, 1).setScale(1.25).setDepth(oy + y + 1);
+      S.tweens.add({ targets: pr, y: pr.y - 1, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
     objs.push(rey, pr);
     S._ckcRey = rey; S._ckcPrin = pr;
     return { rey, princesa: pr };

@@ -270,7 +270,9 @@ window.CK_FOSA_ARTE = { rocas: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAH
   const lanza = (S, x, y0, y1, carril) => {
     const T = S._ckFo; if (!T) return;
     son('ck_lanzas', 0.75) || son('sword_hit', 0.6, { rate: 1.4 });
-    const sp = S.add.image(x, y0, 'ckfo_lanza').setOrigin(0.5, 1).setDepth(y1 + 2).setScale(1.2, 0.1);
+    // (14/11, nota del dueño 86: "arreglar las lanzas q salgan bien") la lanza crece desde el agujero hacia abajo (antes el
+    // pie quedaba en el agujero y crecía para arriba, metida en la pared)
+    const sp = S.add.image(x, y0, 'ckfo_lanza').setOrigin(0.5, 0).setDepth(y1 + 2).setScale(1.2, 0.1);
     T.lanzas.push(sp);
     polvo(S, x, y0, 3, 0x6b5f52);
     S.tweens.add({ targets: sp, scaleY: (y1 - y0) / 64 * 1.02, duration: 110, ease: 'Quad.easeOut', onComplete: () => {

@@ -40,13 +40,16 @@
   const CA = window.CK_COLISEO_ARTE, CC = A.coliseo;
   // (11/11) Gorvak, el campeón del escudo, rediseñado más chiquito ("quedó muy grande, rediseñalo más tiny"): dibujo nuevo
   // de PixelLab de unos 40 px de alto (el de antes, 54), a escala 1 como los otros dos
-  const COL = { orc_campeon: { h: 'elite', w: 20, s: 1 }, bestia_kragmor: { h: 'gorila', w: 34, s: 1 }, cazador_ulrak: { h: 'jinete', w: 36, s: 1 } };
+  // (14/11, nota 130 del dueño: "el orco del escudo… reducele el tamaño un 25%") Gorvak a 0,75
+  const COL = { orc_campeon: { h: 'elite', w: 20, s: 0.75 }, bestia_kragmor: { h: 'gorila', w: 34, s: 1 }, cazador_ulrak: { h: 'jinete', w: 36, s: 1 } };
   if (CA && CC) Object.keys(CC).forEach(h => {
     Object.keys(CA).filter(k => k.indexOf(h + '_') === 0).forEach(k => delete CA[k]);
     Object.keys(CC[h]).forEach(an => { CA[h + '_' + an] = { img: CC[h][an].img, t: 100, n: CC[h][an].n }; });
   });
   const JEFE = 'orc_warlord';
-  if (A[JEFE] && ENEMY_TYPES[JEFE]) Object.assign(ENEMY_TYPES[JEFE], { frames: cuadros(JEFE), scale: 1.15, hitAt: 400 });
+  // (15/11, nota 46 del dueño: "hacé que el caudillo sea un 20 % más grande") 1,15 → 1,38
+  const ESC_JEFE = 1.38;
+  if (A[JEFE] && ENEMY_TYPES[JEFE]) Object.assign(ENEMY_TYPES[JEFE], { frames: cuadros(JEFE), scale: ESC_JEFE, hitAt: 400 });
   window.CK_CAUDILLO_CUADROS && A[JEFE] && Object.assign(window.CK_CAUDILLO_CUADROS, ENEMY_TYPES[JEFE] ? ENEMY_TYPES[JEFE].frames : {});
 
   // el coliseo pone a Grushak en 0,97 al cargar (sus cuadros viejos eran grandes): con los nuevos, 1,15
@@ -54,9 +57,9 @@
   P.preloadRoster = function () {
     const r = pr0.apply(this, arguments);
     try {
-      if (A[JEFE] && ENEMY_TYPES[JEFE]) ENEMY_TYPES[JEFE].scale = 1.15;
+      if (A[JEFE] && ENEMY_TYPES[JEFE]) ENEMY_TYPES[JEFE].scale = ESC_JEFE;
       if (CC) Object.keys(COL).forEach(id => { if (ENEMY_TYPES[id]) ENEMY_TYPES[id].scale = COL[id].s; }); // unas 2 veces el héroe (Gorvak, 1,5)
-      if (CC && ENEMY_TYPES.orc_campeon) ENEMY_TYPES.orc_campeon.reach = 52;   // más chico, el brazo llega menos
+      if (CC && ENEMY_TYPES.orc_campeon) ENEMY_TYPES.orc_campeon.reach = 44;   // más chico, el brazo llega menos (14/11: 52 → 44)
     } catch (e) {}
     return r;
   };
@@ -66,7 +69,7 @@
     const e = c0.apply(this, arguments);
     try {
       if (e && e.type === 'orc_corneta') { const k = 1.2 / 1.45, w = 16 * k, h = 8 * k; e.setScale(1.45); e.body.setSize(w, h); e.body.setOffset(50 - w / 2, 60 - h); }
-      if (e && e.type === JEFE && A[JEFE]) { e.setScale(1.15); e.body.setSize(20, 8); e.body.setOffset(40, 52); }
+      if (e && e.type === JEFE && A[JEFE]) { e.setScale(ESC_JEFE); const w = 20 * 1.15 / ESC_JEFE, h = 8 * 1.15 / ESC_JEFE; e.body.setSize(w, h); e.body.setOffset(50 - w / 2, 60 - h); }   // (el pie, del mismo tamaño en el mundo)
       const C = e && CC && COL[e.type];
       if (C) { e.setScale(C.s); e.body.setSize(C.w, 10); e.body.setOffset(50 - C.w / 2, 50); }
       if (e && e.type === 'werebear_jefe' && A.werebear_jefe) { e.setScale(1); e.body.setSize(22, 9); e.body.setOffset(39, 51); }

@@ -31,6 +31,9 @@
       .setOrigin(e.originX, e.originY).setScale(e.scaleX, e.scaleY).setFlipX(e.flipX).setFlipY(e.flipY)
       .setDepth(Math.max(5, (e.depth || 0) - 4));
     if (e.isTinted && e.tintTopLeft !== 0xff3333) c.setTint(e.tintTopLeft);
+    // (15/11, nota 47 del dueño: "cuando mueren la animación de muerte queda más grande que el diseño original"): el cuerpo ya
+    // tiene la escala del mapa (la traía el bicho vivo); se marca así ck_escala_mapas.js no lo vuelve a agrandar
+    c._ckEscF = e._ckEscF; c._ckEscVal = c.scaleX; c._ckCadaver = true;
     e.destroy();
     S._ckCadaveres = S._ckCadaveres || [];
     S._ckCadaveres.push(c);

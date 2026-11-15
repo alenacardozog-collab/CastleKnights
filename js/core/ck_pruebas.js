@@ -144,7 +144,11 @@
   // Estas dos pruebas juegan la campaña de verdad (guardan partida): copian todo lo guardado antes y lo restauran después.
   const conGuardadoIntacto = async fn => {
     const copia = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); copia[k] = localStorage.getItem(k); }
+    // (15/11) la runa por descifrar (ck_mazmorra_runas.js) salta sola apenas la historia la habilita (acá, al sellar al
+    // Nigromante en la prueba del Capítulo 1) y deja el juego en pausa: durante estas pruebas se le dice "Más tarde"
+    const runa = setInterval(() => { try { const b = document.querySelector('#ck-runa.on .luego'); if (b) b.click(); } catch (e) {} }, 300);
     try { await fn(); } finally {
+      clearInterval(runa);
       Object.keys(localStorage).forEach(k => { if (!(k in copia)) localStorage.removeItem(k); });
       Object.keys(copia).forEach(k => localStorage.setItem(k, copia[k]));
     }

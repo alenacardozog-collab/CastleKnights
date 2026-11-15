@@ -11,9 +11,12 @@
      un golpe a la pila de cráneos del medio los devuelve a su lugar.
    NIVEL 2 OESTE · el RÍO DE LAVA y el SANTUARIO DE LOS REYES:
      PUZZLE 2 · LOS PILARES DE BASALTO: del salón se llega al borde de la lava. Hay una losa firme; las piedras rúnicas de
-     arriba y de abajo (NE y SE) levantan un pilar cada una por 5,5 s: de lejos (flecha, hechizo) hay que tener los dos
-     arriba para cruzar a la orilla de arriba. Al cruzar quedan firmes. Las otras dos piedras (NO y SO), prendidas las dos,
-     dan un premio.
+     arriba y de abajo (NE y SE) despiertan EL COMPÁS DE LA LAVA (13/11, v4, pedido: "el de magma no tiene coherencia, el
+     jugador se pierde; hacé un patrón relevante y que tenga jugabilidad"): los dos pilares suben y bajan siempre en el mismo
+     orden (primero el del medio, después el de la orilla), cada uno avisado antes con un brillo en la lava y titilando antes
+     de hundirse. Hay que mirar el compás y cruzar saltando al ritmo. Con una piedra prendida el compás corre; con las dos,
+     va más lento (más tiempo para cruzar). Quedarse en un pilar que se hunde quema y devuelve a la losa. Al cruzar quedan
+     firmes. Las otras dos piedras (NO y SO), prendidas las dos, dan un premio.
      PUZZLE 3 · LAS CORONAS DE LOS REYES: cuatro estatuas con la corona apagada; un golpe prende o apaga la suya y la de
      las dos vecinas (en ronda). Con las cuatro prendidas cae el escudo del primer obelisco y se rompe a golpes. La tabla
      del centro (T) muestra el camino de las baldosas.
@@ -146,7 +149,7 @@
       t(PLACAS.o.x, PLACAS.o.y + 4, 30, ['Una placa con una calavera, hundida en el piso. Algo pesado encima la haría bajar']);
       t(PLACAS.e.x, PLACAS.e.y + 4, 30, ['Otra placa con calavera. Del otro lado de la reja se oye el martilleo de una fragua']);
       t(720, 524, 40, ['Una pila de cráneos. Si un bloque se traba en un rincón, un golpe acá y vuelven a su lugar']);
-      t(444, 520, 34, ['La lava corta el paso. Las piedras de las runas, arriba y abajo, esperan un golpe. Desde la losa firme llegás a las dos: arriba y abajo']);
+      t(444, 520, 34, ['La lava corta el paso y respira despacio. Las piedras de las runas, arriba y abajo, despiertan el compás de los pilares: suben y bajan siempre en el mismo orden']);
       t(250, 250, 40, ['Cuatro reyes de piedra con la corona apagada. Golpeás a uno y cambian también sus vecinos']);
       t(1110, 300, 46, ['Un cristal dorado tira una luz santa. Los espejos se giran con T; los capullos la tapan']);
       t(1084, 600, 50, ['Placas de pinchos: suben por columnas, una y otra. Mejor medir el paso']);
@@ -444,15 +447,21 @@
     chispas(S, pd.sp.x + pd.sp.width / 2, pd.sp.y + pd.sp.height * 0.5, 10, 0xffc070, 30);
     if (pd.k === 'piedra_ne' || pd.k === 'piedra_se') {
       if (F.lava) { S.tweens.add({ targets: pd.rs, alpha: { from: 0.55, to: 0.95 }, duration: 1500, yoyo: true, repeat: -1 }); return; }
-      const pl = M.pilares[pd.k === 'piedra_ne' ? 1 : 2];
-      subirPilar(S, pl);
-      S.tweens.add({ targets: pd.rs, alpha: 0.15, duration: DURA_PILAR, ease: 'Quad.easeIn' });
-      // (13/11) se entiende qué pasó: un hilo de luz va de la piedra a SU pilar, y el cartel dice qué falta
+      // (v4) el compás: la piedra queda prendida; con una corre, con las dos va más lento
+      const prend = (M.prendidas = M.prendidas || {});
+      const nueva = !prend[pd.k]; prend[pd.k] = 1;
+      S.tweens.add({ targets: pd.rs, alpha: { from: 0.6, to: 1 }, duration: 700, yoyo: true, repeat: -1 });
       const a = M.a, g = S.add.graphics().setDepth(a.y + 700).setBlendMode(Phaser.BlendModes.ADD);
-      g.lineStyle(3, 0xffc860, 0.9).lineBetween(pd.sp.x + pd.sp.width / 2, pd.sp.y + pd.sp.height * 0.5, a.x + pl.p[0] + pl.p[2] / 2, a.y + pl.p[1] + pl.p[3] / 2);
+      M.pilares.slice(1).forEach(pl => g.lineStyle(3, 0xffc860, 0.9).lineBetween(pd.sp.x + pd.sp.width / 2, pd.sp.y + pd.sp.height * 0.5, a.x + pl.p[0] + pl.p[2] / 2, a.y + pl.p[1] + pl.p[3] / 2));
       S.tweens.add({ targets: g, alpha: 0, duration: 900, onComplete: () => g.destroy() });
-      const otro = M.pilares[pd.k === 'piedra_ne' ? 2 : 1];
-      texto(S, S.player.x, S.player.y - 56, otro.arriba ? '¡Los dos pilares arriba! Cruzá ya' : (pd.k === 'piedra_ne' ? 'Sube el pilar del medio. Falta la piedra de abajo' : 'Sube el pilar de la orilla. Falta la piedra de arriba'), 0xfde68a);
+      const dos = prend.piedra_ne && prend.piedra_se;
+      if (!M.compas) { M.compas = { t0: S.time.now + 500, lento: dos }; texto(S, S.player.x, S.player.y - 56, 'La lava empieza a respirar: los pilares suben en orden. Mirá el compás y cruzá', 0xfde68a); }
+      else if (nueva && dos && !M.compas.lento) {
+        // pasar a lento sin cortar el ciclo: se recalcula el comienzo para seguir en la misma parte del compás
+        const T0 = COMPAS.T, fase = ((S.time.now - M.compas.t0) % T0 + T0) % T0;
+        M.compas = { t0: S.time.now - fase * COMPAS.LENTO, lento: true };
+        texto(S, S.player.x, S.player.y - 56, 'Las dos piedras prendidas: el compás va más lento', 0xfde68a);
+      }
       return;
     }
     const k = pd.k === 'piedra_no' ? 'no' : 'so';
@@ -467,6 +476,25 @@
         texto(S, S.player.x, S.player.y - 56, 'Las piedras viejas responden: +1 ELIXIR · +40 monedas', 0xfde68a);
       } else texto(S, pd.sp.x + 20, pd.sp.y - 10, 'La piedra quedó encendida…', 0xfde68a);
     } else S.tweens.add({ targets: pd.rs, alpha: { from: 0.55, to: 0.95 }, duration: 1500, yoyo: true, repeat: -1 });
+  };
+  // (v4) el compás de la lava (ms, con una piedra; con las dos todo ×LENTO): [pilar, sube, baja] dentro de un ciclo de T
+  const COMPAS = { T: 6000, LENTO: 1.5, AVISO: 700, PASOS: [[1, 700, 3700], [2, 2200, 5200]] };
+  const avisoPilar = (S, pl) => {
+    const a = S._mz.a, x = a.x + pl.p[0] + pl.p[2] / 2, y = a.y + pl.p[1] + pl.p[3] / 2 + 4;
+    const e = S.add.ellipse(x, y, pl.p[2] + 6, pl.p[3] * 0.7, 0xffb040, 0).setDepth(a.y + pl.p[1] + 1).setBlendMode(Phaser.BlendModes.ADD);
+    S.tweens.add({ targets: e, fillAlpha: 0.75, duration: COMPAS.AVISO * 0.6, yoyo: true, onComplete: () => e.destroy() });
+    chispas(S, x, y, 6, 0xffa040, 18);
+    son('ck_rocas_rodar', 0.25, { rate: 1.6 }) || son('amb_fire', 0.2);
+  };
+  const compas = (S, now) => {
+    const M = S._mz, C = M.compas; if (!C || now < C.t0) return;
+    const k = C.lento ? COMPAS.LENTO : 1, T = COMPAS.T * k, t = now - C.t0, n = Math.floor(t / T), ph = t - n * T;
+    COMPAS.PASOS.forEach(([i, sube, baja]) => {
+      const pl = M.pilares[i], s0 = sube * k, b0 = baja * k;
+      if (pl.firme) return;
+      if (ph >= s0 - COMPAS.AVISO * k && ph < s0 && pl.avisado !== n) { pl.avisado = n; avisoPilar(S, pl); }
+      if (ph >= s0 && ph < b0 && !pl.arriba) { subirPilar(S, pl); pl.hasta = now + (b0 - ph); }
+    });
   };
   const subirPilar = (S, pl) => {
     const M = S._mz, a = M.a;
@@ -585,7 +613,8 @@
     try { o.z.destroy(); } catch (e) {}
     polvo(S, cx, by - 6, 14, 0x3a2a28);
     const n = (F.obelisco_1 ? 1 : 0) + (F.obelisco_2 ? 1 : 0);
-    S.time.delayedCall(700, () => texto(S, S.player.x, S.player.y - 56, `¡Un sello menos! (${n}/2)`, 0xfde68a));
+    // (14/11) con las runas del portón (ck_mazmorra_runas.js) los obeliscos ya no cuentan "sellos": guardan una runa cada uno
+    if (!window.CK_MZ_RUNAS) S.time.delayedCall(700, () => texto(S, S.player.x, S.player.y - 56, `¡Un sello menos! (${n}/2)`, 0xfde68a));
     // (13/11, pedido: "el cristal y los espejos… debería darme una recompensa el explorar"): al quemar el obelisco con la luz
     // santa, del pedestal cae un tesoro
     if (o.k === 'obelisco_2' && !F.premio2) {
@@ -598,7 +627,7 @@
         texto(S, S.player.x, S.player.y - 56, 'Entre las ruinas del obelisco: +1 ELIXIR · +2 POCIONES · +80 monedas', 0xfde68a);
       });
     }
-    if (n >= 2) S.time.delayedCall(1600, () => abrirHuesos(S, true));
+    if (n >= 2 && !window.CK_MZ_RUNAS) S.time.delayedCall(1600, () => abrirHuesos(S, true));
   };
   const abrirHuesos = (S, anim) => {
     const M = S._mz, F = fl(S); if (!M) return;
@@ -702,11 +731,14 @@
     const M = S._mz, a = M.a, r = SALAS[sala];
     return S.enemies ? S.enemies.getChildren().filter(e => vivo(e) && e._mz && dentro({ x: e.x - a.x, y: e.y - a.y }, r)).length : 0;
   };
+  const ojos = (S, pts, n) => (typeof ENEMY_TYPES !== 'undefined' && ENEMY_TYPES.demonio_ojo) ? pts.slice(0, n).map(([x, y]) => ['demonio_ojo', x, y]) : [];
   const ENCUENTROS = {
     salon: (S, F) => (F.po && F.pe) ? [['demonio_menor', 600, 470]] : [['demonio_menor', 560, 470], ['demonio_menor', 880, 470], ['demonio_menor', 720, 600]],
-    santuario: (S, F) => F.obelisco_1 ? [] : [['demonio_menor', 160, 230], ['demonio_menor', 330, 300], ['demonio_bruto', 250, 360]],
-    fragua: (S, F) => F.obelisco_2 ? [['demonio_menor', 1200, 560]] : [['demonio_bruto', 1210, 640], ['demonio_menor', 1180, 520], ['demonio_menor', 1300, 650]],
-    criadero: (S, F) => []
+    // (15/11, pedido del dueño: "más adentro de la mazmorra aparecen más de estos ojos"): en las salas del fondo, los Ojos
+    // vigía del reino corrompido (más cuanto más adentro: el santuario, la fragua y el criadero)
+    santuario: (S, F) => (F.obelisco_1 ? [] : [['demonio_menor', 160, 230], ['demonio_menor', 330, 300], ['demonio_bruto', 250, 360]]).concat(ojos(S, [[210, 210], [320, 250]], F.obelisco_1 ? 1 : 2)),
+    fragua: (S, F) => (F.obelisco_2 ? [['demonio_menor', 1200, 560]] : [['demonio_bruto', 1210, 640], ['demonio_menor', 1180, 520], ['demonio_menor', 1300, 650]]).concat(ojos(S, [[1110, 590], [1320, 560], [1240, 520]], F.obelisco_2 ? 2 : 3)),
+    criadero: (S, F) => ojos(S, [[1150, 220], [1280, 300], [1220, 250]], 3)
   };
 
   // ------------------------------------------------------------------ T: espejos y tabla
@@ -751,7 +783,7 @@
       }
       // el portal
       const t = now / 1000, g = M.portal.g; g.clear();
-      [[34, 0.55, 1], [26, 0.35, -1.4], [18, 0.25, 2]].forEach(([rr, al, v]) => {
+      if (!M.portal.oculto) [[34, 0.55, 1], [26, 0.35, -1.4], [18, 0.25, 2]].forEach(([rr, al, v]) => {
         g.lineStyle(2, 0xffd27a, al + 0.15 * Math.sin(t * 2 + rr));
         g.strokeEllipse(M.portal.x, M.portal.y, rr * 2, rr * 1.1);
         for (let k = 0; k < 8; k++) { const an = t * v + k * Math.PI / 4; g.fillStyle(0xffe9b0, al).fillRect(M.portal.x + Math.cos(an) * rr - 1.5, M.portal.y + Math.sin(an) * rr * 0.55 - 1.5, 3, 3); }
@@ -774,14 +806,15 @@
       // PUZZLE 1
       if (dentro(q, SALAS.salon) || (q.y > 420 && q.y < 640 && q.x > 440 && q.x < 1000)) empujar(S, dt);
       // PUZZLE 2: los pilares bajan; cruzar los deja firmes
+      if (!F.lava) compas(S, now);
       M.pilares.forEach(pl => { if (pl.arriba && !pl.firme && pl.hasta && now > pl.hasta) bajarPilar(S, pl); });
       // (13/11) la primera vez que se para en la losa firme, se explica el puzzle
       if (!F.lava && !M.avisoLava && q.x > 420 && q.x < 470 && q.y > 520 && q.y < 600) {
         M.avisoLava = 1;
-        nota('Las dos piedras rúnicas de esta orilla levantan un pilar cada una, un rato. Pegales (de cerca o de lejos), encendé las dos y cruzá por los pilares');
+        nota('Pegale a una piedra rúnica (de cerca o de lejos): la lava empieza a respirar y los pilares suben y bajan en orden, primero el del medio y después el de la orilla. Mirá el compás y cruzá saltando de uno a otro. Con las dos piedras prendidas va más lento');
       }
       // los pilares que van a bajar titilan en los últimos 2 s
-      M.pilares.forEach(pl => { if (pl.arriba && !pl.firme && pl.hasta) { const falta = pl.hasta - now; pl.sp.setAlpha(falta < 2000 ? (Math.floor(now / 120) % 2 ? 0.45 : 1) : 1); } });
+      M.pilares.forEach(pl => { if (pl.arriba && !pl.firme && pl.hasta) { const falta = pl.hasta - now; pl.sp.setAlpha(falta < 1000 ? (Math.floor(now / 110) % 2 ? 0.45 : 1) : 1); } });   // (v4) el último segundo
       if (!F.lava && q.x < 290 && q.x > 200 && q.y < 600 && q.y > 470 && M.pilares[2].arriba) pilaresFirmes(S);
       // PUZZLE 4: el rayo
       if (!M.rayoProx || now > M.rayoProx) { M.rayoProx = now + 120; M.quema = rayo(S); }
@@ -799,7 +832,7 @@
       // los diablillos de las grietas del criadero
       if (!F.obelisco_2 && dentro(q, SALAS.criadero) && now > (M.grietaProx || 0)) {
         M.grietaProx = now + R(7000, 10000);
-        if (demoniosEn(S, 'criadero') < 3) demonio(S, R(1100, 1340), R(250, 350), 'demonio_menor');
+        if (demoniosEn(S, 'criadero') < 3) demonio(S, R(1100, 1340), R(250, 350), Math.random() < 0.4 && typeof ENEMY_TYPES !== 'undefined' && ENEMY_TYPES.demonio_ojo ? 'demonio_ojo' : 'demonio_menor');   // (15/11) también ojos
       }
       // encuentros: una vez por visita al entrar a la sala
       Object.keys(ENCUENTROS).forEach(sala => {
@@ -840,7 +873,7 @@
       }
       M.bal.forEach(b => { if (b.hueco && now > b.hasta) { const h = b.hueco; b.hueco = null; S.tweens.add({ targets: h, alpha: 0, duration: 300, onComplete: () => h.destroy() }); } });
       // la reja de huesos: si se cargó la partida con los dos rotos
-      if (F.obelisco_1 && F.obelisco_2 && M.col.huesos && !M.abriendo) { M.abriendo = 1; abrirHuesos(S, false); }
+      if (!window.CK_MZ_RUNAS && F.obelisco_1 && F.obelisco_2 && M.col.huesos && !M.abriendo) { M.abriendo = 1; abrirHuesos(S, false); }
       // flechas y hechizos que pegan en las piezas
       if (S.projectiles) S.projectiles.getChildren().forEach(pr2 => {
         if (!pr2.active || !pr2.body) return;
@@ -918,5 +951,6 @@
   document.addEventListener('DOMContentLoaded', instalar);
   if (document.readyState !== 'loading') instalar();
   window.CK_MAZMORRA = { ID, Z, SALAS, PLACAS, PILARES, RONDA, ESPEJOS, CAPULLOS, BAL, LLEGADA, PORTAL, fl, rayo: S => { rayo(S); return S._mz && { pts: S._mz.rayoPts, fin: S._mz.rayoFin }; }, estado: S => S._mz,
-    _t: { golpe, girar: (S, i) => girarEspejo(S, S._mz.espejos[i]), mover: (S, i, x, yb) => moverBloque(S, S._mz.bloques[i], x, yb), tabla: verTabla } };
+    _t: { golpe, girar: (S, i) => girarEspejo(S, S._mz.espejos[i]), mover: (S, i, x, yb) => moverBloque(S, S._mz.bloques[i], x, yb), tabla: verTabla,
+      abrirHuesos, herir, chispas, polvo, texto, nota, demonio, SEGURO_LAVA, CRISTAL } };
 })();

@@ -44,14 +44,26 @@
   // del Roble (que el dueño dio por buenos) como 1. Los mapas grandes de Nano Banana (1436×802) dibujan todo una vez y media
   // más grande, así que ahí el héroe, la gente y las bestias crecen; los de 958×534 y todos los interiores quedan en 1.
   Object.assign(MAPA, {
-    norte_del_roble: 1.4, san_roque: 1.4, bosque_embrujado: 1.4, cementerio_real: 1.45, claro_de_las_bestias: 1.35,
+    norte_del_roble: 1.4, bosque_embrujado: 1.4, cementerio_real: 1.45, claro_de_las_bestias: 1.35,
     cueva_galerias: 1.3, cueva_grutas: 1.3, cueva_fosa: 1.3, mazmorra_sello: 1.35, coliseo_orco: 1.25,
     camino_al_castillo: 1.15, bosque_de_la_frontera: 1.2
   });
+  // (13/11, v5) San Roque sale de la tabla: sus puertas miden ~34 px, como las de los Campos del Roble, y con ×1,4 el héroe
+  // quedaba más alto que una puerta. Los aldeanos adultos de todos los mapas del Taller (también los interiores, donde medían
+  // 0,62-0,72 del héroe) se llevan a RELACION del alto del héroe; el héroe de los interiores queda como está.
+  // (14/11, v6, notas del dueño) San Roque +10 % (52), la casita del cerco +20 % (66), la choza orca +30 % (101), la Fortaleza
+  // Orca +25 % (126) y el patio del castillo +25 % (34, el héroe y la gente)
+  Object.assign(MAPA, { san_roque: 1.1, casita_cerco_san_roque: 1.2, choza_orca: 1.3, fortaleza_orca: 1.25, 'castle.courtyard': 1.25 });
+  // (v6) mapas donde la gente también se ACHICA hasta su medida (en el resto nunca queda más chica de lo que estaba): en el
+  // Jardín Real eran más altos que el héroe (35); y retoques por personaje (45: las dos damas del trono un poco más chicas)
+  const ACHICA = /^(jardin_real|salon_del_trono_3)$/;
+  const RETOQUE = { salon_del_trono_3: { npc9_villager: 0.86, npc8_villager: 0.86 } };
+  const RELACION = 0.94;                             // alto de un aldeano adulto / alto del héroe
   const AGRANDAR = true;                             // (v4) prendido, pero sólo en los mapas de la tabla
   const factor = S => {
     if (!AGRANDAR) return 1;
     const c = S && S.currentInterior, k = c && c.building && c.building.kind;
+    if (k === 'castle' && c.areaName && MAPA['castle.' + c.areaName] !== undefined) return MAPA['castle.' + c.areaName];   // (v6)
     if (!k || k.indexOf('ed_') !== 0) return 1;
     const f = MAPA[k.slice(3)];
     return f === undefined ? 1 : f;
@@ -95,7 +107,7 @@
   };
 
   // ------------------------------------------------------------------ NPC y todo personaje que aparezca en el mapa
-  const REY = /^(king_|ck_rey_sentado|ckc_rey)/, ACHICAR_REY = 0.8;   // (10/11) "reducile un 20 % el tamaño al Rey"
+  const REY = /^(king_|ck_rey_sentado|ckc_rey)/, ACHICAR_REY = 0.88;   // (10/11) "reducile un 20 % el tamaño al Rey"; (14/11, v6) "el rey un 10 % más grande"
   // alto visible de la hoja (en px del dibujo), medido una vez por textura
   const ALTOS = {}, cv = document.createElement('canvas'), g2 = cv.getContext('2d', { willReadFrequently: true });
   const altoDe = (S, o) => {
@@ -114,6 +126,14 @@
   const pasada = S => {
     const f0 = factor(S);
     const L = S.children && S.children.list; if (!L) return;
+    const c = S.currentInterior, kd = c && c.building && c.building.kind, taller = !!(kd && (kd.indexOf('ed_') === 0 || (kd === 'castle' && f0 !== 1)));
+    const mid = kd && kd.indexOf('ed_') === 0 ? kd.slice(3) : '', achica = ACHICA.test(mid), ret = RETOQUE[mid] || {};
+    // el alto del héroe se mide una vez por escala (las hojas de caminar y de quieto miden distinto: así la gente no late)
+    const p0 = S.player, e0 = p0 ? Math.abs(p0.scaleY) : 0;
+    if (taller && p0 && p0.texture && (!S._ckHeroeAlto || S._ckHeroeAlto.e !== e0 || S._ckHeroeAlto.h !== S.playerHero)) {
+      const h0 = altoDe(S, p0); if (h0) S._ckHeroeAlto = { e: e0, h: S.playerHero, v: h0 * e0 };
+    }
+    const hp = taller && S._ckHeroeAlto && S._ckHeroeAlto.e === e0 ? S._ckHeroeAlto.v : 0;
     for (let i = 0; i < L.length; i++) {
       const o = L[i];
       if (!o || !o.active || o === S.player || o.type !== 'Sprite' || !o.frame) continue;
@@ -124,18 +144,37 @@
         continue;
       }
       const f = f0;
-      if (f === 1) continue;
-      // aldeanos de hoja chica: hasta un alto parecido al del héroe
+      // aldeanos de hoja chica (v5: en todos los mapas del Taller, interiores incluidos): RELACION del alto del héroe, nunca
+      // más chicos de lo que estaban ni más del doble
       if (k && !o.def && PERSONA.test(k) && o.frame.cutWidth <= 64) {
-        if (o._ckAld === f && Math.abs(o.scaleX - o._ckEscVal) < 0.001) continue;
-        const base = o._ckAld && Math.abs(o.scaleX - o._ckEscVal) < 0.001 ? o._ckBase : o.scaleX;
+        // (15/11, nota 17 "los npc están gigantes"): la gente de la aldea sigue en la escena mientras el héroe anda por otro mapa
+        // y se agrandaba a la medida de ese mapa; al volver quedaban grandes. Fuera de los mapas del Taller vuelven a su tamaño.
+        if (!taller) {
+          if (o._ckAld !== undefined) {
+            if (Math.abs(o.scaleX - o._ckEscVal) < 0.001 && o._ckBase) o.setScale(o._ckBase, (o.scaleY / (o.scaleX || 1)) * o._ckBase);
+            delete o._ckAld;
+          }
+          continue;
+        }
+        if (!hp || o.angle) continue;                 // los que duermen acostados (girados) quedan del tamaño de su cama
         const h = altoDe(S, o); if (!h) continue;
-        const m = Math.max(1, Math.min(2, ALDEANO * f / ESCALA / (h * base)));
+        const obj = Math.round(hp * RELACION * 10) / 10;
+        const nuestra = o._ckAld !== undefined && Math.abs(o.scaleX - o._ckEscVal) < 0.001;
+        if (nuestra && o._ckAld === obj) continue;
+        const base = nuestra ? o._ckBase : o.scaleX;
+        const m = Math.max(achica ? 0.5 : 1, Math.min(2, obj / (h * base))) * (ret[k] || 1);
         o.setScale(base * m, (o.scaleY / (o.scaleX || 1)) * base * m);
-        o._ckBase = base; o._ckAld = f; o._ckEscVal = o.scaleX;
+        o._ckBase = base; o._ckAld = obj; o._ckEscVal = o.scaleX;
         continue;
       }
+      // (v6) donde la gente se achica, los NPC de cuadro grande dibujados a escala de adentro (el cura del jardín, 1,75) van a
+      // la escala del héroe
+      if (achica && k && !o.def && CUADRO[o.frame.cutWidth] && o.scaleX >= 1.5 && p0 && !(S.enemies && S.enemies.contains(o))) {
+        const e = Math.abs(p0.scaleX); o.setScale(o.scaleX < 0 ? -e : e, e); o._ckEscF = f; o._ckEscVal = o.scaleX; continue;
+      }
+      if (f === 1) continue;
       if (!k || NO.test(k) || !CUADRO[o.frame.cutWidth] || o.frame.cutWidth !== o.frame.cutHeight) continue;
+      if (o._ckCadaver) continue;                      // (15/11) los cuerpos tirados ya traen la escala del bicho
       if (o._ckEscF === f && (Math.abs(o.scaleX - o._ckEscVal) < 0.001 || o.isDead)) continue;
       // los NPC que ya estaban dibujados grandes (a escala de adentro, 1,75) se dejan como están; las bestias se agrandan siempre
       if (!o.def && o._ckEscF !== f && o.scaleX >= 1.5) { o._ckEscF = f; o._ckEscVal = o.scaleX; continue; }
@@ -150,5 +189,5 @@
     try { if (!this._ckEscProx || t > this._ckEscProx) { this._ckEscProx = t + 150; pasada(this); } } catch (e) {}
     return r;
   };
-  window.CK_ESCALA_MAPAS = { ESCALA, MAPA, factor, CASTILLO, INTERIOR, ALDEANO, AGRANDAR };
+  window.CK_ESCALA_MAPAS = { ESCALA, MAPA, factor, CASTILLO, INTERIOR, ALDEANO, AGRANDAR, RELACION };
 })();

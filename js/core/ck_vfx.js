@@ -243,11 +243,11 @@
   const envolver = (n, antes, despues) => { const f0 = P[n]; if (!f0) return; P[n] = function () { let ok; try { ok = antes ? antes.apply(this, arguments) : true; } catch (e) {} const r = f0.apply(this, arguments); try { if (despues) despues.call(this, ok, arguments); } catch (e) { console.warn('[vfx]', n, e); } return r; }; };
   envolver('performArrowRain', function () { return this.lastRainTime; }, function (antes) {
     if (this.lastRainTime === antes || this.playerHero !== 'soldier') return;
-    const S = this, f = pie(S.player);
+    const S = this, f = pie(S.player), z = S._ckRainCenter || f;   // (13/11) la lluvia cae en la zona de adelante (combat.js)
     S.time.delayedCall(450, () => { fx(S, 'haz', f.x, f.y, { escala: 0.75, tinte: 0xffe08a }); });
-    S.time.delayedCall(900, () => { ulti(S, 'soldier', f.x, f.y, 1); fx(S, 'runas', f.x, f.y, { escala: 0.9, tinte: 0xffd25a, alfa: 0.55, suma: true, dura: 900, prof: Math.round(f.y) - 8 }); });
-    for (let i = 0; i < 10; i++) S.time.delayedCall(1150 + i * 70, () => fx(S, 'golpe', f.x + R(-58, 58), f.y + R(-40, 40), { escala: 0.8, tinte: 0xffe08a }));
-    S.time.delayedCall(1900, () => { fx(S, 'suelo', f.x, f.y, { escala: 0.9, prof: Math.round(f.y) - 6 }); window.CK_ONDAS && CK_ONDAS.estallido(S, 'tierra', f.x, f.y, 70, 380); });
+    S.time.delayedCall(900, () => { ulti(S, 'soldier', z.x, z.y, 1); fx(S, 'runas', z.x, z.y, { escala: 0.9, tinte: 0xffd25a, alfa: 0.55, suma: true, dura: 900, prof: Math.round(z.y) - 8 }); });
+    for (let i = 0; i < 10; i++) S.time.delayedCall(1150 + i * 70, () => fx(S, 'golpe', z.x + R(-58, 58), z.y + R(-40, 40), { escala: 0.8, tinte: 0xffe08a }));
+    S.time.delayedCall(1900, () => { fx(S, 'suelo', z.x, z.y, { escala: 0.9, prof: Math.round(z.y) - 6 }); window.CK_ONDAS && CK_ONDAS.estallido(S, 'tierra', z.x, z.y, 70, 380); });
   });
   envolver('performBladeDance', function () { return this.lastSpinTime; }, function (antes) {
     if (this.lastSpinTime === antes) return;

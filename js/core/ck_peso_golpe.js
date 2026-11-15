@@ -39,6 +39,7 @@
 
   const dmg0 = P.damageEnemy;
   P.damageEnemy = function (enemy, amount, sx, sy) {
+    if (this._ckGolpeAjeno) return dmg0.apply(this, arguments);       // (14/11) bestias y orcos peleando entre ellos: sin freno
     const vivo = enemy && !enemy.isDead, hp0 = enemy ? enemy.hp : 0;
     const r = dmg0.apply(this, arguments);
     try {

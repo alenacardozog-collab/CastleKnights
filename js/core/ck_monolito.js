@@ -32,12 +32,15 @@
 
   const despierto = S => vista === 'despierto' || !!(S.story && S.story.flags && (S.story.flags.monolito === 'despierto' || S.story.flags.cap3_fin));
   const texturas = S => {
-    ['dormido', 'despierto'].forEach(k => { if (!S.textures.exists('ck_monolito_' + k) && !texturas['c' + k]) { texturas['c' + k] = 1; S.textures.addBase64('ck_monolito_' + k, ARTE[k]); } });
+    ['dormido', 'despierto', 'suelo'].forEach(k => { if (ARTE[k] && !S.textures.exists('ck_monolito_' + k) && !texturas['c' + k]) { texturas['c' + k] = 1; S.textures.addBase64('ck_monolito_' + k, ARTE[k]); } });
   };
-  const listo = S => S.textures.exists('ck_monolito_dormido') && S.textures.exists('ck_monolito_despierto');
+  const listo = S => S.textures.exists('ck_monolito_dormido') && S.textures.exists('ck_monolito_despierto') && (!ARTE.suelo || S.textures.exists('ck_monolito_suelo'));
+  // (15/11) el parche del suelo detrás de la piedra (donde se borró del dibujo quedaba una mancha lisa con contorno negro)
+  const SUELO = [181, 71];
 
   const poner = S => {
     if (S._ckMono) { try { S._ckMono.destroy(); } catch (e) {} S._ckMono = null; }
+    if (S._ckMonoSuelo) { try { S._ckMonoSuelo.destroy(); } catch (e) {} S._ckMonoSuelo = null; }
     if (!S.currentZoneKey || S.currentZoneKey() !== ZONA || !S.currentInterior) return;
     texturas(S);
     if (!listo(S)) { S.time.delayedCall(120, () => poner(S)); return; }
@@ -45,6 +48,7 @@
     const sp = S.add.image(a.x + X, a.y + Y + 2, despierto(S) ? 'ck_monolito_despierto' : 'ck_monolito_dormido').setOrigin(0.5, 1);
     sp.setDepth(Math.round(a.y + Y));
     S._ckMono = sp;
+    if (S.textures.exists('ck_monolito_suelo')) S._ckMonoSuelo = S.add.image(a.x + SUELO[0], a.y + SUELO[1], 'ck_monolito_suelo').setOrigin(0, 0).setDepth(7.5);
   };
   const a0 = P.onAreaShown;
   P.onAreaShown = function () {

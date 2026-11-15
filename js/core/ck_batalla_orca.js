@@ -15,7 +15,10 @@
      "te espero en la arena".
    - A los 480: a Bruno le dan; cae herido. "¡Retirada!": la pantalla se oscurece, los soldados se lo llevan y el héroe
      queda a la entrada de las Tierras. El capítulo sigue (paso 5: el Pueblo Orco y Gorak).
-   Va después de ck_capitulo2.js, ck_coliseo.js y ck_ajustes_juego.js. Borrar su línea de index.html vuelve al paso 4 de antes (4 orcos). */
+   Va después de ck_capitulo2.js, ck_coliseo.js y ck_ajustes_juego.js. Borrar su línea de index.html vuelve al paso 4 de antes (4 orcos).
+   (14/11, v2) FRENTES: la batalla puede pasar por varios mapas seguidos (CK_BATALLA_ORCA.frentes(lista)); cada frente tiene su
+   línea de soldados, por dónde entran los orcos y hasta qué cuenta dura. Al llegar a su cuenta, los orcos se repliegan y la
+   línea avanza al mapa del frente siguiente; en el último, Bruno cae herido. Sin otro archivo, un solo frente: las Tierras. */
 (function () {
   if (typeof MainGameScene === 'undefined' || typeof INTERIOR_LAYOUTS === 'undefined') return;
   const P = MainGameScene.prototype, ID = 'tierras_orcas', Z = 'ed_' + ID + '.main';
@@ -38,32 +41,46 @@
   const fl = S => { const s = S.story; if (!s) return null; s.flags = s.flags || {}; return s.flags; };
   const B = S => { const f = fl(S); if (!f) return { n: 0 }; return (f.batalla_orca = f.batalla_orca || { n: 0, g: 0, fin: 0 }); };
   const activa = S => { const f = fl(S); return !!f && (f.c2 || 0) === 4 && !B(S).fin; };
-  const aqui = S => !!(S.currentZoneKey && S.currentZoneKey() === Z && S.currentInterior && S.currentInterior.area);
+  // los frentes (v2): por defecto, uno solo en las Tierras, como antes
+  let FRENTES = [{ id: ID, soldados: SOLDADOS, bruno: BRUNO, entran: ENTRAN, sur: SUR, llegada: LLEGADA, gorvak: [880, 140], salida: [900, 110],
+    hasta: FIN_EN, objetivo: 'Tierras Orcas: resistí junto al Capitán Bruno', retirada: 'hasta la entrada de las Tierras' }];
+  const zonaDe = f => 'ed_' + f.id + '.main';
+  const actual = S => { const n = B(S).n; return FRENTES.find(f => n < f.hasta) || FRENTES[FRENTES.length - 1]; };
+  const ultimo = f => f === FRENTES[FRENTES.length - 1];
+  const F = S => S._ckBat && S._ckBat.frente || actual(S);
+  const aqui = S => !!(S.currentZoneKey && S.currentInterior && S.currentInterior.area && S.currentZoneKey() === zonaDe(actual(S)));
   const globo = (S, o, t, ms) => { try { if (window.CK_ESCENA && CK_ESCENA.globo) return CK_ESCENA.globo(S, o, t, ms || 2400, 46); } catch (e) {} S.createFloatingText(o.x, o.y - 50, t, 0xfde68a); };
 
   // ------------------------------------------------------------------ la línea del reino (actores del área: pelean solos)
-  const L0 = INTERIOR_LAYOUTS['ed_' + ID];
-  INTERIOR_LAYOUTS['ed_' + ID] = function (kit) {
-    const r = L0.apply(this, arguments), a = kit.areas && kit.areas.main;
-    try {
-      const S = window.activeGameScene || (window.game && game.scene.scenes.find(s => s.startCampaign));
-      if (a && S && activa(S)) {
-        a.actors = a.actors || [];
-        SOLDADOS.forEach(([g, x, y]) => a.actors.push(soldado(g, x, y)));
-        a.actors.push(Object.assign(soldado('knight', BRUNO.x, BRUNO.y), { lines: ['¡Mantengan la línea!', '¡Por el Rey y por el Roble!', '¡No retrocedan!'] }));
-      }
-    } catch (e) { console.warn('[batalla]', e); }
-    return r;
+  const envueltos = {};
+  const envolver = f => {
+    if (envueltos[f.id] || !INTERIOR_LAYOUTS['ed_' + f.id]) return;
+    envueltos[f.id] = true;
+    const L0 = INTERIOR_LAYOUTS['ed_' + f.id];
+    INTERIOR_LAYOUTS['ed_' + f.id] = function (kit) {
+      const r = L0.apply(this, arguments), a = kit.areas && kit.areas.main;
+      try {
+        const S = window.activeGameScene || (window.game && game.scene.scenes.find(s => s.startCampaign));
+        const g = S && activa(S) && actual(S);
+        if (a && g && g.id === f.id) {
+          a.actors = a.actors || [];
+          g.soldados.forEach(([t, x, y]) => a.actors.push(soldado(t, x, y)));
+          a.actors.push(Object.assign(soldado('knight', g.bruno.x, g.bruno.y), { lines: ['¡Mantengan la línea!', '¡Por el Rey y por el Roble!', '¡No retrocedan!'] }));
+        }
+      } catch (e) { console.warn('[batalla]', e); }
+      return r;
+    };
   };
+  FRENTES.forEach(envolver);
   function soldado(g, x, y) {
-    return { type: 'walker', key: 'g_' + g + '_idle', idle: 'g_' + g + '_idle', walk: 'g_' + g + '_walk', scale: ESCALA_SOLDADO, speed: 30,
+    return { type: 'walker', _ckBatalla: true, key: 'g_' + g + '_idle', idle: 'g_' + g + '_idle', walk: 'g_' + g + '_walk', scale: ESCALA_SOLDADO, speed: 30,
       pts: [[x, y, 600000], [x + 1, y, 600000]], lines: ['¡Por el Rey!', '¡Son demasiados!', '¡Aguanten!', '¡Otro más!'] };
   }
   const brunoDe = S => ((S.currentInterior.area.actors) || []).find(t => t.sprite && t.sprite.active && t.sprite.texture && t.sprite.texture.key === 'g_knight_idle');
   const soldadosDe = S => ((S.currentInterior.area.actors) || []).filter(t => t.role === 'guard' || t.role === 'archer');
   // dos soldados más desde el sur (un actor nuevo, igual que los del área)
   const refuerzo = (S, g, px, py) => {
-    const a = S.currentInterior.area, x = a.x + SUR[0] + azar(-14, 14), y = a.y + SUR[1];
+    const a = S.currentInterior.area, sur = F(S).sur, x = a.x + sur[0] + azar(-14, 14), y = a.y + sur[1];
     const key = 'g_' + g + '_idle'; if (!S.textures.exists(key)) return;
     const sp = S.add.sprite(x, y, key).setOrigin(0.5, 1).setScale(ESCALA_SOLDADO).setDepth(y);
     if (S.anims.exists(key)) sp.play(key);
@@ -79,7 +96,7 @@
   const vivosBatalla = S => S.enemies ? S.enemies.getChildren().filter(e => vivo(e) && e._ckBatalla).length : 0;
   const entrada = S => {
     const a = S.currentInterior.area, cam = S.cameras.main.worldView;
-    const libres = ENTRAN.map(([x, y]) => [a.x + x, a.y + y]).filter(([x, y]) => !S.navIsFree || S.navIsFree(x, y));
+    const libres = F(S).entran.map(([x, y]) => [a.x + x, a.y + y]).filter(([x, y]) => !S.navIsFree || S.navIsFree(x, y));
     const fuera = libres.filter(([x, y]) => !Phaser.Geom.Rectangle.Contains(cam, x, y));
     return uno(fuera.length ? fuera : libres);
   };
@@ -102,7 +119,13 @@
     son('ck_cuerno_orco', 1) || son('warg_howl', 0.8, { rate: 0.6 });
     S.cameras.main.shake(700, 0.008);
     const tipo = (typeof ENEMY_TYPES !== 'undefined' && ENEMY_TYPES.orc_campeon) ? 'orc_campeon' : 'orc_elite';
-    const a = S.currentInterior.area, e = traerOrco(S, tipo, [a.x + 880, a.y + 140]); if (!e) { b.g = 0; return; }
+    const f = F(S), gp = f.gorvak || [880, 140];
+    const a = S.currentInterior.area, e = traerOrco(S, tipo, [a.x + gp[0], a.y + gp[1]]); if (!e) { b.g = 0; return; }
+    // (v2) sus legiones: acorazados y de élite que bajan con él, en dos filas
+    for (let i = 0; i < (f.legion || 0); i++) {
+      const fila = i % 2, col = Math.floor(i / 2) - Math.floor((f.legion - 1) / 4);
+      S.time.delayedCall(250 + i * 160, () => { const o = traerOrco(S, i % 3 === 2 ? 'orc_elite' : 'orc_armored', [a.x + gp[0] + 30 + fila * 28, a.y + gp[1] + col * 30]); if (o) o._target = null; });
+    }
     e._target = null; e._ckGorvak = S.time.now;
     if (tipo !== 'orc_campeon') { e.hp = e.maxHp = 30; e.setScale(e.scaleX * 1.5).setTint(0x9aa4b2); }
     S.createFloatingText(S.player.x, S.player.y - 70, '¡GORVAK, EL DEL ESCUDO!', 0xff6b6b);
@@ -116,7 +139,7 @@
     if (e.body) e.body.enable = false;
     if (S.anims.exists(e.type + '_block')) e.play(e.type + '_block', true);
     globo(S, e, '¡Ja! Esto no termina acá, humanito… Te espero en la arena', 3200);
-    const a = S.currentInterior.area, sale = [a.x + 900, a.y + 110];
+    const a = S.currentInterior.area, sp = F(S).salida || [900, 110], sale = [a.x + sp[0], a.y + sp[1]];
     S.time.delayedCall(1400, () => {
       if (!e.active) return;
       if (S.anims.exists(e.type + '_walk')) e.play(e.type + '_walk', true);
@@ -153,7 +176,8 @@
           const a = S.currentInterior.area;
           a.actors = (a.actors || []).filter(t => { if (t.role === 'guard' || t.role === 'archer') { try { t.sprite.destroy(); } catch (e) {} return false; } return true; });
           limpiar(S);
-          try { if (S.placePlayerFeetAt) S.placePlayerFeetAt(a.x + LLEGADA.x, a.y + LLEGADA.y); else S.player.setPosition(a.x + LLEGADA.x, a.y + LLEGADA.y); } catch (e) {}
+          const ll = F(S).llegada || LLEGADA;
+          try { if (S.placePlayerFeetAt) S.placePlayerFeetAt(a.x + ll.x, a.y + ll.y); else S.player.setPosition(a.x + ll.x, a.y + ll.y); } catch (e) {}
           S.time.delayedCall(400, () => { try { S.cameras.main.resetFX(); S.cameras.main.fadeIn(600, 0, 0, 0); } catch (e) {} });
           S.time.delayedCall(2600, () => {
             S.createFloatingText(S.player.x, S.player.y - 56, 'LA LÍNEA RESISTIÓ · ' + b.n + ' ORCOS', 0xfde68a);
@@ -166,9 +190,42 @@
         });
       };
       if (S.openDialog) S.openDialog('Capitán Bruno', ['¡Argh! Me… me alcanzó una flecha negra…', '¡Son demasiados! ¡RETIRADA! ¡A la empalizada del sur!',
-        '(Los soldados levantan al Capitán y retroceden. Cubrís la retirada hasta la entrada de las Tierras.)'], fin, 'g_knight_idle');
+        '(Los soldados levantan al Capitán y retroceden. Cubrís la retirada ' + (F(S).retirada || 'hasta la entrada de las Tierras') + '.)'], fin, 'g_knight_idle');
       else fin();
     });
+  };
+
+  // ------------------------------------------------------------------ (v2) el frente cae: los orcos se repliegan y la línea avanza
+  const avance = S => {
+    const B2 = S._ckBat, f = B2 && B2.frente; if (!f || B2.avance) return;
+    B2.avance = true;
+    const sig = FRENTES[FRENTES.indexOf(f) + 1];
+    son('ck_cuerno_orco', 1) || son('orc_attack', 0.9, { rate: 0.6 });
+    S.cameras.main.shake(500, 0.005);
+    const a = S.currentInterior.area, hu = f.huyen || [930, 240];
+    (S.enemies ? S.enemies.getChildren() : []).filter(e => vivo(e) && e._ckBatalla).forEach((e, i) => {
+      e._ckIntangible = true; e.state = 'ck_retira'; e.isAttacking = false; if (e.setVelocity) e.setVelocity(0, 0); if (e.body) e.body.enable = false;
+      if (e.hpBar) e.hpBar.setVisible(false);
+      if (S.anims.exists(e.type + '_walk')) e.play(e.type + '_walk', true);
+      const tx = a.x + hu[0] + azar(-20, 20), ty = a.y + hu[1] + azar(-40, 40);
+      e.setFlipX(tx < e.x);
+      const d = Phaser.Math.Distance.Between(e.x, e.y, tx, ty);
+      S.tweens.add({ targets: e, x: tx, y: ty, delay: i * 60, duration: Math.max(900, d / 110 * 1000), onUpdate: () => e.setDepth(e.y + 26),
+        onComplete: () => S.tweens.add({ targets: e, alpha: 0, duration: 300, onComplete: () => { try { if (e.hpBar) e.hpBar.destroy(); e.destroy(); } catch (er) {} } }) });
+    });
+    S.createFloatingText(S.player.x, S.player.y - 60, f.cae || '¡SE REPLIEGAN!', 0xfde68a);
+    const br = brunoDe(S);
+    if (br) S.time.delayedCall(700, () => globo(S, br.sprite, f.avanza || '¡Se repliegan! ¡Adelante, tras ellos!', 3200));
+    // la línea marcha hacia el frente siguiente
+    const m = f.marcha || hu;
+    soldadosDe(S).concat(br ? [br] : []).forEach((t, i) => {
+      if (!t.sprite || !t.sprite.active) return;
+      t.fight = null; t.down = false;
+      S.time.delayedCall(1500 + i * 120, () => { if (t.sprite.active) t.pts = [[a.x + m[0] + azar(-30, 30), a.y + m[1] + azar(-50, 50), 600000]]; t.i = 0; t.wait = 0; });
+    });
+    S.saveStory && S.saveStory(); S.updateObjective && S.updateObjective();
+    pintarHud(S);
+    if (sig) S.time.delayedCall(3500, () => S.player && S.createFloatingText(S.player.x, S.player.y - 56, '▶ ' + (sig.nombre || 'Seguí a la línea'), 0xbfdbfe));
   };
 
   // ------------------------------------------------------------------ la cuenta en pantalla
@@ -198,24 +255,32 @@
     const r = u0.apply(this, arguments);
     try {
       const S = this;
-      if (!aqui(S) || S._gameMode !== 'campaign' || !activa(S)) { if (S._ckBat) { limpiar(S); quitarHud(); } return r; }
+      // (v2) el frente que acaba de caer queda como está (los orcos se van, la línea marcha) hasta que se sale del mapa
+      const mismo = !!(S._ckBat && S.currentInterior && S._ckBat.area === S.currentInterior.area);
+      if (mismo && S._ckBat.avance) return r;
+      if (!(mismo || aqui(S)) || S._gameMode !== 'campaign' || !activa(S)) { if (S._ckBat) { limpiar(S); quitarHud(); } return r; }
       const a = S.currentInterior.area, now = S.time.now, b = B(S);
       if (!S._ckBat || S._ckBat.area !== a) {
         if (S._ckBat) limpiar(S);
-        S._ckBat = { area: a, prox: now + 2500, refuerzo: now + 45000, extra: [], hablo: false };
+        const fr = actual(S), primera = !b['e_' + fr.id];
+        S._ckBat = { area: a, frente: fr, prox: now + 2500, refuerzo: now + 45000, extra: [], hablo: false, t0: now };
+        b['e_' + fr.id] = 1;
         pintarHud(S);
-        S.time.delayedCall(1200, () => {
+        // (v2) el frente puede tener su escena de llegada (las escaleras del Sendero, por ejemplo)
+        if (fr.alEntrar) { try { fr.alEntrar(S, primera, b); } catch (e) { console.warn('[batalla]', e); } }
+        S.time.delayedCall(fr.alEntrar ? 400 : 1200, () => {
           const br = aqui(S) && brunoDe(S);
-          if (!br || !activa(S)) return;
-          globo(S, br.sprite, b.n ? '¡Volviste! ¡Siguen bajando, a la línea!' : '¡Llegaste justo! ¡Bajan del norte! ¡Formen la línea, por el Rey!', 3000);
-          if (!b.n) { son('ck_cuerno_orco', 0.8); S.cameras.main.shake(400, 0.004); }
+          if (!br || !activa(S) || S._ckEscena) return;
+          globo(S, br.sprite, fr.llega ? fr.llega(b, primera) : (b.n ? '¡Volviste! ¡Siguen bajando, a la línea!' : '¡Llegaste justo! ¡Bajan del norte! ¡Formen la línea, por el Rey!'), 3000);
+          if (primera) { son('ck_cuerno_orco', 0.8); S.cameras.main.shake(400, 0.004); }
         });
       }
       const B2 = S._ckBat;
-      if (B2.final || S.dialogOpen || S.isDead || S._ckEscena) return r;
+      if (B2.final || B2.avance || S.dialogOpen || S.isDead || S._ckEscena) return r;
+      if (b.n >= B2.frente.hasta) { if (ultimo(B2.frente)) final(S); else avance(S); return r; }
       if (b.n >= FIN_EN) { final(S); return r; }
       // Gorvak
-      if (b.n >= GORVAK_EN && !b.g) gorvak(S);
+      if (b.n >= GORVAK_EN && !b.g && now - B2.t0 > 2500) gorvak(S);
       S.enemies.getChildren().forEach(e => {
         if (!vivo(e) || e._ckGorvak === undefined || e._ckSeVa) return;
         if (e.hp <= e.maxHp * 0.55 || now - e._ckGorvak > 60000) retirarGorvak(S, e);
@@ -241,7 +306,7 @@
       if (now > B2.refuerzo) {
         B2.refuerzo = now + 45000;
         const enPie = soldadosDe(S).filter(t => !t.down).length;
-        if (enPie < 7) { const [g1, x1, y1] = uno(SOLDADOS), [g2, x2, y2] = uno(SOLDADOS); refuerzo(S, g1, x1, y1); refuerzo(S, g2, x2, y2); S.createFloatingText(S.player.x, S.player.y - 60, '¡Llegan refuerzos del Roble!', 0xbfdbfe); }
+        if (enPie < 7) { const SL = B2.frente.soldados, [g1, x1, y1] = uno(SL), [g2, x2, y2] = uno(SL); refuerzo(S, g1, x1, y1); refuerzo(S, g2, x2, y2); S.createFloatingText(S.player.x, S.player.y - 60, '¡Llegan refuerzos del Roble!', 0xbfdbfe); }
       }
       // el nombre de Bruno sobre su cabeza
       const br = brunoDe(S);
@@ -257,9 +322,9 @@
   P.onEnemyDefeated = function (enemy) {
     let cuenta = false;
     try {
-      if (enemy && aqui(this) && activa(this) && /^orc/.test(enemy.type || '') && !enemy._ckContado) {
+      if (enemy && activa(this) && /^orc/.test(enemy.type || '')) fl(this).c2n = 0;   // el paso 4 viejo (4 orcos) no se cumple solo: lo cierra la batalla
+      if (enemy && aqui(this) && activa(this) && /^orc/.test(enemy.type || '') && !enemy._ckContado && !(this._ckBat && this._ckBat.avance)) {
         enemy._ckContado = true; cuenta = true;
-        fl(this).c2n = 0;                                   // el paso 4 viejo (4 orcos) no se cumple solo: lo cierra la batalla
       }
     } catch (e) {}
     const r = ve0 ? ve0.apply(this, arguments) : undefined;
@@ -287,11 +352,27 @@
   P.updateObjective = function () {
     const r = ob0.apply(this, arguments);
     try {
-      if (activa(this)) { const box = document.getElementById('ck-objective'), t = box && box.querySelector('.ck-obj-text'); if (t) t.textContent = 'Tierras Orcas: resistí junto al Capitán Bruno (' + B(this).n + ' orcos caídos)'; }
+      if (activa(this)) { const box = document.getElementById('ck-objective'), t = box && box.querySelector('.ck-obj-text'); if (t) t.textContent = actual(this).objetivo + ' (' + B(this).n + ' orcos caídos)'; }
     } catch (e) {}
     return r;
   };
   const ms0 = P.onAreaShown;
-  P.onAreaShown = function () { const r = ms0 ? ms0.apply(this, arguments) : undefined; try { if (!aqui(this)) quitarHud(); } catch (e) {} return r; };
-  window.CK_BATALLA_ORCA = { B, activa, GORVAK_EN, FIN_EN, SOLDADOS, ENTRAN };
+  P.onAreaShown = function () {
+    const r = ms0 ? ms0.apply(this, arguments) : undefined;
+    try {
+      if (!aqui(this)) quitarHud();
+      // (v2) la línea de un frente que ya cayó (o de una batalla terminada) no se queda en el mapa al volver
+      const a = this.currentInterior && this.currentInterior.area;
+      const z = this.currentZoneKey ? this.currentZoneKey() : '', esDeLinea = t => !!(t && t.sprite && t.sprite.texture && /^g_(templar|lancer|axeman|archer|knight)_/.test(t.sprite.texture.key));
+      if (a && a.actors && FRENTES.some(f => zonaDe(f) === z) && !(activa(this) && aqui(this)) && a.actors.some(esDeLinea)) {
+        a.actors = a.actors.filter(t => { if (!esDeLinea(t)) return true; try { t.sprite.destroy(); } catch (e) {} return false; });
+      }
+    } catch (e) {}
+    return r;
+  };
+  window.CK_BATALLA_ORCA = { B, activa, actual, GORVAK_EN, FIN_EN, SOLDADOS, ENTRAN,
+    /** (v2) Cambia los frentes de la batalla: [{ id, soldados, bruno, entran, sur, llegada, gorvak, salida, legion, hasta,
+        objetivo, retirada, huyen, marcha, avanza, cae, nombre, llega(b, primera), alEntrar(S, primera, b) }] */
+    frentes: lista => { FRENTES = lista; FRENTES.forEach(envolver); return FRENTES; },
+    get FRENTES() { return FRENTES; } };
 })();

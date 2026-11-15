@@ -56,13 +56,23 @@
   // persiguiendo al héroe vuelve a su lado. Los murciélagos vuelan y no cuentan.
   const LIMITE_X = 1048, VUELA = /^(bat|fantasma|ghost|wisp|cuervo)$/;
   const enBosque = S => S.currentZoneKey && S.currentZoneKey() === ZB && S.currentInterior && S.currentInterior.area;
+  // (13/11, v4) las que nacían del lado humano se amontonaban todas contra la empalizada (x 1110-1135) y las que cruzaban
+  // persiguiendo al héroe volvían de golpe: ahora se reparten al azar por el lado orco (en un lugar caminable) y en el límite
+  // chocan como contra una pared (se las frena cuadro a cuadro, sin saltos) y se vuelven a su lugar
+  const REPARTO = [80, 360];                       // a cuántos px al este del límite pueden aparecer
   const sp0 = P.spawnEnemy;
   P.spawnEnemy = function (x, y, tipo) {
     try {
       if (enBosque(this) && !VUELA.test(tipo)) {
-        const a = this.currentInterior.area;
-        if (x < a.x + LIMITE_X + 10) x = a.x + LIMITE_X + 40 + Math.random() * 60;
-        arguments[0] = x;
+        const a = this.currentInterior.area, lim = a.x + LIMITE_X;
+        if (x < lim + 10) {
+          x = Math.min(a.x + a.w - 40, lim + REPARTO[0] + Math.random() * (REPARTO[1] - REPARTO[0]));
+          try {
+            const G = this.navGrid && this.navGrid(true), c = G && this.navNearestCell ? this.navNearestCell(G, x, y, 12) : null;
+            if (c) { const C = typeof NAV_CELL !== "undefined" ? NAV_CELL : 8, cx = G.x + c[0] * C + C / 2, cy = G.y + c[1] * C + C / 2; if (cx > lim + 30) { x = cx; y = cy; } }
+          } catch (e) {}
+          arguments[0] = x; arguments[1] = y;
+        }
       }
     } catch (e) {}
     return sp0.apply(this, arguments);
@@ -71,14 +81,14 @@
   P.update = function (t) {
     const r = upB.apply(this, arguments);
     try {
-      if (!enBosque(this) || !this.enemies || (this._ckFbProx && t < this._ckFbProx)) return r;
-      this._ckFbProx = t + 250;
-      const a = this.currentInterior.area, lim = a.x + LIMITE_X;
+      if (!enBosque(this) || !this.enemies) return r;
+      const a = this.currentInterior.area, lim = a.x + LIMITE_X + 4;
       this.enemies.getChildren().forEach(e => {
         if (!e.active || e.isDead || VUELA.test(e.type) || !e.body || e.x >= lim) return;
-        e.body.reset(lim + 30, e.y); e.body.setVelocity(0, 0);
+        if (e.x < lim - 60) { e.body.reset(lim + 30, e.y); e.body.setVelocity(0, 0); }   // (las que nacieron mal de alguna otra forma)
+        else { e.body.reset(lim, e.y); if (e.body.velocity.x < 0) e.body.setVelocityX(0); }
         if (e.home) { e.home.x = Math.max(e.home.x, lim + 60); }
-        e.target = null; e.alerted = false; e.state = e.state === 'chase' ? 'return' : e.state;
+        if (e.state === 'chase') { e.target = null; e.alerted = false; e.state = 'return'; }
       });
     } catch (e) {}
     return r;

@@ -147,7 +147,8 @@
   ];
   // mapas con sendas marcadas (en los de tierra suelta, como las Tierras Orcas, todo es "camino" en el dibujo del minimapa)
   const SENDAS = /camino_al_castillo|bosque_de_la_frontera|campos_del_roble|jardin_real|patio_del_castillo/;
-  const NO_PONER = { 'ed_camino_al_castillo.main': [[290, 380, 520, 480], [960, 540, 1060, 620]] };   // las puntas del puente y la escalera de abajo
+  const NO_PONER = { 'ed_camino_al_castillo.main': [[290, 380, 520, 480], [960, 540, 1060, 620]],   // las puntas del puente y la escalera de abajo
+    'ed_campos_del_roble.main': [[580, 0, 762, 152]] };                                              // (13/11) el trigal del espantapájaros
   const juegoDe = zona => JUEGOS.find(([re]) => re.test(zona || ''))[1];
   const BARRO = /^(vasija|anfora|urna|olla_orca)$/;
   const MEZCLA = { canasto: 0.45, anfora: 0.45, urna: 0.6, tocon: 0.5, olla_orca: 0.55, tambor: 0.55 };   // cuánto toman de la paleta del mapa
@@ -188,6 +189,42 @@
     const leer = ctx => { const d = ctx.getImageData(0, 0, W, H).data, o = new Uint8Array(W * H); for (let i = 0; i < o.length; i++) o[i] = d[i * 4 + 3] > 50 ? 1 : 0; return o; };
     return { a, W, H, o: leer(g), d: leer(gd) };
   };
+  // (13/11, pedido: "los cofres y cosas rompibles ponelos en lugares que no tapen cosas del mapa que no sea suelo"): la
+  // ocupación de arriba no ve lo que está pintado en el suelo (riscos, piedras, raíces, troncos, el borde del trigal, flores,
+  // la base de un muro). Se arma el piso tal como se ve (el suelo y todo lo que va a ras del piso) y para cada lugar se mide
+  // cuánto "dibujo" tiene debajo: bordes fuertes y contraste. Sólo se aceptan los lugares tan lisos como la mitad más lisa
+  // del suelo caminable de ese mapa (CALMA); si en una zona no alcanza para los cofres, se vuelve a la regla de antes.
+  const CALMA = 1.2;                                  // tolerancia sobre la mediana del suelo caminable
+  const pisoDe = S => {
+    const a = S.currentInterior.area, W = Math.ceil(a.w), H = Math.ceil(a.h);
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    S.children.list.forEach(o => {
+      if (!o.active || !o.visible || o.depth > 7.5 || (o.type !== 'Image' && o.type !== 'Sprite')) return;
+      const fr = o.frame; if (!fr || !fr.source || !fr.source.image) return;
+      g.save(); g.translate(o.x - a.x, o.y - a.y); g.scale(o.scaleX * (o.flipX ? -1 : 1), o.scaleY);
+      try { g.drawImage(fr.source.image, fr.cutX, fr.cutY, fr.cutWidth, fr.cutHeight, -o.originX * fr.cutWidth, -o.originY * fr.cutHeight, fr.cutWidth, fr.cutHeight); } catch (e) {}
+      g.restore();
+    });
+    const d = g.getImageData(0, 0, W, H).data, L = new Uint8Array(W * H), E = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) L[i] = (0.3 * d[i * 4] + 0.59 * d[i * 4 + 1] + 0.11 * d[i * 4 + 2]) | 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x, v = L[i]; E[i] = Math.max(x ? Math.abs(v - L[i - 1]) : 0, y ? Math.abs(v - L[i - W]) : 0) > 35 ? 1 : 0; }
+    return (x0, y0, x1, y1) => {
+      x0 = Math.max(0, Math.floor(x0 - a.x)); y0 = Math.max(0, Math.floor(y0 - a.y)); x1 = Math.min(W, Math.ceil(x1 - a.x)); y1 = Math.min(H, Math.ceil(y1 - a.y));
+      let n = 0, e = 0, s = 0, s2 = 0;
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) { const i = y * W + x, v = L[i]; n++; e += E[i]; s += v; s2 += v * v; }
+      if (!n) return { e: 1, s: 99 };
+      const m = s / n; return { e: e / n, s: Math.sqrt(Math.max(0, s2 / n - m * m)) };
+    };
+  };
+  const calmaDe = (M, celdas) => {
+    const es = [], ss = [], paso = Math.max(1, Math.floor(celdas.length / 600));
+    for (let i = 0; i < celdas.length; i += paso) { const c = celdas[i], q = M.piso(c.x - 12, c.y - 20, c.x + 12, c.y + 4); es.push(q.e); ss.push(q.s); }
+    const med = v => { const o = v.slice().sort((p, q) => p - q); return o.length ? o[Math.floor(o.length / 2)] : 0; };
+    // con tope: aunque el mapa entero sea de piedra o raíces, un lugar con más dibujo que esto no es piso libre
+    return { e: Math.min(0.09, Math.max(0.03, med(es)) * CALMA), s: Math.min(24, Math.max(12, med(ss)) * CALMA) };
+  };
+  const calmo = (M, x0, y0, x1, y1) => { if (!M.calmaOn || !M.piso) return true; const q = M.piso(x0, y0, x1, y1); return q.e <= M.calma.e && q.s <= M.calma.s; };
   // ¿cuánto de un rectángulo (del mundo) está ocupado?
   const cuenta = (M, arr, x0, y0, x1, y1) => {
     let n = 0;
@@ -225,6 +262,8 @@
   const entra = (S, M, G, k, x, y) => {
     const { w, h } = TAM(k), x0 = x - w / 2, x1 = x + w / 2, y0 = y - h;
     if (cuenta(M, M.o, x0 - 1, y0 - 1, x1 + 1, y + 2)) return null;            // no pisa ni tapa nada
+    if (x0 < M.a.x + 10 || x1 > M.a.x + M.a.w - 10 || y0 < M.a.y + 12) return null;   // (13/11) ni pegado al borde del mapa
+    if (!calmo(M, x0, y0, x1, y + 2)) return null;                              // (13/11) ni tapa algo pintado en el suelo
     if (M.ruta && (M.ruta(x, y - 3) || M.ruta(x0 + 2, y - 3) || M.ruta(x1 - 2, y - 3))) return null;   // ni corta un camino
     // el pie y el frente, caminables (se llega y no queda trabado)
     const libreNav = (px, py) => { const cx = Math.floor((px - G.x) / 8), cy = Math.floor((py - G.y) / 8); return cx >= 0 && cy >= 0 && cx < G.gw && cy < G.gh && !G.g[cy * G.gw + cx]; };
@@ -269,28 +308,55 @@
     const entrada = { x: S.player.body.center.x, y: S.player.body.bottom };
     const M = ocupacion(S), G = S.navGrid(true);
     M.ruta = rutas(S, G, a, [[S.player.body.center.x, S.player.body.bottom]]);
+    try { M.piso = pisoDe(S); M.calma = calmaDe(M, celdas); M.calmaOn = true; } catch (e) { M.calmaOn = false; }
     const s = S.story; s.flags = s.flags || {};
     // (08/11) lugares nuevos: cofres_pos2. Los cofres ya abiertos siguen abiertos (se guardan por número, no por lugar)
     const pos = (s.flags.cofres_pos3 = s.flags.cofres_pos3 || {}), abiertos = (s.flags.cofres = s.flags.cofres || {});
     const lejos = c => Math.hypot(c.x - entrada.x, c.y - entrada.y), dmax = Math.max(...celdas.map(lejos));
     const cofres = [];
     if (nCofres) {
-      if (!pos[zona]) {
-        // rincones: cerrados por dos o tres lados, en la mitad de la zona más lejos de la entrada
+      // rincones: cerrados por dos o tres lados, en la mitad de la zona más lejos de la entrada
+      const candCofres = () => {
         const rnd = semilla(zona), cand = [];
         celdas.forEach(c => {
           const d = lejos(c); if (d < Math.max(LEJOS_ENTRADA, dmax * 0.45)) return;
           const e = entra(S, M, G, 'cofre', c.x, c.y + 4); if (!e || !e.n) return;
           cand.push({ x: c.x, y: c.y + 4, n: e.n, p: e.n * 4 + (e.T ? 2 : 0) + c.paredes * 0.25 + (d / dmax) * 6 + rnd() * 2 });
         });
-        cand.sort((p, q) => q.p - p.p);
+        return cand.sort((p, q) => q.p - p.p);
+      };
+      // elige hasta n lugares lejos de los que ya están (fijos); si con el piso liso no alcanza, vuelve a la regla de antes
+      const elegir = (n, fijos) => {
         const sel = [];
-        [[2, 200], [1, 200], [1, 110]].forEach(([nmin, sep]) => cand.forEach(c => {
-          if (sel.length >= nCofres || c.n < nmin || sel.some(o => Math.hypot(o.x - c.x, o.y - c.y) < sep)) return;
-          sel.push(c);
-        }));
-        pos[zona] = sel.map(c => [Math.round(c.x - a.x), Math.round(c.y - a.y)]);
+        for (const liso of [true, false]) {
+          if (sel.length >= n) break;
+          M.calmaOn = liso && !!M.piso;
+          const cand = candCofres();
+          [[2, 200], [1, 200], [1, 110]].forEach(([nmin, sep]) => cand.forEach(c => {
+            if (sel.length >= n || c.n < nmin || sel.concat(fijos).some(o => Math.hypot(o.x - c.x, o.y - c.y) < sep)) return;
+            sel.push(c);
+          }));
+        }
+        M.calmaOn = !!M.piso;
+        return sel;
+      };
+      if (!pos[zona]) {
+        pos[zona] = elegir(nCofres, []).map(c => [Math.round(c.x - a.x), Math.round(c.y - a.y)]);
         S.saveStory && S.saveStory();
+      } else {
+        // (13/11) los cofres de partidas guardadas que quedaron sobre algo pintado (y todavía cerrados) se mudan una vez
+        const rev = (s.flags.cofres_rev = s.flags.cofres_rev || {});
+        if (!rev[zona] && M.piso) {
+          rev[zona] = 1;
+          const T = TAM('cofre'), malos = [];
+          pos[zona].forEach(([x, y], i) => { if (!abiertos[zona + '#' + i] && !calmo(M, a.x + x - T.w / 2, a.y + y - T.h, a.x + x + T.w / 2, a.y + y + 2)) malos.push(i); });
+          if (malos.length) {
+            const fijos = pos[zona].filter((q, i) => malos.indexOf(i) < 0).map(([x, y]) => ({ x: a.x + x, y: a.y + y }));
+            const nuevos = elegir(malos.length, fijos);
+            malos.forEach((i, j) => { if (nuevos[j]) pos[zona][i] = [Math.round(nuevos[j].x - a.x), Math.round(nuevos[j].y - a.y)]; });
+          }
+          S.saveStory && S.saveStory();
+        }
       }
       pos[zona].forEach(([x, y], i) => {
         const id = zona + '#' + i, abierto = !!abiertos[id];

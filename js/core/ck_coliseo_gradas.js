@@ -60,9 +60,16 @@
       pinta('ckg_hueco_' + n, 0, 0); pinta('ckg_reja_' + n, R.x - H.x, R.y - H.y);
       const d = g.getImageData(0, 0, w, h), px = d.data;
       // la unión de lo opaco, rellena: cada columna, del primer píxel opaco al último (las rayas entre barrotes también)
+      const Y0 = new Array(w).fill(-1), Y1 = new Array(w).fill(-1);
+      for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) if (px[(y * w + x) * 4 + 3] > 30) { if (Y0[x] < 0) Y0[x] = y; Y1[x] = y; }
+      // (v3, 13/11) el borde de abajo seguía las puntas de los barrotes (quedaba dentado sobre la arena): ahora es una recta,
+      // la que mejor pasa por las puntas (lo más bajo de cada tramo de 11 columnas), con la inclinación de la perspectiva
+      const env = Y1.map((v, x) => { if (v < 0) return -1; let m = v; for (let k = Math.max(0, x - 5); k <= Math.min(w - 1, x + 5); k++) if (Y1[k] > m) m = Y1[k]; return m; });
+      let n0 = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
+      env.forEach((v, x) => { if (v >= 0) { n0++; sx += x; sy += v; sxx += x * x; sxy += x * v; } });
+      const den = n0 * sxx - sx * sx, pend = n0 > 1 && den ? (n0 * sxy - sx * sy) / den : 0, ord = n0 ? (sy - pend * sx) / n0 : 0;
       for (let x = 0; x < w; x++) {
-        let y0 = -1, y1 = -1;
-        for (let y = 0; y < h; y++) if (px[(y * w + x) * 4 + 3] > 30) { if (y0 < 0) y0 = y; y1 = y; }
+        const y0 = Y0[x], y1 = y0 < 0 ? -1 : Math.min(h - 1, Math.max(y0, Math.round(ord + pend * x)));
         for (let y = 0; y < h; y++) { const i = (y * w + x) * 4; const dentro = y0 >= 0 && y >= y0 && y <= y1; const t = h > 1 ? y / (h - 1) : 0; px[i] = 9 + 6 * t; px[i + 1] = 6 + 4 * t; px[i + 2] = 12 + 6 * t; px[i + 3] = dentro ? 255 : 0; }
       }
       g.putImageData(d, 0, 0);
