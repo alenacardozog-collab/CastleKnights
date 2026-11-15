@@ -68,6 +68,18 @@
     const f = MAPA[k.slice(3)];
     return f === undefined ? 1 : f;
   };
+  // (15/11) deshace agrandar(): el dibujo vuelve a su escala y la caja a su tamaño y lugar de antes
+  const restaurar = o => {
+    const f = o._ckEscF; if (!f || f === 1) return;
+    o.setScale(o.scaleX / f, o.scaleY / f);
+    const b = o.body;
+    if (b && b.setSize && b.sourceWidth) {
+      const w = b.sourceWidth, h = b.sourceHeight, ox = b.offset.x, oy = b.offset.y;
+      b.setSize(w * f, h * f, false); b.setOffset(ox - w * (f - 1) / 2, oy - h * (f - 1));
+      o._ckEscW = b.sourceWidth;
+    }
+    o._ckEscF = 1; o._ckEscVal = o.scaleX;
+  };
   // agranda el dibujo y achica la caja en la misma proporción (el pie queda igual en el mundo)
   const agrandar = (o, f, base) => {
     const sx = base, sy = o.scaleY / (o.scaleX || 1) * base;
@@ -137,12 +149,18 @@
     for (let i = 0; i < L.length; i++) {
       const o = L[i];
       if (!o || !o.active || o === S.player || o.type !== 'Sprite' || !o.frame) continue;
+      // (15/11, pedido: "en la aldea del Roble los personajes quedaron gigantes"): los sprites de la aldea y de las salas
+      // siguen en la escena, escondidos, mientras el héroe anda por un mapa del Taller, y se agrandaban a la medida de ese
+      // mapa; al volver, con factor 1, nadie los volvía a su tamaño. Ahora los escondidos no se tocan, y lo que quedó
+      // agrandado de antes vuelve a su escala (dibujo y caja) apenas se está en un mapa sin escala
+      if (!o.visible) continue;
       const k = o.texture && o.texture.key;
       if (k && REY.test(k)) {                         // el Rey: un 20 % más chico (y agrandado como todos en los mapas del Taller)
         const fr = f0 * ACHICAR_REY;
         if (!(o._ckEscF === fr && Math.abs(o.scaleX - o._ckEscVal) < 0.001)) agrandar(o, fr, o.scaleX);
         continue;
       }
+      if (f0 === 1 && o._ckEscF && o._ckEscF !== 1 && Math.abs(o.scaleX - o._ckEscVal) < 0.001) { restaurar(o); continue; }
       const f = f0;
       // aldeanos de hoja chica (v5: en todos los mapas del Taller, interiores incluidos): RELACION del alto del héroe, nunca
       // más chicos de lo que estaban ni más del doble
