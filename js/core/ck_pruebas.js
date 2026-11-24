@@ -217,12 +217,37 @@
       await hablar(s, 'ruy'); ok(paso() === 4 && fl().sal, 'Ruy no dio la sal ni el paso a Brumavieja (paso ' + paso() + ')');
       await hablar(s, 'hermit'); ok(paso() === 5, 'Tobías no mandó al cementerio (paso ' + paso() + ')');
       await irZona(s, 'ruins.village');
-      await vencer(s, x => x.type === 'skeleton_great', 1); ok(await hasta(() => paso() === 6 && fl().key, 2000), 'el Gran Esqueleto no dejó la llave (paso ' + paso() + ')');
-      // la capilla: al acercarse sale el Nigromante (antes habla Varek)
-      const a = s.currentInterior.area, cap = window.CK_CAPILLA || { x: 560, y: 300 };
-      s.placePlayerFeetAt(a.x + cap.x, a.y + cap.y + 80); await esperar(400); await cerrarDialogo(s);
-      s.placePlayerFeetAt(a.x + cap.x, a.y + cap.y + 30); await esperar(300); await cerrarDialogo(s);
-      ok(await hasta(() => s.enemies.getChildren().some(x => x.active && x.type === 'necromancer'), 4000), 'el Nigromante no salió de la capilla');
+      const H = window.CK_BRUMAVIEJA_HIST, a = s.currentInterior.area, cap = window.CK_CAPILLA || { x: 522, y: 220 };
+      const vivos = f => s.enemies.getChildren().filter(x => x.active && !x.isDead && f(x));
+      if (H) {
+        // (23/11) Brumavieja rehecha (ck_brumavieja_historia.js): al acercarse a la capilla los muertos la cuidan; vencidos,
+        // la puerta cede y se entra con T; adentro está el diario de Varek (acá se da por leído); al salir sube el Gran
+        // Esqueleto con la llave del Cementerio Real
+        s.placePlayerFeetAt(a.x + cap.x, a.y + cap.y + 110); s.player.setVelocity(0, 0); await esperar(300); await cerrarDialogo(s);
+        ok(await hasta(() => vivos(x => x._bvGuardia).length >= 3, 5000), 'los muertos no salieron a cuidar la capilla');
+        await esperar(900);
+        await vencer(s, x => x._bvGuardia, vivos(x => x._bvGuardia).length);
+        ok(await hasta(() => fl().bv && fl().bv.capilla, 5000), 'la puerta de la capilla no cedió al vencer a los muertos');
+        s.placePlayerFeetAt(a.x + cap.x, a.y + cap.y + 20); s.player.setVelocity(0, 0); await esperar(300); await cerrarDialogo(s);
+        s.interact(); ok(await hasta(() => s.currentZoneKey() === 'ed_capilla_brumavieja.main' && !s._doorTransition, 6000), 'T en la puerta no entró a la capilla'); await esperar(400);
+        H.saltar(s, 'libro');
+        s.switchInteriorArea('zb_ruinas_capilla'); ok(await hasta(() => s.currentZoneKey() === 'ruins.village' && !s._doorTransition, 6000), 'no volvió de la capilla a Brumavieja');
+        ok(await hasta(() => vivos(x => x.type === 'skeleton_great').length > 0, 9000), 'el Gran Esqueleto no subió al salir de la capilla');
+        await hasta(() => !s._ckEscena, 6000); await esperar(400);
+      }
+      await vencer(s, x => x.type === 'skeleton_great', 1); ok(await hasta(() => paso() === 6 && fl().key, 3000), 'el Gran Esqueleto no dejó la llave (paso ' + paso() + ')');
+      if (H) {
+        // el Cementerio Real: con las reliquias ya puestas en el círculo (saltar 'puzzle'), al llegar el Nigromante sale del círculo
+        H.saltar(s, 'puzzle');
+        await irZona(s, 'ed_cementerio_real.main'); await cerrarDialogo(s);
+        ok(await hasta(() => s.enemies.getChildren().some(x => x.active && x.type === 'necromancer'), 8000), 'el Nigromante no salió del círculo del Cementerio Real');
+        await hasta(() => !s._ckEscena, 6000); await esperar(300);
+      } else {
+        // la capilla: al acercarse sale el Nigromante (antes habla Varek)
+        s.placePlayerFeetAt(a.x + cap.x, a.y + cap.y + 80); await esperar(400); await cerrarDialogo(s);
+        s.placePlayerFeetAt(a.x + cap.x, a.y + cap.y + 30); await esperar(300); await cerrarDialogo(s);
+        ok(await hasta(() => s.enemies.getChildren().some(x => x.active && x.type === 'necromancer'), 4000), 'el Nigromante no salió de la capilla');
+      }
       await vencer(s, x => x.type === 'necromancer', 1);
       // (10/11) con ck_libro_sello.js queda de rodillas: se lo sella como lo haría el héroe
       if (window.CK_LIBRO_SELLO) s.enemies.getChildren().filter(x => x.type === 'necromancer' && x._ckSello).forEach(x => CK_LIBRO_SELLO.sellar(s, x));
