@@ -32,6 +32,9 @@
      siguiente (también por la izquierda), cada vez con más énfasis. El Caudillo, un 20 % más grande.
    - AL FINAL: Grushak, malherido: "te vas a arrepentir de tu decisión… pero ganaste: por ley, te la podés llevar". Se abre
      la reja de abajo y se sale AFUERA DEL PUEBLO ORCO con la princesa, que te sigue hasta el castillo (ck_escolta_princesa.js).
+   (23/11, v6, nota 25 del dueño: "Grushak parado, no sentado"): en la Fortaleza espera DE PIE delante del trono, con la
+   animación quieta del jefe (la misma que en la arena), mirando hacia la entrada.
+   (23/11, v7, nota: "Grushak aparece aquí"): parado en (770, 184), sobre la alfombra delante del trono.
    Borrar su línea de index.html deja la pelea con Grushak en el trono, como antes. */
 (function () {
   if (typeof MainGameScene === 'undefined' || typeof INTERIOR_LAYOUTS === 'undefined' || !window.CK_COLISEO) return;
@@ -42,7 +45,7 @@
   const RONDAS = ['orc_campeon', 'cazador_ulrak', 'bestia_kragmor'];   // (14/11, nota 130) el del escudo, el huargo, el gorila
   const PUERTAS = [[356, 382], [1086, 374], [718, 322]];          // dónde aparece cada campeón (sin ck_coliseo_gradas.js)
   const REJAS = ['izq', 'der', 'arr'];                              // por qué reja entra cada uno (con ck_coliseo_gradas.js)
-  const TRIBUNA = { x: 718, y: 128 }, TRONO_FORT = { x: 835, y: 178 };
+  const TRIBUNA = { x: 718, y: 128 }, TRONO_FORT = { x: 835, y: 178 }, GRUSHAK_PARADO = { x: 770, y: 184 };
   const LLEGA = { patio: { x: 40, y: 258 }, patioPuerta: { x: 214, y: 112 }, fort: { x: 140, y: 500 }, fortTrono: { x: 760, y: 250 }, pueblo: { x: 778, y: 50 }, col: { x: 718, y: 596 } };
   const fl = s => (s.flags = s.flags || {});
   const paso = s => (s && s.flags && s.flags.c2) || 0;
@@ -105,8 +108,15 @@
       if (z === Z.fort && paso(s) === 6 && !fl(s).grushak) {
         this._c2Jefe = true;                                   // ck_capitulo2.js ya no lo hace pelear acá
         const a = this.currentInterior.area;
-        const rey = this.add.sprite(a.x + TRONO_FORT.x, a.y + TRONO_FORT.y, 'ckc_rey_idle').setOrigin(0.5, 0.9).setScale(0.9).setDepth(a.y + TRONO_FORT.y);   // (15/11) +20 %
-        this.tweens.add({ targets: rey, scaleY: 0.918, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        // (v6, nota 25) parado delante del trono (antes, sentado: 'ckc_rey_idle'); los pies de sus cuadros están en y = 92 de 100
+        const ER = (typeof ENEMY_TYPES !== 'undefined' && ENEMY_TYPES.orc_warlord) || {}, parado = this.textures.exists('orc_warlord_idle');
+        // (v7, nota del dueño del 23/11: "Grushak aparece aquí") parado en la alfombra, delante del trono, a la izquierda
+        const ry = parado ? GRUSHAK_PARADO.y : TRONO_FORT.y, rx = parado ? GRUSHAK_PARADO.x : TRONO_FORT.x;
+        const rey = parado
+          ? this.add.sprite(a.x + rx, a.y + ry, 'orc_warlord_idle').setOrigin(0.5, 0.92).setScale(ER.scale || 1.2).setDepth(a.y + ry).setFlipX(true)
+          : this.add.sprite(a.x + TRONO_FORT.x, a.y + ry, 'ckc_rey_idle').setOrigin(0.5, 0.9).setScale(0.9).setDepth(a.y + ry);   // (15/11) +20 %
+        if (parado && this.anims.exists('orc_warlord_idle')) rey.play('orc_warlord_idle');
+        else this.tweens.add({ targets: rey, scaleY: 0.918, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         (a.objs || (a.objs = [])).push(rey);
         this._colRey = rey; this._colHablo = false; this._colEntro = this.time.now;
         // (15/11, nota 45) la guardia de la fortaleza se queda: hay que limpiarla antes de que Grushak hable
@@ -294,7 +304,7 @@
       ], 'orc_warlord_idle');
     }).then(sigue).catch(sigue);
   };
-  // (15/11, nota 46) cómo presenta Grushak a cada uno, cada vez con más ganas (sale por la reja de la izquierda, la cámara lo sigue)
+  // (15/11, nota 46) cómo presenta Grushak a cada uno, cada vez con más ganas (sale por su reja, la cámara lo sigue)
   const PRESENTA = [
     ['¡GORVAK, CAMPEÓN DE LA ARENA! Cien peleas… ¡y ni una derrota!', '¡Que su escudo te parta los dientes!'],
     ['¡ULRAK EL CAZADOR Y COLMILLO, SU HUARGO!', '¡NADIE se escapó NUNCA de esos colmillos! ¡CORRÉ, gusano, CORRÉ!'],
@@ -310,19 +320,23 @@
     S.time.delayedCall(1600, () => {
       if (zona(S) !== Z.col) return;
       const GR = window.CK_COLISEO_GRADAS, E = window.CK_ESCENA;
-      if (GR && E && E.correr && GR.PUERTA && GR.PUERTA.izq) {   // (15/11) por la izquierda, con la cámara encima y su presentación
-        const pu = GR.PUERTA.izq;
+      // (23/11, notas 22 a 24 del dueño: "de este lado sale grovak" / "de este lado sale el gorila" / "de este lado sale el
+      // huargo"): cada uno por su reja, con la cámara encima: Gorvak por la izquierda, Ulrak y su huargo por la derecha y
+      // Kragmor por la de arriba (antes salían los tres por la izquierda)
+      const lado = REJAS[n] || 'izq';
+      if (GR && E && E.correr && GR.PUERTA && GR.PUERTA[lado]) {   // (15/11) con la cámara encima y su presentación
+        const pu = GR.PUERTA[lado];
         let e = null;
         const pelea = () => {
-          if (!e && zona(S) === Z.col) { e = GR.entrar(S, 'izq', tipo, q => S.time.delayedCall(300, () => vivo(q) && S.alertEnemy(q))); if (e) e._colRonda = n; return; }
+          if (!e && zona(S) === Z.col) { e = GR.entrar(S, lado, tipo, q => S.time.delayedCall(300, () => vivo(q) && S.alertEnemy(q))); if (e) e._colRonda = n; return; }
           if (vivo(e)) S.time.delayedCall(200, () => vivo(e) && S.alertEnemy(e));
         };
         E.correr(S, async () => {
-          await E.camara(S, pu.a[0] + 40, pu.a[1] - 20, 900);
-          e = GR.entrar(S, 'izq', tipo, () => {});
+          await E.camara(S, pu.a[0] + (lado === 'izq' ? 40 : lado === 'der' ? -40 : 0), pu.a[1] - (lado === 'arr' ? -10 : 20), 900);
+          e = GR.entrar(S, lado, tipo, () => {});
           if (e) e._colRonda = n;
           await new Promise(r => setTimeout(r, 1700));
-          if (vivo(e)) { e.setFlipX(false); S.cameras.main.shake(300, 0.004 + n * 0.003); }
+          if (vivo(e)) { if (lado !== 'arr') e.setFlipX(lado === 'der'); S.cameras.main.shake(300, 0.004 + n * 0.003); }
           try { GR.alboroto && GR.alboroto(S, 1.5 + n * 0.5, 2600); } catch (er) {}
           await E.dialogo(S, 'Grushak, el Caudillo', PRESENTA[n], 'orc_warlord_idle');
         }).then(pelea).catch(pelea);

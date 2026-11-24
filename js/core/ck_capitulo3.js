@@ -29,6 +29,22 @@
    caer meteoritos y la gente vuelve a salir. El cartel de arriba dice cuántos demonios quedan, cuánta gente falta y
    cuántos lugares están limpios (story.flags.inf[lugar] = { g, m, ok, llego }). Fuera de esos lugares (Brumavieja, el
    Cementerio) no hay caos. Con los seis limpios, Bruno espera frente al portón: lo último es el castillo (segunda parte).
+   (23/11, v8, notas del dueño del 23/11, 2 a 17, y su mensaje sobre el castillo) LA PRIMERA PARTE, REHECHA:
+   - Bruno espera en el camino del campamento (nota 17) y habla del Rey traidor. De noche, junto al fogón, los caballeros
+     negros de Gaspar (los mercenarios, ahora también enemigos: "mercenario") voltean a sus hombres; el héroe y Bruno pelean
+     contra una tropa que no se acaba, caen, y Bruno se rinde para salvar a los heridos. Atados (nota 12) miran el ritual: la
+     princesa es la de siempre (npc8), el monolito despierta con su anillo de runas, la energía que se junta y tres latidos;
+     el portal del piso es de pixelfx (se abre, gira, la chupa y se cierra) y después la piedra tira la columna de luz al
+     cielo y todo tiembla. El rojo lo cubre todo, se abren portales y caen bolas de fuego, el Rey queda mirando y huye
+     (nota 13), las sogas se queman y se pelea en el claro, sólo Bruno y el héroe (los heridos no), en tres oleadas que
+     salen de portales. Bruno manda a ayudar a la gente (nota 9). (Arte en ck_capitulo3_arte.js.)
+   - EL REINO EN LLAMAS va en orden (notas 2 a 8): San Roque (1.er jefe), el Camino al Castillo (2.º, con los soldados de
+     Bruno peleando por todos lados), la Aldea (3.º) y los Campos (el último; el camino al norte, cerrado). El lugar que no
+     le toca espera tranquilo (rojo, sin demonios); a la Aldea no se pasa hasta limpiar el Camino, ni a los Campos hasta
+     limpiar la Aldea. En San Roque, la Aldea y los Campos hay 20 vecinos que corren solos a las casas y los demonios los
+     persiguen: el que cae pide ayuda (T lo levanta) y si nadie llega se muere. Hay que salvar al menos 15: si se mueren
+     6, se pierde y el lugar empieza de nuevo. El Claro del Monolito y el Norte del Roble ya no son lugares a limpiar.
+   - Con los cuatro limpios, el portón del castillo se abre (la segunda parte, ck_capitulo3_castillo.js).
    Va después de ck_capitulo2.js, ck_coliseo_historia.js, ck_consejero.js, ck_monolito.js, ck_fuegos_vivos.js v3 y
    ck_ambiente_mapas.js v2. Borrar su línea de index.html lo saca (el Capítulo 2 vuelve a cerrar como antes). */
 (function () {
@@ -50,7 +66,12 @@
   const Z = { trono: 'ed_salon_del_trono_3.main', camino: 'ed_camino_al_castillo.main', bosque: 'ed_bosque_de_la_frontera.main',
     col: 'ed_coliseo_orco.main', fort: 'ed_fortaleza_orca.main' };
   const MONO = window.CK_MONOLITO ? { x: window.CK_MONOLITO.X, y: window.CK_MONOLITO.Y } : { x: 220, y: 196 };
-  const CAMPO = { bruno: { x: 434, y: 336 }, curandera: { x: 524, y: 352 }, heridos: [[404, 362], [458, 376], [552, 330]],
+  // (v8) Bruno espera en el camino (nota 17); el fogón de sus hombres, donde llegan los caballeros negros (nota 16); dónde
+  // quedan atados el héroe y Bruno (nota 12) y dónde se queda el Rey mirando (nota 13)
+  const CAMPO = { bruno: { x: 750, y: 378 }, curandera: { x: 524, y: 352 }, heridos: [[404, 362], [458, 376], [552, 330]],
+    fogon: { x: 430, y: 392 }, unidades: [['templar', 378, 410], ['lancer', 452, 420], ['axeman', 506, 398], ['archer', 548, 376], ['templar', 476, 356]],
+    mercs: [[300, 470], [350, 500], [430, 510], [520, 500], [580, 470], [250, 440]], sur: { x: 610, y: 400 },
+    cautivos: { heroe: { x: 306, y: 398 }, bruno: { x: 336, y: 400 }, guardias: [[282, 404], [362, 404]] }, rey: { x: 298, y: 356 },
     escondite: { x: 330, y: 262 }, brunoEsc: { x: 358, y: 270 } };
 
   // ================================================================== 1. LOS DEMONIOS
@@ -67,6 +88,10 @@
     Object.keys(d.frames).forEach(an => { window.GAME_ASSETS_BASE64[id + '_' + an] = ARTE[d.a + '_' + an]; });
     const t = Object.assign({}, d); delete t.a; ENEMY_TYPES[id] = t;
   });
+  // (v8) los mercenarios de Gaspar como enemigos (la hoja del hachero del castillo con el acero negro, ck_capitulo3_arte.js)
+  if (typeof ENEMY_TYPES !== 'undefined' && window.GAME_ASSETS_BASE64.mercenario_idle && !ENEMY_TYPES.mercenario)
+    ENEMY_TYPES.mercenario = { name: 'Mercenario de Gaspar', frames: { idle: 6, walk: 8, attack1: 9, attack2: 9, hurt: 4, death: 4 }, hp: 6, speed: 92, dmg: 1,
+      reach: 52, cd: 1300, hitAt: 420, xp: 22, coins: 4, scale: 1.2, sfx: ['sword_swing2', 'knight_hurt', 'knight_death', 1] };
   const esDemonio = e => e && e.active && !e.isDead && /^demonio_/.test(e.type || '');
   // los sonidos de ElevenLabs de los demonios y el portal vinieron más fuertes que los del juego: se tocan más bajo
   if (typeof sfx !== 'undefined' && sfx.fx && !sfx._ckC3) {
@@ -134,9 +159,9 @@
   // ================================================================== 4. OBJETIVOS
   const OBJ = {
     1: 'Echado del castillo. Buscá al Capitán Bruno en su campamento del Bosque de la Frontera',
-    2: 'Seguí a Bruno: hay antorchas en el claro del monolito',
+    2: 'El campamento de Bruno, de noche',
     3: 'El reino en llamas: limpiá cada lugar de demonios y poné a salvo a la gente',
-    4: 'El reino respira. Lo último es el castillo: Bruno te espera frente al portón',
+    4: 'El reino respira. El portón del castillo se abrió: Bruno te espera ahí',
     5: 'Continuará: el castillo, el Rey y la mazmorra del sello'
   };
   const paso3 = (S, n, txt) => {
@@ -186,10 +211,12 @@
       const g = S._ckGasparSp;
       if (g && g.active) { g._ckAnim = 'ck_gaspar'; await e.caminar(S, g, hx + 36, hy - 4, 44); g.setFlipX(true); }
       await e.dialogo(S, 'Sir Gaspar', ['Las piedras, elegido. La verde del Nigromante y la roja del Caudillo.', 'Su Majestad las va a guardar. Son asuntos del reino.'], 'ck_gaspar_idle');
-      const pos = [[-38, 12], [40, 16], [-32, -20], [32, -24]];
+      // (23/11, nota 20 del dueño: "aca los npc q nos corren se paran hasta este lado"): los cuatro se paran a los costados
+      // de la alfombra, dos de cada lado, a la altura del héroe (antes lo rodeaban encima de la alfombra)
+      const ALF = [208, 284], pos = [[ALF[0], hy + 14], [ALF[1], hy + 18], [ALF[0], hy + 42], [ALF[1], hy + 46]];
       pos.forEach((q, i) => mercs.push(guardia(S, 'axeman', 240 + (i % 2 ? 16 : -16), 548 - (i > 1 ? 20 : 0))));
       sonar('ck_paso_armadura', 0.5);
-      await Promise.all(mercs.map((m, i) => e.caminar(S, m, hx + pos[i][0], hy + pos[i][1], 80)));
+      await Promise.all(mercs.map((m, i) => e.caminar(S, m, pos[i][0], pos[i][1], 80)));
       mercs.forEach(m => m.setFlipX(m.x > S.player.x));
       await e.globo(S, S.player, '¿Qué es esto?', 1700);
       const f = fl(S.story), cr = f.cristales || (f.cristales = {});
@@ -227,10 +254,10 @@
         'El verde y el rojo. Los juntaste vos… y se los llevaste a él. ¿Y la sangre real?',
         'La princesa no se escapó con los orcos. Se estaba escondiendo de su padre. Grushak la cuidaba.',
         'Tomá, de lo poco que nos dejaron. Te va a hacer falta.',
-        '…¿Ves eso, entre los árboles? Antorchas. Suben hacia la piedra vieja. Vení, sin hacer ruido.'];
-      if (n === 2) return ['¡Agachate! Que no nos vean.'];
-      if (n === 3) return ['Lugar por lugar: el camino, la aldea, los Campos, San Roque, el Norte. Echá a los demonios y sacá a la gente.',
-        'Donde no quede ni un demonio y la gente esté a salvo, el fuego se apaga. Lo último es el castillo. ¡Andá!'];
+        'Si el Rey nos traicionó a todos… no voy a dejar a mis muchachos solos esta noche. Vení al fogón.'];
+      if (n === 2) return ['Quedate cerca.'];
+      if (n === 3) return ['Primero San Roque, después el camino del castillo, la aldea y los Campos. Echá a los demonios y que la gente llegue a las casas.',
+        'Si se nos mueren muchos en un lugar, no hay vuelta atrás. Donde no quede ni un demonio, el fuego se apaga. ¡Andá!'];
       if (n === 4) return ['Lo hiciste. La gente está en la taberna, en la posada, en las casas que todavía tienen techo.',
         'Lo último es el castillo. Gaspar trancó el portón desde adentro, y el Rey está ahí con lo que salió del monolito.',
         'Pero esto no termina hasta que se cierre esa puerta… y alguien traiga de vuelta a la princesa.',
@@ -246,8 +273,14 @@
     if (n < 1) return;
     const b = S._c3Bruno = guardia(S, 'knight', CAMPO.bruno.x, CAMPO.bruno.y);
     b.setFlipX(true);
-    if (n === 2 || n === 3) b.setPosition(area(S).x + CAMPO.brunoEsc.x, area(S).y + CAMPO.brunoEsc.y);
+    if (n === 2 || n === 3) b.setPosition(area(S).x + CAMPO.fogon.x + 26, area(S).y + CAMPO.fogon.y);
     if (n >= 4) b.setVisible(false).setActive(false);   // ya está en el portón
+    // (v8) sus hombres junto al fogón: en pie hasta la emboscada; después, caídos
+    S._c3Unidades = CAMPO.unidades.map(([t, x, y], i) => {
+      const u = guardia(S, t, x, y); u.setFlipX(i % 2 === 1);
+      if (n >= 3) { const k = u._ckAnim + '_death'; if (S.textures.exists(k)) { u.anims.stop(); u.setTexture(k, Math.max(0, S.textures.get(k).frameTotal - 2)); } }
+      return u;
+    });
     // los heridos (acostados) y la curandera
     CAMPO.heridos.forEach(([x, y], i) => {
       const h = guardia(S, i === 1 ? 'lancer' : 'templar', x, y);
@@ -263,8 +296,18 @@
     }
   };
 
-  // ================================================================== 8. EL RITUAL
-  const REY_ESC = 1.2;
+  // ================================================================== 8. LA EMBOSCADA, EL RITUAL Y LA PRIMERA PELEA
+  // (23/11, v8, notas del dueño 9 a 17: "llega la noche y de repente vemos que los caballeros negros empiezan a atacar a las
+  // unidades del capitán Bruno y las destruyen, sólo quedamos Bruno y nosotros… tenemos que pelear primero pero caemos
+  // derrotados y Bruno nos pide rendirnos para salvar a sus colegas"; "nosotros y Bruno estamos en este lugar cuando hacen
+  // el ritual y sacrifican a la princesa"; "el modelo de la princesa es el otro"; "mejora la animación de corrupción del
+  // monolito, dale un aura y timing, luego tira un rayo al cielo y el portal quítalo, todo empieza a temblar"; "el portal
+  // hazlo con pixelfx y hazlo mejor cuando tiran a la princesa por él"; "el rey sigue acá, de pronto todo se torna rojo y
+  // empiezan a aparecer portales y a caer bolas de fuego del cielo, el rey huye despavorido, y empezamos a pelear en esta
+  // zona"; "acá los npc aliados están heridos, sólo peleamos Bruno y nosotros"; "al limpiar la zona Bruno nos dice que
+  // tenemos que ayudar a los habitantes del reino"). Antes, el héroe y Bruno espiaban el ritual escondidos.
+  const REY_ESC = 1.2, NOCHE = 0.8 * 300000;
+  const VX = () => window.CK_VFX;
   const cristalVuela = (S, color, de, x, y) => new Promise(r => {
     const a = area(S), k = 'ckc3_cristal_' + color;
     const c = S.add.image(de.x, de.y - 30, k).setScale(1.4).setDepth(27540); obj(S).push(c);
@@ -283,113 +326,361 @@
     S.cameras.main.shake(260, 0.006);
     S.tweens.add({ targets: g, alpha: 0, duration: 420, onComplete: () => g.destroy() });
   };
+  /** Un mercenario de Gaspar para las escenas (la hoja del enemigo "mercenario": el hachero con el acero negro). */
+  const merc = (S, x, y) => {
+    const a = area(S), k = S.textures.exists('mercenario_idle') ? 'mercenario' : 'g_axeman';
+    const sp = S.add.sprite(a.x + x, a.y + y, k + '_idle').setOrigin(0.5, 0.6).setScale(1.2).setDepth(a.y + y);
+    sp._ckAnim = k; if (S.anims.exists(k + '_idle')) sp.play(k + '_idle');
+    obj(S).push(sp); return sp;
+  };
+  /** La princesa Elia (npc8, la del castillo; nota 15: "el modelo de la princesa es el otro"). */
+  const princesa = (S, x, y) => {
+    const a = area(S);
+    if (!S.textures.exists('npc8_villager')) { const im = S.add.image(a.x + x, a.y + y, 'ckc_princesa').setOrigin(0.5, 1).setScale(0.95).setDepth(a.y + y); obj(S).push(im); return im; }
+    const sp = S.add.sprite(a.x + x, a.y + y, 'npc8_villager').setOrigin(0.5, 1).setScale(1.3).setDepth(a.y + y);
+    sp._ckAnim = 'npc8'; if (S.anims.exists('npc8_idle')) sp.play('npc8_idle');
+    obj(S).push(sp); return sp;
+  };
+  /** Un portal de pixelfx en el piso (pfx_c3_portal): se abre, gira mientras haga falta y se cierra. */
+  const PORTAL = { abre: [0, 8], gira: [5, 13], cierra: [25, 38] };
+  const portalFx = (S, x, y, esc, prof) => {
+    const vx = VX(), key = vx && vx.listo(S, 'pfx_c3_portal');
+    if (!key) return null;
+    const H = window.CK_VFX_ARTE.hojas.pfx_c3_portal;
+    ['abre', 'gira', 'cierra'].forEach(n => {
+      const k = key + '_' + n; if (S.anims.exists(k)) return;
+      const [a0, a1] = PORTAL[n];
+      S.anims.create({ key: k, frames: S.anims.generateFrameNumbers(key, { start: a0, end: Math.min(a1, H.n - 1) }), frameRate: n === 'gira' ? 12 : 15, repeat: n === 'gira' ? -1 : 0 });
+    });
+    const s = S.add.sprite(x, y, key, 0).setOrigin(H.ax / H.fw, H.ay / H.fh).setScale((esc || 1) * H.esc).setDepth(prof !== undefined ? prof : y + 2);
+    s.play(key + '_abre'); s.once('animationcomplete', () => { if (s.active && !s._cierra) s.play(key + '_gira'); });
+    s.cerrar = () => new Promise(r => { if (!s.active) return r(); s._cierra = true; s.play(key + '_cierra'); s.once('animationcomplete', () => { if (s.active) s.destroy(); r(); }); setTimeout(r, 1400); });
+    (S._c3Luces = S._c3Luces || []).push({ o: s, c: [255, 70, 30], r: 70 * (esc || 1), f: 0.9 });
+    obj(S).push(s);
+    sonar('ck_portal_abre', 0.6, { rate: R(0.9, 1.1) });
+    return s;
+  };
+  /** Un efecto de pixelfx suelto (CK_VFX.fx), sumado a la lista de la escena. */
+  const efecto = (S, k, x, y, o) => { const vx = VX(); const s = vx && vx.fx(S, k, x, y, o); if (s) obj(S).push(s); return s; };
+
+  // ---------- 8a. la emboscada: los caballeros negros de Gaspar voltean a los hombres de Bruno
+  const emboscada = async S => {
+    const e = E(); if (!e || S._c3Ritual || zonaDe(S) !== Z.bosque) return;
+    S._c3Ritual = true;
+    texturas(S);
+    const a = area(S);
+    S.dayClock = NOCHE;
+    let bruno = S._c3Bruno;
+    if (!bruno || !bruno.active) bruno = S._c3Bruno = guardia(S, 'knight', CAMPO.fogon.x + 30, CAMPO.fogon.y);
+    const unidades = (S._c3Unidades || []).filter(u => u.active);
+    let mercs = [];
+    const ok = await e.correr(S, async () => {
+      S.placePlayerFeetAt(a.x + CAMPO.fogon.x - 20, a.y + CAMPO.fogon.y + 8);
+      bruno.setPosition(a.x + CAMPO.fogon.x + 26, a.y + CAMPO.fogon.y + 4).setFlipX(true).setDepth(a.y + CAMPO.fogon.y + 4);
+      await e.camara(S, CAMPO.fogon.x, CAMPO.fogon.y - 10, 900);
+      await e.dialogo(S, 'Capitán Bruno', ['Esta noche dormimos acá, con los muchachos. Mañana vemos qué hacemos con el Rey.'], 'g_knight_idle');
+      await e.esperar(700);
+      sonar('ck_paso_armadura', 0.6);
+      if (unidades[0]) e.globo(S, unidades[0], '¿Oyeron eso?', 1500);
+      await e.esperar(1000);
+      mercs = CAMPO.mercs.map(([x, y]) => merc(S, x, y));
+      await e.camara(S, CAMPO.fogon.x, CAMPO.fogon.y + 60, 700);
+      await e.dialogo(S, 'Mercenario', ['Por orden de Sir Gaspar: del Capitán Bruno no queda nadie en pie.'], 'mercenario_idle');
+      // cada uno va por un soldado y lo voltea
+      await Promise.all(unidades.map((u, i) => (async () => {
+        const m = mercs[i % mercs.length]; if (!m || !u.active) return;
+        await e.esperar(i * 260);
+        const lado = m.x < u.x ? -20 : 20;
+        await e.caminar(S, m, u.x - a.x + lado, u.y - a.y + 2, 130);
+        m.setFlipX(u.x < m.x); u.setFlipX(m.x < u.x);
+        golpe(S, m, m._ckAnim + '_attack1');
+        await e.esperar(380);
+        sonar('sword_hit', 0.6, { rate: R(0.85, 1.05) });
+        u.setTint(0xff7777); setTimeout(() => u.active && u.clearTint(), 160);
+        await golpe(S, u, u._ckAnim + '_death');
+        const k = u._ckAnim + '_death';
+        if (u.active && S.textures.exists(k)) { u.anims.stop(); u.setTexture(k, Math.max(0, S.textures.get(k).frameTotal - 2)); }
+      })()));
+      sonar('ck_grito', 0.55);
+      e.globo(S, bruno, '¡NOOO! ¡' + nombre(S) + ', conmigo!', 1700);
+      await e.esperar(900);
+    });
+    if (!ok || zonaDe(S) !== Z.bosque) { S._c3Ritual = false; return; }
+    // las figuras de la escena pasan a ser enemigos de verdad
+    const pos = mercs.filter(m => m.active).map(m => [m.x, m.y]);
+    mercs.forEach(m => m.active && m.destroy());
+    S._c3Ritual = false;
+    peleaPerdida(S, pos);
+  };
+  // ---------- 8b. la pelea que se pierde: no se acaban nunca
+  const peleaPerdida = (S, pos) => {
+    const a = area(S);
+    S._c3Emb = { t0: S.time.now, fin: false, dijo: false };
+    if (window.CK_MUSICA_MOMENTOS) window.CK_MUSICA_MOMENTOS.fijar(S, 'boss');
+    const traer = (x, y) => {
+      const m = S.spawnEnemy(x, y, ENEMY_TYPES.mercenario ? 'mercenario' : 'orc');
+      if (!m) return;
+      m.zone = Z.bosque; m._c3Merc = true; m._ckSinSusto = true; m._ckAullo = true; m._ckLlamadas = true;
+      S.time.delayedCall(150, () => m.active && S.alertEnemy && S.alertEnemy(m));
+    };
+    pos.forEach(([x, y]) => traer(x, y));
+    S._c3Emb.traer = traer;
+    S.showZoneTitle('¡Emboscada!', 'Los caballeros negros de Sir Gaspar');
+  };
+  const vivosMerc = S => (S.enemies ? S.enemies.getChildren().filter(m => m.active && !m.isDead && m._c3Merc).length : 0);
+  const emboscadaCuadro = S => {
+    const D = S._c3Emb; if (!D || D.fin) return;
+    const t = S.time.now - D.t0, a = area(S);
+    if (zonaDe(S) !== Z.bosque) { S._c3Emb = null; return; }
+    // siempre llegan más (de a dos, desde el sur)
+    if (vivosMerc(S) < 4 && (!D.prox || S.time.now > D.prox)) {
+      D.prox = S.time.now + 2200;
+      [[-30, 0], [30, 10]].forEach(([dx, dy]) => D.traer(a.x + CAMPO.sur.x + dx + R(-20, 20), a.y + CAMPO.sur.y + dy));
+    }
+    if (!D.dijo && t > 14000) { D.dijo = true; if (S._c3Bruno && E()) E().globo(S, S._c3Bruno, '¡Son demasiados! ¡No paran de llegar!', 2200); }
+    if (t > 32000) derrota(S);
+  };
+  // ---------- 8c. caemos; Bruno se rinde por sus hombres
+  const derrota = async S => {
+    const D = S._c3Emb; if (!D || D.fin) return;
+    D.fin = true;
+    const e = E(), a = area(S), bruno = S._c3Bruno;
+    S.health = Math.max(1, S.health); if (S.updateHUD) S.updateHUD();
+    // los que quedan se quedan quietos
+    (S.enemies ? S.enemies.getChildren() : []).filter(m => m.active && !m.isDead && m._c3Merc).forEach(m => { m.state = 'idle'; m.setVelocity && m.setVelocity(0, 0); m._ckIntangible = true; });
+    if (window.CK_MUSICA_MOMENTOS) window.CK_MUSICA_MOMENTOS.fijar(S, null);
+    const ok = await e.correr(S, async () => {
+      sonar('player_hurt', 0.8) || sonar('sword_hit', 0.8, { rate: 0.6 });
+      S.cameras.main.shake(400, 0.01); S.cameras.main.flash(250, 160, 20, 20);
+      S.player.setTint(0x9a7070); S.tweens.add({ targets: S.player, angle: S.player.flipX ? -80 : 80, duration: 260 });
+      await e.esperar(900);
+      if (bruno && bruno.active) {
+        await e.caminar(S, bruno, pies(S).x - a.x + 30, pies(S).y - a.y, 90);
+        bruno.setFlipX(true);
+        await e.dialogo(S, 'Capitán Bruno', ['¡Basta! ¡BASTA!', 'Nos rendimos. Pero a mis hombres no los tocan más: los que quedan vivos, heridos, se quedan acá.'], 'g_knight_idle');
+      }
+      await e.dialogo(S, 'Mercenario', ['Sir Gaspar los quiere vivos para lo que viene esta noche.', 'Que miren. Y que aprendan a quién sirven.'], 'mercenario_idle');
+      S.cameras.main.fadeOut(500, 0, 0, 0);
+      await e.esperar(650);
+      (S.enemies ? S.enemies.getChildren() : []).filter(m => m.active && m._c3Merc).forEach(m => { try { if (m.hpBar) m.hpBar.destroy(); m.destroy(); } catch (er) {} });
+      S.tweens.killTweensOf(S.player); S.player.setAngle(0).clearTint();
+      S.placePlayerFeetAt(a.x + CAMPO.cautivos.heroe.x, a.y + CAMPO.cautivos.heroe.y);
+      S.player.setFlipX(true);
+      if (bruno && bruno.active) { bruno.setPosition(a.x + CAMPO.cautivos.bruno.x, a.y + CAMPO.cautivos.bruno.y).setFlipX(true).setDepth(a.y + CAMPO.cautivos.bruno.y); }
+      S._c3Guardias = CAMPO.cautivos.guardias.map(([x, y]) => { const m = merc(S, x, y); m.setFlipX(x > CAMPO.cautivos.heroe.x); return m; });
+      S._c3Sogas = sogas(S, [S.player, bruno]);
+      S.cameras.main.fadeIn(600, 0, 0, 0);
+      await e.esperar(700);
+    });
+    S._c3Emb = null;
+    if (!ok || zonaDe(S) !== Z.bosque) return;
+    ritual(S);
+  };
+  /** Las sogas de los cautivos: dos vueltas marrones a la altura de la cintura que siguen al que está atado. */
+  const sogas = (S, quienes) => quienes.filter(Boolean).map(q => {
+    const g = S.add.graphics(); obj(S).push(g);
+    const pintar = () => {
+      if (!g.active) return S.events.off('postupdate', pintar);
+      if (!q.active) { g.destroy(); return S.events.off('postupdate', pintar); }
+      g.clear(); const y = q === S.player ? q.y + 4 : q.y + 2, x = q.x;
+      g.lineStyle(2, 0x6b4a2a, 1); g.strokeEllipse(x, y, 20, 6); g.strokeEllipse(x, y + 5, 18, 5);
+      g.lineStyle(1, 0xb08a5a, 1); g.strokeEllipse(x, y - 1, 20, 6);
+      g.setDepth(q.depth + 0.5);
+    };
+    S.events.on('postupdate', pintar); return g;
+  });
+
+  // ---------- 8d. el ritual (lo miran atados, con Bruno)
   const ritual = async S => {
     const e = E(); if (!e || S._c3Ritual || zonaDe(S) !== Z.bosque || !window.CK_GASPAR) return;
     S._c3Ritual = true;
     texturas(S);
     const a = area(S);
-    S.dayClock = 0.8 * 300000;
-    S.placePlayerFeetAt(a.x + CAMPO.escondite.x, a.y + CAMPO.escondite.y);
-    S.player.setFlipX(true);
-    let bruno = S._c3Bruno;
-    if (!bruno || !bruno.active) bruno = S._c3Bruno = guardia(S, 'knight', CAMPO.brunoEsc.x, CAMPO.brunoEsc.y);
-    bruno.setPosition(a.x + CAMPO.brunoEsc.x, a.y + CAMPO.brunoEsc.y).setFlipX(true).setDepth(a.y + CAMPO.brunoEsc.y);
-    let rey, gaspar, elia, mercs = [];
-    await e.correr(S, async () => {
-      await e.camara(S, MONO.x + 30, MONO.y + 60, 1500);
-      gaspar = window.CK_GASPAR.poner(S, a.x + 240, a.y + 440, {}); gaspar._ckAnim = 'ck_gaspar'; obj(S).push(gaspar);
-      rey = S.add.sprite(a.x + 250, a.y + 470, 'king_idle').setOrigin(0.54, 0.61).setScale(REY_ESC).setDepth(a.y + 470); rey._ckAnim = 'kingprueba';
+    S.dayClock = NOCHE;
+    let rey, gaspar, elia, mercs = [], aura = [], po = null;
+    // por si se entra de nuevo a mitad: los cautivos en su lugar
+    if (!S._c3Sogas) {
+      S.placePlayerFeetAt(a.x + CAMPO.cautivos.heroe.x, a.y + CAMPO.cautivos.heroe.y); S.player.setFlipX(true);
+      if (!S._c3Bruno || !S._c3Bruno.active) S._c3Bruno = guardia(S, 'knight', CAMPO.cautivos.bruno.x, CAMPO.cautivos.bruno.y);
+      S._c3Bruno.setPosition(a.x + CAMPO.cautivos.bruno.x, a.y + CAMPO.cautivos.bruno.y).setFlipX(true);
+      S._c3Guardias = CAMPO.cautivos.guardias.map(([x, y]) => merc(S, x, y));
+      S._c3Sogas = sogas(S, [S.player, S._c3Bruno]);
+    }
+    const bruno = S._c3Bruno;
+    const ok1 = await e.correr(S, async () => {
+      await e.camara(S, 250, 290, 1300);   // (el monolito arriba, los cautivos abajo)
+      gaspar = window.CK_GASPAR.poner(S, a.x + 250, a.y + 560, {}); gaspar._ckAnim = 'ck_gaspar'; obj(S).push(gaspar);
+      rey = S.add.sprite(a.x + 262, a.y + 586, 'king_idle').setOrigin(0.54, 0.61).setScale(REY_ESC).setDepth(a.y + 586); rey._ckAnim = 'kingprueba';
       if (S.anims.exists('kingprueba_idle')) rey.play('kingprueba_idle'); obj(S).push(rey);
-      elia = S.add.image(a.x + 238, a.y + 504, 'ckc_princesa').setOrigin(0.5, 1).setScale(0.95).setDepth(a.y + 504); obj(S).push(elia);
-      mercs = [[222, 500], [256, 506], [212, 466], [272, 470]].map(([x, y]) => guardia(S, 'axeman', x, y));
-      S._c3Luces = [{ o: mercs[2], c: [255, 150, 66], r: 70, f: 0.95, dy: -26 }, { o: mercs[3], c: [255, 150, 66], r: 70, f: 0.95, dy: -26 }];
+      elia = princesa(S, 240, 612);
+      mercs = [[218, 606], [266, 614], [206, 572], [282, 576]].map(([x, y]) => merc(S, x, y));
+      S._c3Luces = (S._c3Luces || []).concat([{ o: mercs[2], c: [255, 150, 66], r: 70, f: 0.95, dy: -26 }, { o: mercs[3], c: [255, 150, 66], r: 70, f: 0.95, dy: -26 }]);
       sonar('ck_paso_armadura', 0.4);
       await Promise.all([
-        e.caminar(S, gaspar, MONO.x + 42, MONO.y + 66, 30), e.caminar(S, rey, MONO.x + 6, MONO.y + 76, 28),
-        moverImg(S, elia, MONO.x - 12, MONO.y + 100, 28),
-        e.caminar(S, mercs[0], MONO.x - 30, MONO.y + 100, 28), e.caminar(S, mercs[1], MONO.x + 8, MONO.y + 104, 28),
-        e.caminar(S, mercs[2], MONO.x - 56, MONO.y + 70, 30), e.caminar(S, mercs[3], MONO.x + 64, MONO.y + 80, 30)
+        e.caminar(S, gaspar, MONO.x + 44, MONO.y + 66, 34), e.caminar(S, rey, MONO.x + 6, MONO.y + 78, 32),
+        e.caminar(S, elia, MONO.x - 14, MONO.y + 102, 32),
+        e.caminar(S, mercs[0], MONO.x - 32, MONO.y + 104, 32), e.caminar(S, mercs[1], MONO.x + 10, MONO.y + 108, 32),
+        e.caminar(S, mercs[2], MONO.x - 58, MONO.y + 72, 34), e.caminar(S, mercs[3], MONO.x + 66, MONO.y + 82, 34)
       ]);
       mercs[0].setFlipX(false); mercs[1].setFlipX(true);
+      if (bruno) e.globo(S, bruno, '…El Rey. Y la princesa.', 1800);
+      await e.esperar(900);
       await e.dialogo(S, 'Rey Aldric', ['Mi abuelo cerró esta puerta con tres llaves. Y le tuvo miedo toda su vida.',
         'Yo no. Lo que hay del otro lado no es un castigo: es poder. Y el poder obedece a quien abre la puerta.', 'El verde de los muertos del norte…'], 'king_idle');
       await cristalVuela(S, 'verde', rey, MONO.x - 14, MONO.y - 34);
       await e.dialogo(S, 'Rey Aldric', ['…el rojo de los clanes…'], 'king_idle');
       await cristalVuela(S, 'rojo', rey, MONO.x + 14, MONO.y - 34);
+      // el monolito despierta: el anillo de runas en el piso, la energía que se junta arriba y tres latidos que crecen
       if (window.CK_MONOLITO) window.CK_MONOLITO.despertar();
-      const po = S._c3Portal = portal(S, a.x + MONO.x, a.y + MONO.y + 40, a.y + MONO.y + 39, 0.05, 0.025);
-      obj(S).push(po);
-      sonar('ck_portal_abre', 0.9);
-      S.tweens.add({ targets: po, scaleX: 0.9, scaleY: 0.45, duration: 1500, ease: 'Back.easeOut' });
-      await e.esperar(1600);
+      const mx = a.x + MONO.x, my = a.y + MONO.y;
+      aura.push(efecto(S, 'pfx_c3_runas', mx, my + 6, { escala: 1.2, prof: my - 30, suma: true }));
+      aura.push(efecto(S, 'pfx_c3_carga', mx + 4, my - 40, { escala: 1.1, prof: 27540, suma: true }));
+      const halo = S.add.ellipse(mx, my - 30, 70, 110, 0xff3020, 0.0).setDepth(27530).setBlendMode(Phaser.BlendModes.ADD); obj(S).push(halo); aura.push(halo);
+      (S._c3Luces = S._c3Luces || []).push({ o: halo, c: [255, 50, 40], r: 120, f: 0.9 });
+      for (let i = 0; i < 3; i++) {
+        sonar('thunder_strike', 0.35 + i * 0.15, { rate: 0.55 - i * 0.05 });
+        S.cameras.main.shake(300 + i * 150, 0.003 + i * 0.003);
+        S.tweens.add({ targets: halo, alpha: { from: 0.15 + i * 0.15, to: 0.05 }, scaleX: { from: 1 + i * 0.25, to: 1 }, scaleY: { from: 1 + i * 0.25, to: 1 }, duration: 700, ease: 'Quad.easeOut' });
+        if (window.CK_LUZ && window.CK_LUZ.destello) window.CK_LUZ.destello([255, 60, 40], 0.25 + i * 0.15, 300);
+        await e.esperar(1050 - i * 200);
+      }
+      S.tweens.add({ targets: halo, alpha: 0.35, duration: 400 });
+      // se abre el portal en el piso, al pie de la piedra
+      po = S._c3Portal = portalFx(S, mx, my + 44, 1.1, my + 40);
+      await e.esperar(1400);
     });
-    if (zonaDe(S) !== Z.bosque) { S._c3Ritual = false; return; }
-    await e.correr(S, async () => {
+    if (!ok1 || zonaDe(S) !== Z.bosque) { S._c3Ritual = false; return; }
+    const ok2 = await e.correr(S, async () => {
       await e.dialogo(S, 'Rey Aldric', ['…y la sangre de mi casa.'], 'king_idle');
-      await e.dialogo(S, 'Princesa Elia', ['¡Padre, no! ¡Vos sabés lo que hay del otro lado!', '¡Nos vas a matar a todos!'], 'ckc_princesa');
+      await e.dialogo(S, 'Princesa Elia', ['¡Padre, no! ¡Vos sabés lo que hay del otro lado!', '¡Nos vas a matar a todos!'], 'npc8_villager');
       await e.dialogo(S, 'Rey Aldric', ['A ellos, hija. No a mí.'], 'king_idle');
-      await e.caminar(S, rey, MONO.x - 2, MONO.y + 92, 40);
+      if (bruno) e.globo(S, bruno, '¡Suéltenme! ¡ALTEZA!', 1600);
+      await e.caminar(S, rey, MONO.x - 4, MONO.y + 94, 40);
       rey.setFlipX(true);
+      // ella forcejea
+      if (elia.active) S.tweens.add({ targets: elia, x: elia.x + 3, duration: 70, yoyo: true, repeat: 5 });
+      await e.esperar(600);
       sonar('ck_grito', 0.55);
-      e.globo(S, bruno, '¡NOOO!', 1600);
-      await new Promise(r => S.tweens.add({ targets: elia, x: a.x + MONO.x, y: a.y + MONO.y + 44, scale: 0.15, alpha: 0, angle: 320, duration: 900, ease: 'Sine.easeIn', onComplete: r }));
+      const mx = a.x + MONO.x, my = a.y + MONO.y + 44;
+      // el empujón, el portal que la chupa girando (y chispas que se meten en el remolino)
+      for (let i = 0; i < 14; i++) {
+        const an = R(0, Math.PI * 2), d = R(40, 70), c = S.add.image(mx + Math.cos(an) * d, my + Math.sin(an) * d * 0.4, 'ckc3_brasa').setDepth(my + 3).setBlendMode(Phaser.BlendModes.ADD).setTint(UNO([0xff7a2a, 0xffb347, 0xff4a1a])).setScale(R(1, 2));
+        obj(S).push(c); S.tweens.add({ targets: c, x: mx, y: my, scale: 0.2, duration: R(500, 900), delay: R(0, 400), ease: 'Quad.easeIn', onComplete: () => c.destroy() });
+      }
+      await new Promise(r => S.tweens.add({ targets: elia, x: mx, y: my + 2, duration: 420, ease: 'Quad.easeOut', onComplete: r }));
+      if (elia.anims) elia.anims.stop();
+      await new Promise(r => S.tweens.add({ targets: elia, y: my + 4, scale: 0.12, alpha: 0, angle: 540, duration: 1000, ease: 'Sine.easeIn', onComplete: r }));
+      S.cameras.main.flash(220, 255, 120, 60);
+      if (window.CK_LUZ && window.CK_LUZ.destello) window.CK_LUZ.destello([255, 90, 50], 0.7, 400);
+      sonar('ck_portal_abre', 0.9, { rate: 0.7 });
       await e.esperar(700);
-    });
-    if (zonaDe(S) !== Z.bosque) { S._c3Ritual = false; return; }
-    // el despertar: todo se vuelve rojo
-    const f = fl(S.story); f.infierno = true; S.saveStory();
-    await e.correr(S, async () => {
+      // el portal se cierra (nota 14: "el portal quitalo") y la piedra tira un rayo al cielo; todo tiembla
+      if (po && po.cerrar) await po.cerrar();
+      S._c3Portal = null;
+      await e.esperar(300);
+      efecto(S, 'pfx_c3_columna', a.x + MONO.x, a.y + MONO.y + 8, { escala: 1.5, prof: 27535, suma: true });
       const haz = S._c3Haz = S.add.image(a.x + MONO.x, a.y + MONO.y - 30, 'ckc3_haz').setOrigin(0.5, 1).setDisplaySize(40, 10).setDepth(27530).setBlendMode(Phaser.BlendModes.ADD);
       obj(S).push(haz);
-      S.tweens.add({ targets: haz, displayHeight: 640, duration: 900, ease: 'Cubic.easeOut' });
-      S.cameras.main.shake(1600, 0.01);
+      S.time.delayedCall(700, () => haz.active && S.tweens.add({ targets: haz, displayHeight: 640, duration: 900, ease: 'Cubic.easeOut' }));
+      S.cameras.main.shake(2600, 0.012);
       if (window.CK_LUZ && window.CK_LUZ.destello) window.CK_LUZ.destello([255, 60, 40], 0.9, 1000);
       sonar('thunder_epic', 0.6, { rate: 0.7 });
+      aura.forEach(o => o && o.active && S.tweens.add({ targets: o, alpha: 0, duration: 1500, onComplete: () => o.active && o.destroy() }));
+      await e.esperar(2200);
+    });
+    if (!ok2 || zonaDe(S) !== Z.bosque) { S._c3Ritual = false; return; }
+    // el despertar: todo se vuelve rojo, se abren portales, caen bolas de fuego, el Rey huye
+    const f = fl(S.story); f.infierno = true; S.saveStory();
+    const ok3 = await e.correr(S, async () => {
       if (window.CK_MUSICA_MOMENTOS) window.CK_MUSICA_MOMENTOS.fijar(S, 'boss');
-      await e.esperar(1300);
-      for (const m of [mercs[2], mercs[0], mercs[3]]) {
+      S._c3CapaFija = 0;
+      const sube = { k: 0 }; S.tweens.add({ targets: sube, k: 1, duration: 1800, onUpdate: () => { S._c3CapaFija = sube.k; } });
+      // el Rey queda donde está (nota 13), mirando lo que hizo
+      await e.caminar(S, rey, CAMPO.rey.x, CAMPO.rey.y, 60);
+      rey.setFlipX(false);
+      e.globo(S, rey, '¡¿Qué…?! ¡No! ¡Esto no es lo que…!', 2000);
+      await e.camara(S, CAMPO.rey.x, CAMPO.rey.y - 40, 600);
+      const IV = window.CK_INFIERNO_VIVO; if (IV && IV.texturas) IV.texturas(S);
+      [[120, 300], [380, 250], [200, 420], [430, 470], [90, 470]].forEach(([x, y], i) => S.time.delayedCall(200 + i * 380, () => {
+        if (zonaDe(S) !== Z.bosque) return;
+        const p = portalFx(S, a.x + x, a.y + y, 0.6); if (p) S.time.delayedCall(2600, () => p.cerrar && p.cerrar());
+      }));
+      [[300, 300], [160, 380], [420, 380], [260, 470], [360, 200], [520, 330]].forEach(([x, y], i) => S.time.delayedCall(500 + i * 450, () => {
+        if (zonaDe(S) === Z.bosque && IV && IV.meteoro) { try { IV.meteoro(S, a.x + x, a.y + y); } catch (er) {} }
+      }));
+      await e.esperar(1500);
+      // los mercenarios caen (rayos del monolito y bolas de fuego); los que nos cuidaban también
+      for (const m of [mercs[2], mercs[0], (S._c3Guardias || [])[0], mercs[3], (S._c3Guardias || [])[1]]) {
+        if (!m || !m.active) continue;
         rayo(S, m.x, m.y - 6);
-        await golpe(S, m, 'g_axeman_death');
+        await golpe(S, m, m._ckAnim + '_death');
         S.tweens.add({ targets: m, alpha: 0, duration: 900 });
         S._c3Luces = (S._c3Luces || []).filter(l => l.o !== m);
-        await e.esperar(380);
+        await e.esperar(300);
       }
-      e.globo(S, rey, '¡¿Qué…?! ¡No! ¡Esto no es lo que…!', 1900);
-      await e.esperar(1300);
       e.globo(S, gaspar, '¡Majestad, a los caballos!', 1500);
-      await e.esperar(600);
-      await Promise.all([e.caminar(S, rey, 250, 520, 95), e.caminar(S, gaspar, 236, 520, 100), e.caminar(S, mercs[1], 262, 520, 110)]);
-      [rey, gaspar, mercs[1]].forEach(o => o.setVisible(false));
-      await e.dialogo(S, 'Capitán Bruno', ['¡Algo sale de esa cosa! ¡Atrás de mí, ' + nombre(S) + '!'], 'g_knight_idle');
+      sonar('ck_grito', 0.4, { rate: 1.2 });
+      e.globo(S, rey, '¡AAAH! ¡Sáquenme de acá!', 1600);
+      await Promise.all([e.caminar(S, rey, 250, 600, 120), e.caminar(S, gaspar, 236, 600, 120), e.caminar(S, mercs[1], 262, 600, 125)]);
+      [rey, gaspar, mercs[1]].forEach(o => o && o.setVisible(false));
+      // las sogas se queman: libres
+      (S._c3Sogas || []).forEach(g => g && g.active && g.destroy()); S._c3Sogas = null;
+      sonar('fire_hit', 0.5);
+      await e.camara(S, CAMPO.cautivos.heroe.x + 10, CAMPO.cautivos.heroe.y - 20, 500);
+      await e.dialogo(S, 'Capitán Bruno', ['¡Las sogas se quemaron! ¡Arriba, ' + nombre(S) + '!', '¡Algo sale de esos agujeros! ¡Espalda con espalda!'], 'g_knight_idle');
     });
     S._c3Ritual = false;
-    if (zonaDe(S) !== Z.bosque) return;
+    if (!ok3 || zonaDe(S) !== Z.bosque) return;
+    S._c3CapaFija = undefined;
     peleaRitual(S);
   };
+  // ---------- 8e. la pelea en el claro: los demonios salen de los portales, de a tandas (sólo Bruno y el héroe)
+  const TANDAS = [['demonio_menor', 'demonio_menor', 'demonio_menor', 'demonio_lava'], ['demonio_sabueso', 'demonio_sabueso', 'demonio_menor', 'demonio_bruto'],
+    ['demonio_garra', 'demonio_garra', 'demonio_murcielago', 'demonio_murcielago', 'demonio_menor']];
   const peleaRitual = S => {
-    const a = area(S); S._c3Pelea = { n: 0 };
-    [[-20, 30], [20, 34], [-36, 50], [36, 52]].forEach(([dx, dy], i) => S.time.delayedCall(i * 450, () => {
-      if (zonaDe(S) !== Z.bosque) return;
-      const e = S.spawnEnemy(a.x + MONO.x + dx, a.y + MONO.y + 40 + dy, 'demonio_menor');
-      if (e) { e._c3Ritual = true; e.zone = Z.bosque; S._c3Pelea.n++; if (S.alertEnemy) S.alertEnemy(e); }
+    S._c3Pelea = { n: 0, tanda: 0 };
+    tanda(S);
+  };
+  const tanda = S => {
+    const P3 = S._c3Pelea; if (!P3 || zonaDe(S) !== Z.bosque) return;
+    const a = area(S), lista = TANDAS[P3.tanda].filter(t => ENEMY_TYPES[t]), p = pies(S);
+    P3.total = (P3.total || 0) + lista.length;
+    S.showZoneTitle('Oleada ' + (P3.tanda + 1) + ' de ' + TANDAS.length, 'Bruno pelea a tu lado');
+    lista.forEach((t, i) => S.time.delayedCall(300 + i * 500, () => {
+      if (zonaDe(S) !== Z.bosque || S._c3Pelea !== P3) return;
+      let x = 0, y = 0;
+      for (let k = 0; k < 20; k++) {
+        const an = R(0, Math.PI * 2), d = R(90, 150);
+        x = p.x + Math.cos(an) * d; y = p.y + Math.sin(an) * d * 0.7;
+        if (!S.navIsFree || S.navIsFree(x, y, true)) break;
+      }
+      const po = portalFx(S, x, y, 0.55);
+      S.time.delayedCall(650, () => {
+        if (zonaDe(S) !== Z.bosque || S._c3Pelea !== P3) return;
+        const en = S.spawnEnemy(x, y - 4, t);
+        if (en) { en._c3Ritual = true; en.zone = Z.bosque; P3.n++; S.time.delayedCall(300, () => en.active && S.alertEnemy && S.alertEnemy(en)); }
+        else { P3.total--; if ((P3.muertos || 0) >= P3.total) finRitual(S); }
+        if (po) S.time.delayedCall(900, () => po.cerrar && po.cerrar());
+      });
     }));
     sonar('ck_demonio_chillido', 0.7);
   };
   const finRitual = S => {
+    const P3 = S._c3Pelea; if (!P3) return;
+    if (P3.tanda < TANDAS.length - 1) { P3.tanda++; S.time.delayedCall(1400, () => tanda(S)); return; }
     S._c3Pelea = null;
     if (window.CK_MUSICA_MOMENTOS) window.CK_MUSICA_MOMENTOS.fijar(S, null);
     S.time.delayedCall(900, async () => {
       if (!E() || zonaDe(S) !== Z.bosque) { paso3(S, 3); return; }
       await E().correr(S, async () => {
         const b = S._c3Bruno; if (b && b.active) await E().caminar(S, b, pies(S).x - area(S).x + 30, pies(S).y - area(S).y, 70);
-        await E().dialogo(S, 'Capitán Bruno', ['Los primeros eran débiles. Los que vengan no van a ser así.',
-          '¿Ves el cielo? Ese fuego no es de acá. Va a salir por todo el reino: el camino, la aldea, los Campos, San Roque, el Norte…',
-          'Hay que limpiarlo lugar por lugar: echar a los demonios y poner a salvo a la gente. La taberna, la posada, las casas grandes.',
-          'Empecemos por acá. Lo último va a ser el castillo.'], 'g_knight_idle');
+        await E().dialogo(S, 'Capitán Bruno', ['Se acabaron los de acá. Pero mirá el cielo…',
+          'Ese fuego no es de acá. Va a salir por todo el reino. Hay que ayudar a la gente.',
+          'San Roque es la primera: se ve el humo desde acá. Después el camino del castillo, la aldea y los Campos.',
+          'Echá a los demonios y que la gente llegue a las casas. Si se nos mueren muchos, no hay vuelta atrás. ¡Andá!'], 'g_knight_idle');
       });
-      const E3 = est(S.story, Z.bosque); E3.llego = true;
       paso3(S, 3, 'EL REINO EN LLAMAS');
-      S.showZoneTitle('El reino en llamas', 'Limpiá cada lugar · lo último es el castillo');
+      S.showZoneTitle('El reino en llamas', 'Primero San Roque · lo último es el castillo');
       if (zonaDe(S) === Z.bosque) armarInf(S);
     });
   };
@@ -402,9 +693,9 @@
   // a salvo; entonces se apagan los fuegos, el rojo se calma, dejan de caer meteoritos y la gente vuelve a salir.
   // Con los seis limpios, lo último es el castillo.
   // por lugar: grupos [x, y, cuántos] (con dos diablillos cada uno), refugio, llamas [x, y, tamaño], sueltos [x, y, 'm'|'b']
+  // (v8) el Claro del Monolito y el Norte del Roble ya no son lugares a limpiar (el claro se pelea en el ritual; el norte queda
+  // cortado); los grupos de los demás son ahora de dónde salen corriendo los vecinos (20 por lugar)
   const ZONAS = {
-    [Z.bosque]: { n: 'Claro del Monolito', grupos: [], fuegos: [[130, 150, 1.1], [330, 130, 1.2], [96, 300, 1]],
-      sueltos: [[300, 300, 'm'], [180, 330, 'm'], [380, 410, 'm'], [520, 270, 'm'], [270, 420, 'm'], [420, 250, 'b']] },
     [Z.camino]: { n: 'Camino al Castillo', grupos: [], fuegos: [[200, 92, 1.3], [232, 104, 1], [760, 462, 1.1], [300, 250, 1], [560, 92, 1.1]],
       sueltos: [[640, 430, 'm'], [700, 520, 'm'], [560, 560, 'm'], [330, 440, 'm'], [180, 300, 'm'], [900, 560, 'm'], [760, 420, 'b']] },
     village: { n: 'Aldea del Roble', refugio: [372, 150], grupos: [[290, 214, 5], [474, 226, 4], [236, 300, 4], [560, 300, 3], [356, 504, 4]],
@@ -416,17 +707,17 @@
     'ed_san_roque.main': { n: 'San Roque', refugio: [585, 270], grupos: [[606, 336, 5], [650, 424, 4], [790, 476, 4], [470, 610, 3], [940, 640, 4]],
       fuegos: [[560, 132, 1.3], [640, 150, 1.1], [820, 232, 1.2], [992, 64, 1], [962, 452, 1.2], [482, 560, 1.2], [682, 560, 1.1], [880, 612, 1], [1000, 622, 0.9], [880, 722, 1]],
       sueltos: [[700, 380, 'b'], [1000, 520, 'b'], [560, 500, 'm'], [820, 380, 'm']] },
-    'ed_norte_del_roble.main': { n: 'Norte del Roble', refugio: [462, 622], grupos: [[700, 500, 5], [560, 700, 4], [950, 700, 4], [300, 700, 4], [1120, 640, 3]],
-      fuegos: [[420, 522, 1.3], [512, 522, 1.1], [930, 502, 1.2], [480, 300, 1], [1000, 300, 1], [330, 668, 0.9]],
-      sueltos: [[760, 420, 'b'], [1050, 560, 'b'], [620, 600, 'm'], [880, 600, 'm']] }
   };
-  const ORDEN = [Z.bosque, Z.camino, 'village', 'ed_campos_del_roble.main', 'ed_san_roque.main', 'ed_norte_del_roble.main'];
+  // (v8, notas 2 a 8) el orden: San Roque, el Camino al Castillo, la Aldea y los Campos
+  const ORDEN = ['ed_san_roque.main', Z.camino, 'village', 'ed_campos_del_roble.main'];
+  const SALVAR = 15, MUEREN = 6;                       // hay que salvar 15 de 20: con 6 muertos se pierde y el lugar empieza de nuevo
+  const NORTE = 'ed_norte_del_roble.main';
   // los adentros de cada lugar (el rojo se ve más suave por las ventanas)
   const ADENTRO = { 'ed_taberna_2.main': 'village', 'ed_casa_grande.main': 'village', 'ed_granero.main': 'village', 'ed_tienda_de_viveres.main': 'village',
     'ed_casa_de_arriba.main': 'village', 'ed_posada_san_roque.main': 'ed_san_roque.main', 'ed_posada_san_roque_arriba.main': 'ed_san_roque.main',
     'ed_herreria_san_roque.main': 'ed_san_roque.main', 'ed_capilla_san_roque.main': 'ed_san_roque.main', 'ed_molino_san_roque.main': 'ed_san_roque.main',
     'ed_casita_cerco_san_roque.main': 'ed_san_roque.main', 'ed_casa_granjeros_san_roque.main': 'ed_san_roque.main',
-    'ed_casa_pastor_san_roque.main': 'ed_san_roque.main', 'ed_casa_quemada_norte.main': 'ed_norte_del_roble.main' };
+    'ed_casa_pastor_san_roque.main': 'ed_san_roque.main' };
   const LUGARES = ZONAS;   // (nombre viejo)
   const TOTAL = ORDEN.reduce((t, k) => t + ZONAS[k].grupos.reduce((u, g) => u + g[2], 0), 0);
   const GENTE = ['npc1', 'npc2', 'npc3', 'npc4', 'npc5', 'npc6', 'npc7', 'npc10', 'npc12', 'npc13', 'npc14', 'npc1a', 'npc2b', 'npc3a', 'npc4a', 'npc5a', 'npc6a', 'npc7a', 'npc10b'];
@@ -437,7 +728,7 @@
     let e = inf[z];
     if (Array.isArray(e)) e = inf[z] = { g: e, m: [] };            // partidas de la v1: sólo los grupos
     if (!e) e = inf[z] = { g: [], m: [] };
-    e.g = e.g || []; e.m = e.m || [];
+    e.g = e.g || []; e.m = e.m || []; e.s = e.s || 0; e.x = e.x || 0;   // (v8) s: vecinos a salvo, x: vecinos muertos
     return e;
   };
   const casillas = z => {
@@ -447,16 +738,23 @@
     // (15/11) ck_reino_criaturas.js reparte las criaturas del pack por lugar y suma el jefe (casilla con jefe: true)
     return window.CK_C3_CASILLAS ? (window.CK_C3_CASILLAS(z, out, L) || out) : out;
   };
-  const salvadosZ = (s, z) => { const e = (fl(s).inf || {})[z]; const g = e ? (Array.isArray(e) ? e : e.g || []) : []; return g.reduce((t, i) => t + ((ZONAS[z].grupos[i] || [0, 0, 0])[2]), 0); };
+  const vecinosZ = z => (ZONAS[z] ? ZONAS[z].grupos.reduce((t, g) => t + g[2], 0) : 0);
+  const salvadosZ = (s, z) => { const e = (fl(s).inf || {})[z]; return e && !Array.isArray(e) ? (e.s || 0) : 0; };
   const salvados = salvadosZ;
   const totalSalvados = s => ORDEN.reduce((t, z) => t + salvadosZ(s, z), 0);
   const limpia = (s, z) => { const e = (fl(s).inf || {})[z]; return !!(e && !Array.isArray(e) && e.ok); };
   const limpias = s => ORDEN.filter(z => limpia(s, z)).length;
+  /** (v8) El lugar al que le toca (el primero sin limpiar, en orden) y si se puede entrar a uno: el Camino siempre (se cruza
+      para ir a San Roque); los demás, recién cuando les toca. */
+  const turno = s => ORDEN.find(z => !limpia(s, z)) || null;
+  const nombreDe = z => (ZONAS[z] ? ZONAS[z].n : '');
+  const cerrado = (s, z) => c3(s) === 3 && !!ZONAS[z] && z !== Z.camino && !limpia(s, z) && turno(s) !== z;
   /** El lugar en que se está y cómo está: 'caos' (sin limpiar), 'limpia', 'adentro-caos', 'adentro-limpia' o null (no es del reino). */
   const estado = S => {
     const s = S.story; if (!infierno(s) || c3(s) < 3) return null;
     const z = zonaInf(S);
-    if (ZONAS[z]) return limpia(s, z) ? 'limpia' : 'caos';
+    if (z === Z.bosque) return 'limpia';                                       // (v8) el claro, después de su pelea
+    if (ZONAS[z]) return limpia(s, z) ? 'limpia' : turno(s) === z ? 'caos' : 'espera';
     const p = ADENTRO[z];
     if (p) return limpia(s, p) ? 'adentro-limpia' : 'adentro-caos';
     return null;
@@ -497,7 +795,8 @@
     const pend = S._c3Pend = S._c3Pend || {}, id = I.z + ':' + c.k;
     if (pend[id]) return;
     pend[id] = true;
-    const marcar = e => { delete pend[id]; if (!e) return; e.zone = zonaDe(S); e._c3slot = c.k; e._c3z = I.z; if (c.k.charAt(0) === 'g') e._c3guarda = true; };
+    // (v8) los de los grupos ya no arrinconan a nadie: salen a cazar a los vecinos que corren
+    const marcar = e => { delete pend[id]; if (!e) return; e.zone = zonaDe(S); e._c3slot = c.k; e._c3z = I.z; };
     const IV = window.CK_INFIERNO_VIVO;
     if (desdeGrieta && IV && IV.grieta) IV.grieta(S, x, y, c.t, cuando, marcar);
     else S.time.delayedCall(cuando || R(200, 900), () => { if (S._c3Inf !== I || zonaInf(S) !== I.z) { delete pend[id]; return; } marcar(S.spawnEnemy(x, y, c.t)); });
@@ -509,14 +808,13 @@
     texturas(S);
     const z = zonaInf(S), L = ZONAS[z], a = area(S), n = c3(S.story);
     const I = S._c3Inf = { z, objs: [], fuegos: [], grupos: [], t: 0 };
-    // la columna de luz del monolito (hasta que se cierre la puerta)
-    if (z === Z.bosque && !S._c3Ritual) {
+    // la columna de luz del monolito (hasta que se cierre la puerta); (v8, nota 14) sin el portal del piso: se cerró
+    if (z === Z.bosque && !S._c3Ritual && n >= 3) {
       const haz = S.add.image(a.x + MONO.x, a.y + MONO.y - 30, 'ckc3_haz').setOrigin(0.5, 1).setDisplaySize(40, 640).setDepth(27530).setBlendMode(Phaser.BlendModes.ADD);
       I.objs.push(haz); I.haz = haz;
-      if (S.textures.exists('ckc3_portal')) { const po = portal(S, a.x + MONO.x, a.y + MONO.y + 40, a.y + MONO.y + 39, 0.9, 0.45); I.objs.push(po); I.portal = po; }
     }
     if (!L || n < 3) return;
-    const s = S.story, E3 = est(s, z), ok = !!E3.ok;
+    const s = S.story, E3 = est(s, z), ok = !!E3.ok, espera = !ok && turno(s) !== z;
     // fuegos: ardiendo mientras hay caos; brasas cuando el lugar quedó limpio
     const FV = window.CK_FUEGOS_VIVOS;
     const prender = () => {
@@ -531,26 +829,20 @@
     };
     if (S.textures.exists(LLAMA())) prender(); else if (FV && FV.cargar) FV.cargar(S).then(r => r && prender());
     if (ok) { gente(S, false); return; }
+    // (v8) no le toca todavía: arde, pero sin demonios ni gente corriendo (se espera el turno)
+    if (espera) { gente(S, true); hud(S); return; }
     // la llegada del caos (la primera vez que se entra después del ritual): el rojo entra de a golpes, la gente que andaba
     // por ahí sale corriendo, se abren grietas y trepan los demonios (ck_infierno_vivo.js)
     const llegada = !E3.llego && z !== Z.bosque;
     if (!E3.llego) { E3.llego = true; S.saveStory(); }
     if (llegada && window.CK_INFIERNO_VIVO) window.CK_INFIERNO_VIVO.corromper(S, { sinArmar: true, sinGrietas: true });
     gente(S, true);
-    // los vecinos acorralados
-    L.grupos.forEach(([gx, gy, cant], gi) => {
-      if (E3.g.indexOf(gi) >= 0) return;
-      const G = { i: gi, x: a.x + gx, y: a.y + gy, cant, gente: [] };
-      for (let k = 0; k < cant; k++) {
-        const ids = GENTE.filter(id => S.textures.exists(id + '_villager'));
-        const id = UNO(ids.length ? ids : ['npc1']), an = (k / cant) * Math.PI * 2 + R(-0.3, 0.3), rr = cant > 1 ? R(8, 16) : 0;
-        const sp = S.add.sprite(G.x + Math.cos(an) * rr, G.y + Math.sin(an) * rr * 0.6, id + '_villager').setOrigin(0.5, 1).setScale(1.3);
-        sp.setDepth(sp.y); sp._ckAnim = id; if (S.anims.exists(id + '_idle')) sp.play({ key: id + '_idle', startFrame: k % 2 });
-        sp.setFlipX(Math.random() < 0.5);
-        I.objs.push(sp); G.gente.push(sp);
-      }
-      I.grupos.push(G);
-    });
+    // (v8, notas 3, 4 y 6: "rescatar la mayor cantidad de aldeanos posible, unos 15 por mapa, que corran y se resguarden en
+    // casa; si matan a más de esos perdemos y empezamos otra vez") los vecinos salen de donde estaban escondidos y corren
+    // solos a las casas, de a tandas; los demonios los persiguen. Los que faltan (ni a salvo ni muertos) vuelven a salir.
+    vecinos(S, I, z, llegada);
+    // (v8) el Camino: los soldados de Bruno pelean por todos lados y la cámara lo muestra al llegar (nota 7)
+    if (z === Z.camino) soldadosCamino(S, I, llegada);
     // los demonios que quedan (por casilla: los vencidos no vuelven)
     const vivos = new Set((S.enemies ? S.enemies.getChildren() : []).filter(e => e.active && !e.isDead && e._c3z === z && e._c3slot).map(e => e._c3slot));
     // (el jefe no: sale solo, de su grieta, cuando no queda nadie más; lo hace ck_reino_criaturas.js)
@@ -566,12 +858,104 @@
     }
     comprobar(S, z);
   };
+  // (v8) los vecinos que corren a las casas: salen de a tandas de donde estaban escondidos (las posiciones de los grupos)
+  const vecinos = (S, I, z, llegada) => {
+    const L = ZONAS[z], IV = window.CK_INFIERNO_VIVO; if (!L || !L.grupos.length || !IV || !IV.vecino) return;
+    const E3 = est(S.story, z), falta = vecinosZ(z) - E3.s - E3.x; if (falta <= 0) return;
+    const a = area(S), lista = [];
+    L.grupos.forEach(([gx, gy, cant]) => { for (let k = 0; k < cant; k++) lista.push([gx, gy]); });
+    const TANDA = 5;
+    lista.slice(0, falta).forEach(([gx, gy], i) => {
+      const cuando = (llegada ? 2600 : 900) + Math.floor(i / TANDA) * 9000 + (i % TANDA) * 260;
+      S.time.delayedCall(cuando, () => {
+        if (S._c3Inf !== I || zonaInf(S) !== z || S._c3Pierde) return;
+        let x = a.x + gx + R(-14, 14), y = a.y + gy + R(-8, 8);
+        if (S.navIsFree && !S.navIsFree(x, y)) { x = a.x + gx; y = a.y + gy; }
+        const v = IV.vecino(S, x, y); v.c3z = z; v.quieto = 0; v.susto = R(150, 500);
+        if (i % TANDA === 0 && E()) E().globo(S, v.sprite, UNO(['¡Corran a las casas!', '¡Ahí vienen!', '¡Por acá, rápido!']), 1500);
+        if (i % TANDA === 0 && i > 0 && S.player) S.createFloatingText(S.player.x, S.player.y - 56, '¡Salen más vecinos!', 0xfde68a);
+      });
+    });
+  };
+  // ck_infierno_vivo.js avisa cuando uno llega a una casa o se muere tirado
+  window.CK_C3_VECINOS = {
+    salvo: (S, v) => {
+      const z = v && v.c3z; if (!z || !ZONAS[z] || c3(S.story) !== 3) return;
+      const E3 = est(S.story, z); if (E3.ok) return;
+      E3.s++; S.saveStory(); S.updateObjective(); hud(S);
+      if (S.player) S.createFloatingText(v.sprite.x, v.sprite.y - 40, '+1 A SALVO', 0x86efac);
+      sonar('quest_done', 0.25, { rate: 1.4, minGap: 300 });
+      comprobar(S, z);
+    },
+    muerto: (S, v) => {
+      const z = v && v.c3z; if (!z || !ZONAS[z] || c3(S.story) !== 3) return;
+      const E3 = est(S.story, z); if (E3.ok) return;
+      E3.x++; S.saveStory(); hud(S);
+      if (S.player) S.createFloatingText(v.sprite.x, v.sprite.y - 40, '✝ ' + (MUEREN - E3.x > 0 ? 'Murió un vecino · quedan ' + (MUEREN - E3.x - 1) + ' de margen' : 'Murió un vecino'), 0xfca5a5);
+      if (E3.x >= MUEREN) perder(S, z); else comprobar(S, z);
+    }
+  };
+  /** (v8) Se murieron demasiados: el lugar empieza de nuevo (los demonios, la gente y la cuenta). */
+  const perder = async (S, z) => {
+    if (S._c3Pierde) return;
+    S._c3Pierde = true;
+    S.showZoneTitle('Murieron demasiados vecinos', nombreDe(z) + ' · empieza de nuevo');
+    sonar('ck_grito', 0.5, { rate: 0.8 });
+    S.cameras.main.fadeOut(900, 0, 0, 0);
+    await new Promise(r => setTimeout(r, 1300));
+    (S.enemies ? S.enemies.getChildren() : []).filter(e => e.active && (e._c3z === z || esDemonio(e))).forEach(e => { try { if (e.hpBar) e.hpBar.destroy(); e.destroy(); } catch (er) {} });
+    const V = S._ckiv; if (V) { V.gente.forEach(v => { try { if (v.sprite && v.sprite.active) v.sprite.destroy(); } catch (er) {} }); V.gente = []; }
+    const f = fl(S.story); (f.inf = f.inf || {})[z] = { g: [], m: [], s: 0, x: 0 };
+    S._rcSale = false; S._rcListo = 0; S._c3Pend = {};
+    S.health = S.maxHealth; if (S.updateHUD) S.updateHUD();
+    S.saveStory();
+    S._c3Pierde = false;
+    if (zonaInf(S) === z) armarInf(S);
+    S.cameras.main.fadeIn(900, 0, 0, 0);
+  };
+  /** (v8, nota 7: "la cámara nos muestra demonios y soldados de Bruno peleando por todos lados") los soldados del Camino. */
+  const SOLDADOS_CAMINO = [['templar', 1090, 470], ['lancer', 1210, 500], ['axeman', 990, 440], ['templar', 870, 470], ['archer', 760, 430], ['lancer', 650, 470], ['axeman', 540, 450]];
+  const soldadosCamino = (S, I, llegada) => {
+    const a = area(S); a.actors = (a.actors || []).filter(t => { if (t._c3Sold) { try { t.sprite.destroy(); } catch (e) {} return false; } return true; });
+    if (est(S.story, Z.camino).ok) return;
+    SOLDADOS_CAMINO.forEach(([g, x, y]) => {
+      const key = 'g_' + g + '_idle'; if (!S.textures.exists(key)) return;
+      const sp = S.add.sprite(a.x + x, a.y + y, key).setOrigin(0.5, 0.61).setScale(1.2).setDepth(a.y + y);
+      if (S.anims.exists(key)) sp.play(key);
+      const act = { type: 'walker', sprite: sp, pts: [[a.x + x, a.y + y, 600000], [a.x + x + 1, a.y + y, 600000]], i: 0, wait: 0, speed: 30, idle: key,
+        walk: 'g_' + g + '_walk', lines: ['¡Aguanten la línea!', '¡Por el Roble!', '¡No los dejen llegar al portón!'], talkAt: 0, moving: false,
+        role: S.actorRole ? S.actorRole(key) : 'guard', hp: 5, maxHp: 5, _ckAliado: true, _c3Sold: true };
+      a.actors.push(act);
+      if (Array.isArray(S.currentInterior.objects)) S.currentInterior.objects.push(sp);
+      I.objs.push(sp);
+    });
+    if (!llegada || !E()) return;
+    S.time.delayedCall(400, () => E().correr(S, async () => {
+      const e = E();
+      await e.camara(S, 1150, 440, 900);
+      S.showZoneTitle('El Camino al Castillo', 'Los soldados de Bruno pelean por todos lados');
+      await e.esperar(1500);
+      await e.camara(S, 820, 450, 1400);
+      await e.esperar(900);
+      await e.camara(S, 560, 460, 1200);
+      await e.esperar(700);
+    }));
+  };
+  /** (v8) Un cartel con pausa (para las salidas cerradas) y un pasito atrás, para no quedar pegado al borde. */
+  const aviso = (S, t) => {
+    if (!S._c3Aviso || S.time.now - S._c3Aviso > 2600) { S._c3Aviso = S.time.now; S.createFloatingText(S.player.x, S.player.y - 46, t, 0xfca5a5); }
+    try {
+      const a = area(S), b = S.player.body, cx = a.x + (a.w || 640) / 2, cy = a.y + (a.h || 640) / 2, dx = cx - b.center.x, dy = cy - b.center.y, d = Math.hypot(dx, dy) || 1;
+      b.reset(S.player.x + dx / d * 14, S.player.y + dy / d * 14);
+    } catch (e) {}
+  };
+
   /** ¿Quedó limpio el lugar? (sin demonios por vencer y con toda su gente a salvo) */
   const comprobar = (S, z) => {
     const s = S.story, L = ZONAS[z]; if (!L || c3(s) !== 3) return;
     const E3 = est(s, z); if (E3.ok) return;
-    const faltanD = casillas(z).filter(c => E3.m.indexOf(c.k) < 0).length, faltanG = L.grupos.length - E3.g.length;
-    if (faltanD > 0 || faltanG > 0) return;
+    const faltanD = casillas(z).filter(c => E3.m.indexOf(c.k) < 0).length, faltanG = vecinosZ(z) - E3.s - E3.x;
+    if (faltanD > 0 || faltanG > 0 || E3.x >= MUEREN) return;
     E3.ok = true; S.saveStory(); S.updateObjective(); hud(S);
     const I = S._c3Inf;
     S.time.delayedCall(900, () => {
@@ -585,8 +969,9 @@
       if (limpias(s) >= ORDEN.length) S.time.delayedCall(4500, () => {
         if (!S.player || c3(s) !== 3) return;
         paso3(S, 4, 'EL REINO RESPIRA');
-        S.showZoneTitle('El reino respira', 'Lo último es el castillo');
+        S.showZoneTitle('El reino respira', 'El portón del castillo se abrió');
       });
+      else S.time.delayedCall(4200, () => S.player && turno(s) && S.showZoneTitle('Sigue: ' + nombreDe(turno(s)), limpias(s) + ' de ' + ORDEN.length + ' lugares libres'));
     });
   };
   const demoniosCerca = (S, x, y, r) => S.enemies && S.enemies.getChildren().some(e => esDemonio(e) && Math.hypot(e.x - x, e.y - y) < r);
@@ -625,17 +1010,18 @@
     }
     const s = S.story, E3 = est(s, I.z), reino = ' · REINO ' + limpias(s) + '/' + ORDEN.length;
     if (E3.ok) { h.textContent = '✔ ' + L.n.toUpperCase() + ' · LIBRE DE DEMONIOS' + reino; h.style.borderColor = '#65a30d'; }
+    else if (turno(s) !== I.z) { h.textContent = '🔥 ' + L.n.toUpperCase() + ' · PRIMERO: ' + nombreDe(turno(s)).toUpperCase() + reino; h.style.borderColor = '#7c2d12'; }
     else {
-      const dem = casillas(I.z).filter(c => E3.m.indexOf(c.k) < 0).length, tot = L.grupos.reduce((u, g) => u + g[2], 0);
+      const dem = casillas(I.z).filter(c => E3.m.indexOf(c.k) < 0).length, tot = vecinosZ(I.z);
       const dt = window.CK_C3_HUD_DEM ? window.CK_C3_HUD_DEM(S, I.z, E3, dem) : null;
-      h.textContent = '🔥 ' + L.n.toUpperCase() + ' · ' + (dt || 'DEMONIOS ' + dem) + (tot ? ' · A SALVO ' + salvadosZ(s, I.z) + '/' + tot : '') + reino;
-      h.style.borderColor = '#c2410c';
+      h.textContent = '🔥 ' + L.n.toUpperCase() + ' · ' + (dt || 'DEMONIOS ' + dem) + (tot ? ' · A SALVO ' + E3.s + '/' + SALVAR + ' · MUERTOS ' + E3.x + '/' + MUEREN : '') + reino;
+      h.style.borderColor = E3.x >= MUEREN - 2 ? '#dc2626' : '#c2410c';
     }
     h.style.display = '';
   };
 
   // la capa roja: fuerte donde hay caos, suave adentro y en lo ya limpio, nada fuera del reino
-  const objetivoCapa = S => ({ caos: 1, limpia: 0.32, 'adentro-caos': 0.45, 'adentro-limpia': 0.18 })[estado(S)] || 0;
+  const objetivoCapa = S => ({ caos: 1, limpia: 0.32, espera: 0.55, 'adentro-caos': 0.45, 'adentro-limpia': 0.18 })[estado(S)] || 0;
   const capa = (S, dt) => {
     const cam = S.cameras.main, v = cam.worldView, meta = objetivoCapa(S);
     let C = S._c3Capa;
@@ -719,10 +1105,10 @@
         this.createFloatingText(this.player.x, this.player.y - 46, '+1 CORAZÓN · +2 POCIONES · +60', 0x86efac);
         if (this.updateHUD) this.updateHUD();
         paso3(this, 2);
-        this.time.delayedCall(900, () => ritual(this));
+        this.time.delayedCall(900, () => emboscada(this));   // (v8) antes: el ritual, espiado
         return;
       }
-      if (id === 'bruno_c3' && c3(s) === 4) { paso3(this, 5); this.showZoneTitle('Fin de la primera parte', 'El tercer pilar continuará'); return; }
+      if (id === 'bruno_c3' && c3(s) === 4 && !window.CK_CAPITULO3_CASTILLO) { paso3(this, 5); this.showZoneTitle('Fin de la primera parte', 'El tercer pilar continuará'); return; }
       if (id === 'bruno_c3') return;
     } catch (e) { console.warn('[capítulo 3]', e); }
     return ta0.apply(this, arguments);
@@ -732,7 +1118,9 @@
     const r = ob0.apply(this, arguments);
     try {
       const n = c3(this.story), box = document.getElementById('ck-objective'), t = box && box.querySelector('.ck-obj-text');
-      if (n && OBJ[n] && t) t.textContent = OBJ[n] + (n === 3 ? ` (lugares ${limpias(this.story)}/${ORDEN.length} · gente ${totalSalvados(this.story)}/${TOTAL})` : '');
+      // (v8) en el reino en llamas, a qué lugar le toca
+      if (n === 3 && t) { const tz = turno(this.story); t.textContent = 'El reino en llamas · ' + (tz ? nombreDe(tz) + ': echá a los demonios' + (vecinosZ(tz) ? ' y que la gente llegue a las casas (salvá ' + SALVAR + ')' : '') : '') + ` (lugares ${limpias(this.story)}/${ORDEN.length})`; }
+      else if (n && OBJ[n] && t) t.textContent = OBJ[n];
     } catch (e) {}
     return r;
   };
@@ -740,7 +1128,8 @@
   P.switchInteriorArea = function (nombreA) {
     try {
       const n = c3(this.story);
-      if (n >= 1 && nombreA === 'courtyard' && zonaDe(this) === Z.camino && !this._doorTransition && !(window.CK_LIBRE && CK_LIBRE())) {
+      // (v8) con el reino limpio, la segunda parte (ck_capitulo3_castillo.js) abre el portón
+      if (n >= 1 && !(n >= 4 && window.CK_CAPITULO3_CASTILLO) && nombreA === 'courtyard' && zonaDe(this) === Z.camino && !this._doorTransition && !(window.CK_LIBRE && CK_LIBRE())) {
         if (!this._c3Tranca || this.time.now - this._c3Tranca > 2600) {
           this._c3Tranca = this.time.now;
           const t = !infierno(this.story) ? 'Mercenario: Órdenes del consejero. Vos no entrás.' : n >= 4 ? 'El portón está atrancado desde adentro. Hablá con Bruno.' : 'El portón está atrancado desde adentro. Primero, el resto del reino.';
@@ -763,7 +1152,7 @@
         try {
           campamento(S);
           armarInf(S);
-          if (z === Z.bosque && c3(S.story) === 2 && !S._c3Ritual) S.time.delayedCall(700, () => ritual(S));
+          if (z === Z.bosque && c3(S.story) === 2 && !S._c3Ritual) S.time.delayedCall(700, () => emboscada(S));   // (v8) si se cortó, empieza de nuevo
         } catch (e) { console.warn('[capítulo 3]', e); }
       });
     } catch (e) {}
@@ -785,8 +1174,8 @@
         hud(this); comprobar(this, enemy._c3z);
       }
       if (enemy && enemy._c3Ritual && this._c3Pelea) {
-        const quedan = this.enemies.getChildren().filter(e => e !== enemy && e._c3Ritual && esDemonio(e)).length;
-        if (!quedan) finRitual(this);
+        const P3 = this._c3Pelea; P3.muertos = (P3.muertos || 0) + 1;
+        if (P3.muertos >= (P3.total || 0)) finRitual(this);
       }
     } catch (e) {}
     return r;
@@ -819,7 +1208,8 @@
       const b = S._c3Bruno;
       if (b && b.active && b.visible && zonaDe(S) === BRUNO.zone) { const a = area(S); BRUNO.x = b.x - a.x; BRUNO.y = b.y - a.y + 8; } else { BRUNO.x = BRUNO.y = -9999; }
       // Bruno pelea en el claro (en el ritual y mientras el claro tenga demonios)
-      if ((S._c3Pelea || (c3(s) === 3 && zonaDe(S) === Z.bosque)) && b && b.active && b.visible && !S._ckEscena) brunoPelea(S, b, dt);
+      if ((S._c3Pelea || S._c3Emb || (c3(s) === 3 && zonaDe(S) === Z.bosque)) && b && b.active && b.visible && !S._ckEscena) brunoPelea(S, b, dt);
+      if (S._c3Emb && !S._ckEscena) emboscadaCuadro(S);
       // la gente del lugar sigue en los refugios mientras haya caos
       if (enCaos(S) && (!S._c3GenteT || time - S._c3GenteT > 1000)) { S._c3GenteT = time; gente(S, true); }
       if (infierno(s)) {
@@ -853,8 +1243,54 @@
     } catch (e) { if (!P._c3Av) { P._c3Av = 1; console.warn('[capítulo 3]', e); } }
     return r;
   };
+  // (v8) las salidas: al norte no se va; a la Aldea y a los Campos, recién cuando les toca
+  const ce0 = P.ckEntrar;
+  if (ce0) P.ckEntrar = function (mapa) {
+    try {
+      const s = this.story, z = 'ed_' + mapa + '.main', libre = window.CK_LIBRE && CK_LIBRE();
+      if (this._gameMode === 'campaign' && s && !libre && !fl(s).cap3_fin) {
+        if (z === NORTE && c3(s) >= 2) { aviso(this, 'El camino al norte está cortado por el fuego.'); return; }
+        if (cerrado(s, z)) { aviso(this, nombreDe(z) + ': todavía no. Primero ' + nombreDe(turno(s)) + '.'); return; }
+      }
+    } catch (e) {}
+    return ce0.apply(this, arguments);
+  };
+  const ex0 = P.exitInterior;
+  if (ex0) P.exitInterior = function () {
+    try {
+      const s = this.story;
+      if (this._gameMode === 'campaign' && s && zonaDe(this) === Z.camino && cerrado(s, 'village') && !(window.CK_LIBRE && CK_LIBRE())) { aviso(this, 'La Aldea: todavía no. Primero ' + nombreDe(turno(s)) + '.'); return; }
+    } catch (e) {}
+    return ex0.apply(this, arguments);
+  };
+  // (v8) en la emboscada no se muere: se cae y Bruno se rinde; atado (mirando el ritual) no lo lastima nada
+  const dp0 = P.damagePlayer;
+  P.damagePlayer = function (amount) {
+    try {
+      const D = this._c3Emb;
+      if (this._c3Sogas || (D && D.fin)) return;
+      if (D && this.health - (amount || 1) <= 0) { this.health = 1; if (this.updateHUD) this.updateHUD(); derrota(this); return; }
+    } catch (e) {}
+    return dp0.apply(this, arguments);
+  };
+  // (v8, nota 10: "acá los npc aliados están heridos, sólo peleamos Bruno y nosotros") los soldados del bosque no pelean
+  const ad0 = P.updateActorDanger;
+  if (ad0) P.updateActorDanger = function (a) {
+    try {
+      if (a && (a.role === 'guard' || a.role === 'archer') && !a._c3Sold && this.story && c3(this.story) >= 2 && zonaDe(this) === Z.bosque) {
+        if (!a._c3Herido && a.sprite && a.sprite.active) {
+          a._c3Herido = true; a.fight = null;
+          const k = (this.actorBase ? this.actorBase(a) : '') + '_hurt';
+          if (this.textures.exists(k)) { a.sprite.anims.stop(); a.sprite.setTexture(k, Math.max(0, this.textures.get(k).frameTotal - 1)); }
+          a.sprite.setTint(0xd8b0a8);
+        }
+        return true;
+      }
+    } catch (e) {}
+    return ad0.apply(this, arguments);
+  };
   const brunoPelea = (S, b, dt) => {
-    const dem = S.enemies.getChildren().filter(esDemonio);
+    const dem = S.enemies.getChildren().filter(e => esDemonio(e) || (e && e.active && !e.isDead && e._c3Merc && !e._ckIntangible));
     if (!dem.length) return;
     const e = dem.reduce((m, x) => (Math.hypot(x.x - b.x, x.y - b.y) < Math.hypot(m.x - b.x, m.y - b.y) ? x : m), dem[0]);
     const d = Math.hypot(e.x - b.x, (e.y + 10) - b.y);
@@ -866,9 +1302,10 @@
     } else if (!b._proxGolpe || S.time.now > b._proxGolpe) {
       b._proxGolpe = S.time.now + 1500; b._golpeando = true;
       golpe(S, b, 'g_knight_attack1').then(() => { b._golpeando = false; });
-      S.time.delayedCall(260, () => { if (esDemonio(e) && Math.hypot(e.x - b.x, (e.y + 10) - b.y) < 56) { S.damageEnemy(e, 1, b.x, b.y); sonar('sword_hit', 0.4); } });
+      S.time.delayedCall(260, () => { if (e.active && !e.isDead && Math.hypot(e.x - b.x, (e.y + 10) - b.y) < 56) { S.damageEnemy(e, 1, b.x, b.y); sonar('sword_hit', 0.4); } });
     } else if (b.anims.currentAnim && b.anims.currentAnim.key !== 'g_knight_idle') b.play('g_knight_idle');
   };
 
-  window.CK_CAPITULO3 = { DEM, ZONAS, LUGARES, ORDEN, TOTAL, OBJ, ritual, expulsion, armarInf, estado, enCaos, limpia, casillas, est, salvados: s => totalSalvados(s) };
+  window.CK_CAPITULO3 = { DEM, ZONAS, LUGARES, ORDEN, TOTAL, OBJ, ritual, emboscada, expulsion, armarInf, estado, enCaos, limpia, limpias, casillas, est, turno,
+    salvados: s => totalSalvados(s), SALVAR, MUEREN, CAMPO, merc, portalFx, efecto, paso3, perder };
 })();

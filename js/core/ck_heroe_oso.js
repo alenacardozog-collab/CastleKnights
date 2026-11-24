@@ -14,6 +14,8 @@
      De base: Q Rugido (aturde a los de alrededor) y E Remolino de garras.
    - Árbol (H) con 3 ramas: Furia (Garras afiladas, Sed de sangre, Frenesí, Desgarro), Tierra (Piel de piedra, Pisotón,
      Montaña, Avalancha) y Bosque (Miel, Mordisco, Espíritu del bosque, Hibernar). Todo se equipa en Q E R F.
+   (23/11, v12, nota 26) La llegada de Garra Negra en la Fosa: los ojos entre las sombras, el dash, el aullido y su cartel.
+   (23/11, v13) Los ojos quedan prendidos (donde va su cabeza) mientras sale de la bruma y se apagan con el aullido.
    (12/11, v8) Con ck_cueva_fosa.js (la Fosa, nivel 3 de la cueva) Urso está ahí, encadenado a un poste en la sala del nido,
    sin jaula; la manada y Garra Negra salen de lugares que pone ese archivo. Sin él, la jaula vuelve al Claro.
    (12/11, v9) Con ck_jaula_hueso.js: la jaula es la de troncos y huesos de PixelLab, con Urso ADENTRO (jaula, Urso y los
@@ -758,10 +760,65 @@
       sn('ck_f_pasos_cueva', 1) || sn('ck_f_paso_jefe', 0.8);
       for (let i = 0; i < 4; i++) { temblor(220, 0.002 + i * 0.0014); polvo(2 + i); await E.esperar(1050); }
       const J = FOSA && FOSA.jefe ? FOSA.jefe : [JAULA.x + 150, JAULA.y + 20];
-      await E.camara(S, J[0], J[1] - 10, 900);
+      // (23/11, v12, nota 26 del dueño: "aparecen los ojos de Garra Negra entre las sombras, luego desaparece, hace un dash y lo
+      // enfoca, hace la animación de aullido y ahí aparece su cartel de personaje"): dos ojos rojos en lo oscuro que parpadean y
+      // se apagan; de la sombra sale Garra Negra como una ráfaga (estela), la cámara se le acerca, aúlla y sale su cartel
+      // (23/11, v13, nota del dueño: "los ojos rojos que vemos brillan y luego aparece el de la bruma y ruge, y con la animación
+      // de rugir los ojos rojos desaparecen"): los ojos se prenden en lo oscuro, justo donde va a estar su cabeza; Garra Negra
+      // sale de la bruma detrás de ellos (humo oscuro, un paso adelante), aúlla y con el aullido los ojos se apagan
+      const fp = S.story && (S.story.flags = S.story.flags || {}), yaVisto = !!(fp && fp.presentados && fp.presentados.garra);
+      if (fp) (fp.presentados = fp.presentados || {}).garra = 1;      // (su cartel, recién después del aullido)
+      await E.camara(S, J[0] - 20, J[1] - 30, 900);
       const e = traerGarra(S, true);
-      if (e) { try { if (FOSA && FOSA.alSalir) FOSA.alSalir(S, e); else { temblor(380, 0.006); sn('ck_f_garra_aullido', 1); } } catch (er) {} }
-      await E.esperar(1500);
+      let ojos = [], brillo = null;
+      if (e) {
+        const fx = e.x, fy = e.y;
+        e.setAlpha(0); if (e.hpBar) e.hpBar.setVisible(false);
+        const cabeza = () => ({ x: e.x + (e.flipX ? -7 : 7), y: e.y - e.displayHeight * 0.3 });
+        const c0 = cabeza();
+        ojos = [-5, 5].map(dx => S.add.ellipse(c0.x + dx, c0.y, 4, 3, 0xff2a1a, 1).setDepth(27000).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0));
+        brillo = S.add.ellipse(c0.x, c0.y, 26, 12, 0xff2a1a, 0.18).setDepth(26999).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+        const seguir = S.time.addEvent({ delay: 16, loop: true, callback: () => { if (!e.active) return; const c = cabeza(); ojos.forEach((o, i) => o.setPosition(c.x + (i ? 5 : -5), c.y)); if (brillo) brillo.setPosition(c.x, c.y); } });
+        S.tweens.add({ targets: ojos.concat([brillo]), alpha: 1, duration: 500 });
+        sn('beast_growl', 0.6, { rate: 0.5 });
+        await E.esperar(900);
+        S.tweens.add({ targets: ojos, scaleY: 0.1, duration: 90, yoyo: true, repeat: 1 });      // parpadea
+        await E.esperar(1000);
+        // sale de la bruma: humo oscuro alrededor, aparece de a poco y da un paso adelante
+        for (let i = 0; i < 14; i++) {
+          const h = S.add.circle(fx + R(-34, 34), fy + R(-10, 24), R(10, 20), 0x14100e, 0.55).setDepth(fy + 40);
+          S.tweens.add({ targets: h, x: h.x + R(-30, 30), y: h.y - R(10, 30), scale: 2.2, alpha: 0, duration: R(900, 1500), delay: i * 50, onComplete: () => h.destroy() });
+        }
+        e.setPosition(fx - (e.flipX ? -26 : 26), fy);
+        sn('ck_f_paso_jefe', 0.8) || sn('dash', 0.6, { rate: 0.6 });
+        await new Promise(r => S.tweens.add({ targets: e, alpha: 1, x: fx, duration: 900, ease: 'Sine.easeOut', onComplete: r }));
+        if (e.body) e.body.reset(fx, fy);
+        if (e.hpBar) e.hpBar.setVisible(true);
+        temblor(260, 0.006); polvo(3);
+        const cam = S.cameras.main, z0 = cam.zoom;
+        await E.camara(S, J[0], J[1] - 10, 400);
+        S.tweens.add({ targets: cam, zoom: z0 * 1.25, duration: 500, ease: 'Sine.easeOut' });
+        await E.esperar(450);
+        // el aullido: la cabeza arriba (su golpe, lento), la onda y el temblor; con el aullido los ojos se apagan
+        if (S.anims.exists('werebear_jefe_attack1')) { e.play('werebear_jefe_attack1'); e.anims.timeScale = 0.6; }
+        sn('ck_f_garra_aullido', 1) || sn('warg_howl', 0.9, { rate: 0.7 });
+        temblor(900, 0.007);
+        S.tweens.add({ targets: ojos.concat([brillo]), alpha: 0, scaleX: 1.8, duration: 380, delay: 150 });
+        for (let i = 0; i < 3; i++) {
+          const o = S.add.ellipse(e.x, e.y - 30, 30, 18).setStrokeStyle(3, 0xffffff, 0.7).setDepth(27001);
+          S.tweens.add({ targets: o, scaleX: 6, scaleY: 6, alpha: 0, duration: 700, delay: i * 180, onComplete: () => o.destroy() });
+        }
+        await E.esperar(1300);
+        seguir.remove();
+        e.anims.timeScale = 1; if (S.anims.exists('werebear_jefe_idle')) e.play('werebear_jefe_idle', true);
+        S.tweens.add({ targets: cam, zoom: z0, duration: 500 });
+        ojos.concat([brillo]).forEach(o => o && o.destroy());
+        // su cartel
+        try { const PR = window.CK_PRESENTACIONES; if (PR && PR.POR_ID && PR.POR_ID.garra && !yaVisto) PR.mostrar(S, 'garra'); } catch (er) {}
+        await E.esperar(600);
+        for (let i = 0; i < 40 && window.CK_PRESENTACIONES && window.CK_PRESENTACIONES.activa && window.CK_PRESENTACIONES.activa(); i++) await E.esperar(150);
+      }
+      await E.esperar(500);
       await E.dialogo(S, 'Urso', ['¡Juntos, humano! Que pague cada barrote de esa jaula.'], OSO + '_idle');
       E.seguir(S);
       if (aliado) aliado.busyUntil = 0;

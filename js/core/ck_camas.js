@@ -11,6 +11,7 @@
      si la hora ya pasó, es la de mañana), el héroe se despierta con la vida completa y la partida queda guardada.
    - Las horas: el día va de la VII a la XVIII, el atardecer de la XVIII a la XX, la noche de la XX a la VI y el
      amanecer de la VI a la VII (las mismas del reloj de sol que se compra, ck_reloj.js).
+   v2 (23/11): al dormir se guarda de verdad (con ck_partidas v2 S.saveStory() ya no escribía): CK_TOTEMS.guardarDescanso.
    Borrar la línea de index.html lo saca (la cama del Rey vuelve a su siesta de antes). */
 (function () {
   if (typeof MainGameScene === 'undefined') return;
@@ -170,11 +171,14 @@ body:has(#ck-cama.on) #ck-ayuda, body:has(#ck-cama.on) #ck-prompt { display: non
       S.dayClock = (S.dayClock || 0) + salto * DIA;
       S.health = S.maxHealth; if (S.stamina !== undefined && S.maxStamina) S.stamina = S.maxStamina;
       try { S._wasNight = S.isNight(); } catch (e) {}
-      try { S.updateHUD(); S.updateObjective(); S.saveStory(); } catch (e) {}
+      // (v2, 23/11) guarda de verdad: con ck_partidas v2, S.saveStory() ya no escribe (la partida se guarda en los carteles
+      // de guardado); la cama guarda como un cartel, donde está el héroe (ck_totems.js v2: guardarDescanso)
+      let guardo = true;
+      try { S.updateHUD(); S.updateObjective(); guardo = window.CK_TOTEMS && CK_TOTEMS.guardarDescanso ? CK_TOTEMS.guardarDescanso(S) : (S.saveStory(), true); } catch (e) {}
       S.time.delayedCall(900, () => {
         cam.fadeIn(900, 0, 0, 0);
         S._doorTransition = false;
-        try { S.showZoneTitle('Hora ' + romano(destino), 'Descansaste hasta ' + momento(destino) + ' · vida completa · partida guardada'); } catch (e) {}
+        try { S.showZoneTitle('Hora ' + romano(destino), 'Descansaste hasta ' + momento(destino) + ' · vida completa' + (guardo ? ' · partida guardada' : '')); } catch (e) {}
       });
     });
   };

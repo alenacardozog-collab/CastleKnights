@@ -11,11 +11,24 @@
      (y lo que quede de gente en el mapa corre a esconderse).
    - Al limpiar la emboscada: Tobías asoma ("¡Te lo dije!"), experiencia y monedas, y el Rey ya sabe la verdad
      (story.flags.bruma_noche). Lo demás del capítulo sigue igual (la llave del Gran Esqueleto y la capilla).
-   Banderas: bruma_vecinos (habló de día), bruma_noche (emboscada ganada). Borrar la línea de index.html lo saca. */
+   Banderas: bruma_vecinos (habló de día), bruma_noche (emboscada ganada). Borrar la línea de index.html lo saca.
+   v2 (23/11, nota 10 del dueño, en el Norte del Roble: "la emboscada de Brumavieja es en esta parte; algunos aldeanos nos darán
+   info y cuando investiguemos y volvamos al centro se nos acercarán aldeanos y se transformarán y atacarán"):
+   - La emboscada pasa al NORTE DEL ROBLE, en el cruce del centro (653-900, 401-565). Ya no depende de la noche.
+   - Desde que el Rey da el permiso del portón del norte (ck_norte_roble.js) hasta la emboscada, Marta, Ciro y Doña Inés están
+     en el cruce: dicen que escaparon de Brumavieja, hablan raro y mandan a mirar las casas (la quemada del este, la
+     abandonada del oeste).
+   - "Investigar": después de hablar con alguno, entrar a una de esas dos casas (story.flags.norte_inv).
+   - Al volver al cruce, los tres se acercan ("¿Encontró algo, forastero?"…), Doña Inés: "Viniste. Sabíamos que ibas a
+     volver…", y los tres se TRANSFORMAN en esqueletos; de la tierra suben seis más. La gente que haya corre a esconderse.
+   - Al limpiarla: bruma_noche (como antes: Aby interrumpe al volver a la aldea), monedas y experiencia. Tobías, en
+     Brumavieja, habla de "los del Norte del Roble". */
 (function () {
   if (typeof MainGameScene === 'undefined' || typeof STORY_NPCS === 'undefined') return;
   const P = MainGameScene.prototype;
-  const Z = 'ruins.village', ZONAS = ['ruins.village', 'ed_aldea_en_ruinas.main'];   // la de la historia y el mapa del Taller suelto
+  const Z = 'ed_norte_del_roble.main', ZONAS = [Z];                                    // (v2) el Norte del Roble
+  const CASAS = ['ed_casa_quemada_norte.main', 'ed_casa_peste.main'];                     // (v2) las dos casas del cruce
+  const CRUCE = { x0: 653, y0: 401, x1: 900, y1: 565 };                                    // (v2) donde los vecinos se acercan
   const enZona = S => ZONAS.indexOf(S.currentZoneKey && S.currentZoneKey()) >= 0;
   const st = S => (S && S._gameMode === 'campaign' && S.story) || null;
   const fl = s => (s.flags = s.flags || {});
@@ -23,32 +36,30 @@
   const son = (k, v, o) => { try { return sfx.fx(k, v, o); } catch (e) { return false; } };
   const R = (a, b) => a + Math.random() * (b - a);
   const noche = S => S.isNight && S.isNight();
+  // (v2) en el cruce del Norte del Roble
   const VECINOS = [
-    { id: 'bv_marta', tex: 'npc4_villager', x: 384, y: 330, nombre: 'Marta, la de las ovejas', dia: [
-      'Buen día, buen día. ¿Usted vio mis ovejas? Hace mucho que no las veo… o no tengo ovejas. No me acuerdo.',
-      'Acá nunca pasó nada, forastero. Nunca. La niebla es linda de noche, ¿sabe? Abriga.'] },
-    { id: 'bv_ciro', tex: 'npc9_villager', x: 516, y: 318, nombre: 'Ciro, el herrero', dia: [
+    { id: 'bv_marta', tex: 'npc4_villager', x: 700, y: 478, nombre: 'Marta, la de las ovejas', dia: [
+      'Buen día, buen día. Venimos de Brumavieja, ¿sabe? Nos fuimos cuando bajó la niebla. ¿O fue antes? No me acuerdo.',
+      '¿Usted vio mis ovejas? En la casa quemada, la del este, dormimos la primera noche. Quedaron cosas de los que se fueron. Vaya a ver, vaya.'] },
+    { id: 'bv_ciro', tex: 'npc9_villager', x: 840, y: 490, nombre: 'Ciro, el herrero', dia: [
       '¿Herrero? No, yo nunca fui herrero. Bueno… sí. A veces. Cuando hacía falta.',
-      'El encapuchado de la capilla es buena gente. Nos cuida. De noche, sobre todo, nos cuida.'] },
-    { id: 'bv_ines', tex: 'npc5_villager', x: 548, y: 418, nombre: 'Doña Inés', dia: [
+      'El encapuchado de la capilla es buena gente. Nos cuida. Los que faltan dejaron todo en la casa vieja del oeste: fíjese ahí, que nosotros no entramos.'] },
+    { id: 'bv_ines', tex: 'npc5_villager', x: 772, y: 538, nombre: 'Doña Inés', dia: [
       'Los que faltan se fueron al norte. Se fueron contentos. Volvieron distintos, pero contentos.',
-      'Vuelva de noche, m\'hijo, que hay fiesta en la plaza. Vamos a estar todos. Todos.'] }
+      'Entre a las casas, m\'hijo. Mire bien. Después venga, que lo esperamos acá, en el medio. Todos.'] }
   ];
-  const NOCHE = { x: 452, y: 352 };   // junto al pozo
-  const diaActivo = s => s && s.step >= 4 && s.step <= 6 && !fl(s).bruma_noche;
-  const nocheActiva = s => s && s.step >= 5 && !fl(s).bruma_noche;
+  const NOCHE = { x: 772, y: 480 };   // (v1: junto al pozo de Brumavieja; v2: el medio del cruce)
+  const abierto = s => (window.CK_NORTE_ROBLE ? CK_NORTE_ROBLE.abierto(s) : s.step >= 4);
+  const diaActivo = s => !!(s && abierto(s) && s.step >= 3 && s.step <= 7 && !fl(s).bruma_noche && !fl(s).c2);
+  const hablo = s => Object.keys(fl(s).bruma_vecinos || {}).length > 0;
+  const lista = s => diaActivo(s) && hablo(s) && !!fl(s).norte_inv;
 
   // ------------------------------------------------------------------ quién se puede hablar
   ZONAS.forEach(Zn => VECINOS.forEach((v, i) => STORY_NPCS.push({
     id: v.id, zone: Zn, x: v.x, y: v.y - 10, r: 40, name: v.nombre, face: v.tex,
-    _ckActivo: S => { const s = st(S); return !!(s && diaActivo(s) && !noche(S)); },
+    _ckActivo: S => { const s = st(S); return !!(s && diaActivo(s) && !S._ckBruma); },
     lines: () => v.dia
   })));
-  ZONAS.forEach(Zn => STORY_NPCS.push({
-    id: 'bv_noche', zone: Zn, x: NOCHE.x, y: NOCHE.y - 10, r: 44, name: 'Doña Inés', face: 'npc5_villager',
-    _ckActivo: S => { const s = st(S); return !!(s && nocheActiva(s) && noche(S) && !S._ckBruma); },
-    lines: () => ['Viniste. Sabíamos que ibas a venir…', 'Quedate con nosotros. Acá ya no se muere nadie.', 'Ya no.']
-  }));
   const nb0 = P.nearbyStoryNPC;
   P.nearbyStoryNPC = function () {
     let r = nb0.apply(this, arguments), guard = 0;
@@ -67,8 +78,9 @@
     const l0 = TOB.lines;
     TOB.lines = function (s) {
       const L = l0.apply(this, arguments) || [];
-      if (s.step === 4 && !fl(s).bruma_noche) return ['¿Hablaste con los de la plaza? No les creas nada.', 'A Marta, a Ciro y a Inés los enterré yo, con estas manos, el invierno pasado.'].concat(L);
-      if (s.step >= 5 && !fl(s).bruma_noche) return L.concat(['Y si volvés de noche… no les hables. Por lo que más quieras, no les hables.']);
+      if (s.step === 4 && !fl(s).bruma_noche) return ['¿Te cruzaste con Marta, Ciro e Inés en el Norte del Roble? No les creas nada.', 'A los tres los enterré yo, con estas manos, el invierno pasado.'].concat(L);
+      if (s.step >= 5 && !fl(s).bruma_noche) return L.concat(['Y si volvés al Norte del Roble… no te les acerques. Por lo que más quieras.']);
+      if (s.step === 4 && fl(s).bruma_noche) return ['¿Marta, Ciro, Inés? ¿En el Norte del Roble? A los tres los enterré yo el invierno pasado. El encapuchado los hace caminar.'].concat(L);
       if (fl(s).bruma_noche && s.step < 7) return ['Eran ellos… Siempre fueron ellos. Andá con cuidado: el encapuchado ya sabe que estás acá.'].concat(L.slice(-1));
       return L;
     };
@@ -79,29 +91,27 @@
   const dibujar = S => {
     quitar(S);
     const s = st(S); if (!s || !E() || !enZona(S)) return;
-    if (diaActivo(s) && !noche(S)) {
+    S._ckBVvec = [];
+    if (diaActivo(s) && !S._ckBruma) {                // (v2) de día o de noche, hasta la emboscada
       VECINOS.forEach((v, i) => {
         if (!S.textures.exists(v.tex)) return;
         const sp = E().actor(S, v.tex, v.x, v.y, { flip: i === 1 });
         sp.setTint(0xe6e0d6);                          // un poco pálidos, nada más
-        S._ckBV.push(sp);
+        S._ckBV.push(sp); S._ckBVvec.push(sp);
         // de vez en cuando se quedan mirando al héroe, quietos
-        S.tweens.add({ targets: sp, angle: i % 2 ? 2 : -2, duration: 2200 + i * 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        sp._ckVaiven = S.tweens.add({ targets: sp, angle: i % 2 ? 2 : -2, duration: 2200 + i * 300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       });
-    } else if (nocheActiva(s) && noche(S) && !S._ckBruma) {
-      const v = VECINOS[2];
-      if (!S.textures.exists(v.tex)) return;
-      const sp = E().actor(S, v.tex, NOCHE.x, NOCHE.y);
-      sp.setTint(0xb9d8c8); sp.setAlpha(0.92);
-      const halo = S.add.ellipse(sp.x, sp.y - 2, 30, 10, 0x7cf0a0, 0.25).setDepth(sp.depth - 1).setBlendMode(1);
-      S.tweens.add({ targets: halo, alpha: 0.06, scaleX: 1.4, duration: 1100, yoyo: true, repeat: -1 });
-      S._ckBV.push(sp, halo); S._ckBVnoche = sp;
     }
   };
   const area0 = P.onAreaShown;
   P.onAreaShown = function () {
     const r = area0.apply(this, arguments);
-    try { this._ckBVfase = null; this._ckBruma = null; dibujar(this); } catch (e) { console.warn('[brumavieja]', e); }
+    try {
+      this._ckBVfase = null; this._ckBruma = null; dibujar(this);
+      // (v2) investigar: entrar a una de las casas del cruce después de hablar con los vecinos
+      const s = st(this), z = this.currentZoneKey && this.currentZoneKey();
+      if (s && CASAS.indexOf(z) >= 0 && diaActivo(s) && hablo(s) && !fl(s).norte_inv) { fl(s).norte_inv = true; this.saveStory && this.saveStory(); }
+    } catch (e) { console.warn('[brumavieja]', e); }
     return r;
   };
   // si cambia de día a noche estando ahí, se vuelve a armar
@@ -111,9 +121,12 @@
     try {
       const s = st(this);
       if (s && enZona(this)) {
-        const fase = noche(this) ? 'n' : 'd';
-        if (this._ckBVfase !== fase && !this._ckBruma) { this._ckBVfase = fase; dibujar(this); }
         if (this._ckBruma) vigilar(this);
+        // (v2) de vuelta en el cruce, después de investigar: se acercan
+        else if (lista(s) && !this._ckEscena && !this.dialogOpen && this.player && this.currentInterior) {
+          const a = this.currentInterior.area, b = this.player.body, px = (b ? b.center.x : this.player.x) - a.x, py = (b ? b.bottom : this.player.y) - a.y;
+          if (px > CRUCE.x0 && px < CRUCE.x1 && py > CRUCE.y0 && py < CRUCE.y1) emboscada(this);
+        }
       }
     } catch (e) {}
     return r;
@@ -137,9 +150,28 @@
     }
     return [x + rmin, y];
   };
+  // (v2) se acercan los tres, hablan y se transforman
+  const emboscada = S => {
+    const e = E(), s = st(S); if (!e || !s || S._ckBruma || S._ckBVacerca) return;
+    const vec = (S._ckBVvec || []).filter(o => o && o.active); if (vec.length < 3) { dibujar(S); return; }
+    S._ckBVacerca = true;
+    vec.forEach(o => { if (o._ckVaiven) o._ckVaiven.remove(); o.setAngle(0); });
+    const p = S.player, lados = [[-46, -8], [46, -6], [0, 34]];
+    e.correr(S, async () => {
+      await e.camara(S, p.x - S.currentInterior.area.x, p.y - S.currentInterior.area.y - 10, 700, { mundo: false });
+      const va = vec.map((o, i) => e.caminar(S, o, p.x + lados[i][0], p.y + lados[i][1], 34, { mundo: true }));
+      await e.globo(S, vec[0], '¿Encontró algo, forastero?', 1700);
+      await e.globo(S, vec[1], 'No tendría que haber entrado ahí…', 1700);
+      await Promise.all(va);
+      vec.forEach(o => o.setFlipX(o.x > p.x));
+      son('ck_fantasma_susurro', 0.7);
+      await e.dialogo(S, 'Doña Inés', ['Viniste. Sabíamos que ibas a volver…', 'Quedate con nosotros. Acá ya no se muere nadie.', 'Ya no.'], 'npc5_villager');
+    }).then(() => { S._ckBVacerca = false; transformar(S); }).catch(() => { S._ckBVacerca = false; transformar(S); });
+  };
   const transformar = S => {
     const s = st(S); if (!s || S._ckBruma) return;
-    const sp = S._ckBVnoche; if (!sp || !sp.active) return;
+    const vec = (S._ckBVvec || []).filter(o => o && o.active);
+    const sp = S._ckBVnoche && S._ckBVnoche.active ? S._ckBVnoche : vec[vec.length - 1]; if (!sp) return;
     S._ckBruma = { vivos: [], fin: false };
     S.cameras.main.shake(400, 0.008); S.cameras.main.flash(250, 140, 255, 170);
     son('necro_cast', 0.8) || son('bone_hit', 0.8, { rate: 0.6 });
@@ -150,14 +182,17 @@
       S.tweens.add({ targets: c, y: c.y - R(20, 50), alpha: 0, scale: 2, duration: R(500, 900), onComplete: () => c.destroy() });
     }
     const x = sp.x, y = sp.y;
+    // (v2) los otros dos, ahí mismo: humo verde y huesos
+    const otros = vec.filter(o => o !== sp).map(o => ({ x: o.x, y: o.y }));
+    otros.forEach(q => { for (let i = 0; i < 8; i++) { const c = S.add.circle(q.x + R(-10, 10), q.y - R(0, 30), R(3, 6), 0x7cf0a0, 0.6).setDepth(q.y + 1).setBlendMode(1); S.tweens.add({ targets: c, y: c.y - R(20, 50), alpha: 0, scale: 2, duration: R(500, 900), onComplete: () => c.destroy() }); } });
+    vec.forEach(o => { if (o !== sp) S.tweens.add({ targets: o, alpha: 0, duration: 380 }); });
     S.tweens.add({ targets: sp, alpha: 0, duration: 380, onComplete: () => quitar(S) });
     S.time.delayedCall(350, () => {
       const L = S._ckBruma.vivos;
       const e = traer(S, 'skeleton', x, y, false); if (e) L.push(e);
-      S.showZoneTitle('¡Emboscada!', 'Los vecinos de Brumavieja eran huesos');
-      // los otros dos, de las sombras de la plaza
-      [VECINOS[0], VECINOS[1]].forEach((v, i) => S.time.delayedCall(500 + i * 400, () => { const a = S.currentInterior.area; const q = traer(S, 'skeleton', a.x + v.x, a.y + v.y, true); if (q) L.push(q); }));
-      // y del cementerio suben seis más alrededor
+      S.showZoneTitle('¡Emboscada!', 'Los vecinos eran huesos');
+      otros.forEach((q, i) => S.time.delayedCall(150 + i * 200, () => { const k = traer(S, i ? 'skeleton_armored' : 'skeleton', q.x, q.y, false); if (k) L.push(k); }));
+      // y de la tierra suben seis más alrededor
       for (let i = 0; i < 6; i++) S.time.delayedCall(1300 + i * 380, () => {
         if (!S._ckBruma) return;
         const p = S.player, [px, py] = libreCerca(S, p.x, p.y + 16, 120, 230);
@@ -189,24 +224,21 @@
     const s = st(S); if (!s) return;
     fl(s).bruma_noche = true;
     s.coins = (s.coins || 0) + 40; S.gainXP && S.gainXP(120);
-    S.showZoneTitle('Brumavieja', 'Ya sabés la verdad');
+    S.showZoneTitle('Norte del Roble', 'Los vecinos eran huesos');
     try { S.saveStory && S.saveStory(); } catch (e) {}
+    // (v2) en el Norte del Roble no está Tobías: lo que quedó en el piso lo dice
     S.time.delayedCall(2200, () => {
-      S.openDialog('Tobías, el último aldeano', [
-        '¡Te lo dije! Eran ellos… siempre fueron ellos. Los vi salir de las tumbas la primera noche de niebla.',
-        'El encapuchado de la capilla los hace caminar y les presta la cara que tenían.',
-        'Contale al Rey. Y cuidate: ahora el encapuchado ya sabe que estás acá.'
-      ], () => { S._ckBruma = null; S.updateObjective && S.updateObjective(); }, 'npc2_villager');
+      if (S.player) S.createFloatingText(S.player.x, S.player.y - 56, 'Entre los huesos, tierra de tumba… y un rastro verde hacia el norte, a Brumavieja', 0xd9f99d);
+      S._ckBruma = null; S.updateObjective && S.updateObjective();
     });
   };
   const tk0 = P.onTalked;
   P.onTalked = function (id) {
     const r = tk0.apply(this, arguments);
     try {
-      if (id === 'bv_noche') transformar(this);
       if (/^bv_(marta|ciro|ines)$/.test(id)) { const s = st(this); if (s) { const h = fl(s).bruma_vecinos || (fl(s).bruma_vecinos = {}); h[id] = true; } }
     } catch (e) { console.warn('[brumavieja]', e); }
     return r;
   };
-  window.CK_BRUMAVIEJA = { VECINOS, NOCHE, transformar };
+  window.CK_BRUMAVIEJA = { VECINOS, NOCHE, CRUCE, CASAS, transformar, emboscada, diaActivo, lista };
 })();

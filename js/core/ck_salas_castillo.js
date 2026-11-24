@@ -338,10 +338,14 @@
         cam.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
           S.health = S.maxHealth;
           if (noche) S.dayClock = Math.floor((S.dayClock || 0) / 300000 + 1) * 300000 + 0.03 * 300000;   // al amanecer
-          S.updateHUD(); S.updateObjective(); S.saveStory();
+          // (23/11) guarda de verdad: con ck_partidas v2, S.saveStory() ya no escribe; la cama guarda como un cartel de
+          // guardado, donde está el héroe (ck_totems.js v2: guardarDescanso)
+          S.updateHUD(); S.updateObjective();
+          let guardo = true;
+          try { guardo = window.CK_TOTEMS && CK_TOTEMS.guardarDescanso ? CK_TOTEMS.guardarDescanso(S) : (S.saveStory(), true); } catch (e) {}
           cam.fadeIn(700, 0, 0, 0);
           S._doorTransition = false;
-          S.showZoneTitle(noche ? 'Amanece' : 'Descansaste', 'Vida completa · partida guardada');
+          S.showZoneTitle(noche ? 'Amanece' : 'Descansaste', 'Vida completa' + (guardo ? ' · partida guardada' : ''));
         });
       }, null);
     }

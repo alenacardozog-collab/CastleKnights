@@ -9,6 +9,8 @@
    - al abrir suena la espada (ck_inicio).
    Libro de héroes: el fondo se oscurece bastante más (y se esconde el título de la portada que quedaba detrás) y
    "Seleccioná tu héroe" va en la misma letra gótica, crema dorada con contorno, bien legible; el subtítulo sin el doble.
+   (17/11, pedido del dueño) El reino se llama VALCAIRN: el título de la portada dice "Valcairn", con la misma letra, el
+   mismo oro y la misma animación; la V, un 20 % más grande que el resto (la capitular).
    Borrar la línea de index.html deja todo como antes. */
 (function () {
   const ov = document.getElementById('start-menu-overlay');
@@ -16,7 +18,8 @@
   const N = n => `calc(var(--ck2-n, 2.7) * ${n}px)`;
   const pr = document.getElementById('sm-press');
   if (pr) pr.textContent = 'Presioná cualquier botón';
-  const TITULO = 'Castleknight';
+  const TITULO = 'Valcairn';                 // (17/11) antes 'Castleknight'
+  const CAPITULAR = 1.2;                     // la primera letra, un 20 % más grande
   const ORO = 'linear-gradient(180deg, #fffaf0 0%, #fbe4ae 18%, #efc073 38%, #d18f45 56%, #a7612a 74%, #6f3a16 90%, #4a2410 100%)';
 
   const st = document.createElement('style');
@@ -30,6 +33,7 @@ body.ck-ui2 #start-menu-overlay .ck-tit .pal { position: relative; display: bloc
 body.ck-ui2 #start-menu-overlay .ck-tit .l { display: inline-block; background: ${ORO}; -webkit-background-clip: text; background-clip: text;
   color: transparent; -webkit-text-fill-color: transparent; -webkit-text-stroke: ${N(0.85)} #2a1406; paint-order: stroke fill;
   opacity: 0; transform-origin: 50% 80%; animation: ckTitLetra 0.62s cubic-bezier(0.2, 0.9, 0.25, 1.25) calc(0.35s + var(--i) * 0.075s) both; }
+body.ck-ui2 #start-menu-overlay .ck-tit .cap { font-size: ${CAPITULAR}em; }
 @keyframes ckTitLetra { 0% { opacity: 0; transform: translateY(-70%) scale(1.7) rotate(-6deg); filter: blur(${N(2)}) brightness(2.6); }
   55% { opacity: 1; transform: translateY(5%) scale(0.95); filter: blur(0) brightness(1.7); } 100% { opacity: 1; transform: none; filter: brightness(1); } }
 /* brillo que cruza las letras (capa encima, recortada a las letras) */
@@ -120,8 +124,9 @@ body.ck-ui2 #hero-selection-modal #hero-modal-subtitle { color: #ead9b4 !importa
     const t = document.createElement('div');
     t.className = 'ck-tit';
     t.setAttribute('aria-label', TITULO);
-    t.innerHTML = '<span class="pal">' + [...TITULO].map((c, i) => `<span class="l" style="--i:${i}">${c}</span>`).join('') +
-      `<span class="brillo" aria-hidden="true">${TITULO}</span></span><span class="sub">✦ Capítulo 1 — La niebla del norte ✦</span>`;
+    // la primera letra lleva .cap (más grande); el brillo repite el mismo tamaño para cruzar justo por encima de las letras
+    t.innerHTML = '<span class="pal">' + [...TITULO].map((c, i) => `<span class="l${i ? '' : ' cap'}" style="--i:${i}">${c}</span>`).join('') +
+      `<span class="brillo" aria-hidden="true"><span class="cap">${TITULO.charAt(0)}</span>${TITULO.slice(1)}</span></span><span class="sub">✦ Capítulo 1 — La niebla del norte ✦</span>`;
     logo.insertBefore(t, logo.querySelector('.sm-logo-flash') || logo.firstChild);
     // la letra gótica tiene que estar cargada antes de que caigan las letras (si tarda, arrancan igual)
     if (document.fonts && document.fonts.load) {

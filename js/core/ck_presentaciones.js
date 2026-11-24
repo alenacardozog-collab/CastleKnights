@@ -13,7 +13,17 @@
    - No muertos (Nigromante, Gran Esqueleto): niebla verde y violeta, letras que chorrean.
    Dura ~3 s, el juego queda en pausa mientras tanto y se saltea con T, Enter, Espacio, Esc o un clic. Los aliados
    entran por la izquierda; los enemigos por la derecha, mirando al héroe. Se guarda en story.flags.presentados.
-   Borrar su línea de index.html (y la de _arte) saca las presentaciones; el juego queda como antes. */
+   Borrar su línea de index.html (y la de _arte) saca las presentaciones; el juego queda como antes.
+   (23/11, v4, pedido del dueño: "las animaciones de presentación de personajes salen una sola vez, cuando vemos al NPC aliado
+   o enemigo por primera vez o interactuamos por primera vez, luego ya no aparecen más; y cambiá lo que dice 'aliado' arriba
+   y 'jefe' y eso: colocales el título que cargan, como Bruno capitán, y si ya lo tienen puesto no lo pongas dos veces"):
+   - UNA SOLA VEZ POR PARTIDA: cada tarjeta que se vio queda anotada aparte de la historia (en el navegador, por partida y
+     héroe), así no vuelve a salir aunque la historia vuelva atrás (Reintentar, cargar un guardado, los eventos de F4) ni
+     cuando otro archivo la pide directo (Gorvak en las Afueras, Garra Negra en la Fosa). Una partida nueva empieza de cero.
+   - ARRIBA, SU TÍTULO (no "aliado" ni "jefe"): Capitán / BRUNO / de la Guardia; Rey / ALDRIC / Señor del Roble; Maestre /
+     ELOY / de la Biblioteca… (TITULOS, abajo). Lo de abajo no repite el título; si el nombre ya lo dice (EL NIGROMANTE), arriba
+     no va nada. Los que suman otros archivos (Gaspar, Garra Negra, Malakar, Azrath, los jefes del Capítulo 3) llevan arriba
+     su título y abajo nada, salvo que figuren en TITULOS. */
 (function () {
   if (typeof MainGameScene === 'undefined') return;
   const P = MainGameScene.prototype, A = window.CK_PRES_ARTE;
@@ -287,11 +297,46 @@ body.ckp-on #ck-dialog, body.ckp-on #ck-prompt { opacity: 0 !important; transiti
     } catch (e) {}
   };
 
+  // ------------------------------------------------------------------ (v4) el título arriba, sin repetirlo
+  // [arriba, abajo] por personaje ('' = no va)
+  const TITULOS = {
+    rey: ['Rey', 'Señor del Roble'], bruno: ['Capitán', 'de la Guardia'], eloy: ['Maestre', 'de la Biblioteca'],
+    elia: ['Princesa', 'del Roble'], mira: ['Hija del mercader', ''], gorak: ['El Desterrado', 'orco sin clan'],
+    grushak: ['Caudillo', 'de los clanes'], gorvak: ['Campeón', 'del Coliseo'], kragmor: ['La Bestia', 'de las Fosas'],
+    ulrak: ['Cazador de huargos', 'y Colmillo, su huargo'], nigro: ['', 'Señor de la Niebla'], esqueleto: ['Guardián', 'del Cementerio'],
+    gaspar: ['Consejero del Rey', 'Señor de los mercenarios'], garra: ['Señor', 'de la manada'], brujo: ['Brujo', 'del Sello'],
+    demonio: ['Rey Demonio', 'Señor del Abismo']
+  };
+  const sinTildes = t => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const rotulos = c => {
+    let [arriba, abajo] = TITULOS[c.id] || [c.titulo || '', ''];
+    const nom = sinTildes(c.nombre);
+    // si el nombre ya lo dice, arriba no va; y abajo no repite lo de arriba
+    if (arriba && nom.indexOf(sinTildes(arriba).replace(/^(el|la) /, '')) >= 0) arriba = '';
+    if (arriba && abajo && sinTildes(abajo).indexOf(sinTildes(arriba)) === 0) abajo = abajo.slice(arriba.length).trim();
+    return { arriba, abajo };
+  };
+  // ------------------------------------------------------------------ (v4) las ya vistas en esta partida (aparte de la historia)
+  const MEMO = 'ck_presentados_vistos';
+  const llave = S => { let a = null; try { a = window.CK_PARTIDAS && CK_PARTIDAS.activa ? CK_PARTIDAS.activa() : null; } catch (e) {} return (a === null || a === undefined ? '_' : a) + '|' + ((S && S.playerHero) || ''); };
+  const memoria = () => { try { return JSON.parse(localStorage.getItem(MEMO) || '{}') || {}; } catch (e) { return {}; } };
+  const memoDe = S => memoria()[llave(S)] || {};
+  const anotar = (S, id) => { try { const m = memoria(), k = llave(S); (m[k] = m[k] || {})[id] = 1; localStorage.setItem(MEMO, JSON.stringify(m)); } catch (e) {} };
+  const pendientes = new Set();
+  const olvidarPartida = S => { try { const m = memoria(); delete m[llave(S)]; localStorage.setItem(MEMO, JSON.stringify(m)); } catch (e) {} };
+
   function mostrar(S, id, listo, espera) {
     const c = POR_ID[id];
     if (!c) { if (listo) listo(); return false; }
+    // (v4) ya salió en esta partida: no otra vez (aunque la historia haya vuelto atrás o la pida otro archivo). La que espera
+    // turno (detrás de otra tarjeta o de una pantalla) ya quedó anotada y pasa.
+    if (S && S._gameMode === 'campaign' && !PRUEBAS && !pendientes.has(id)) {
+      if (memoDe(S)[id]) { if (listo) listo(); return false; }
+      anotar(S, id); pendientes.add(id);
+    }
     if (act) { cola.push([S, id, listo]); return true; }
     if (tapado() && (espera || 0) < 60) { setTimeout(() => mostrar(S, id, listo, (espera || 0) + 1), 200); return true; }
+    pendientes.delete(id);
     css();
     const R = caja(S), der = c.lado === 'enemigo';
     const el = document.createElement('div'); el.id = 'ckp';
@@ -340,10 +385,13 @@ body.ckp-on #ck-dialog, body.ckp-on #ck-prompt { opacity: 0 !important; transiti
     const txt = document.createElement('div'); txt.className = 'ckp-texto';
     Object.assign(txt.style, { top: top + 'px', height: H + 'px', width: anchoTxt + 'px' });
     txt.style[der ? 'right' : 'left'] = textoX + 'px';
-    const etq = document.createElement('div'); etq.className = 'ckp-etq'; etq.textContent = c.etiqueta;
+    const rot = rotulos(c);                                           // (v4) su título arriba; abajo, sin repetirlo
+    const etq = document.createElement('div'); etq.className = 'ckp-etq'; etq.textContent = rot.arriba;
+    if (!rot.arriba) etq.style.visibility = 'hidden';
     const nom = document.createElement('div'); nom.className = 'ckp-nombre';
     const letras = nombreEn(nom, c.fuente, c.nombre, c.colores, c.contorno, esc);
-    const tit = document.createElement('div'); tit.className = 'ckp-tit'; tit.textContent = c.titulo;
+    const tit = document.createElement('div'); tit.className = 'ckp-tit'; tit.textContent = rot.abajo;
+    if (!rot.abajo) tit.style.visibility = 'hidden';
     txt.append(etq, nom, tit);
     const paso = c.tema === 'niebla' ? 90 : c.tema === 'golpe' ? 95 : 65;
     letras.forEach((l, i) => {
@@ -430,8 +478,20 @@ body.ckp-on #ck-dialog, body.ckp-on #ck-prompt { opacity: 0 !important; transiti
   // ------------------------------------------------------------------ quién ya se presentó
   const vistos = S => {
     const st = S.story;
-    if (st) { st.flags = st.flags || {}; return (st.flags.presentados = st.flags.presentados || {}); }
+    if (st) {
+      st.flags = st.flags || {};
+      const v = (st.flags.presentados = st.flags.presentados || {});
+      if (S._gameMode === 'campaign' && !PRUEBAS) { const m = memoDe(S); Object.keys(m).forEach(k => { v[k] = 1; }); }   // (v4)
+      return v;
+    }
     return (S._ckpVistos = S._ckpVistos || {});
+  };
+  // (v4) una partida nueva (sin el prólogo visto) empieza con todas las presentaciones por ver
+  const sc0 = P.startCampaign;
+  if (sc0) P.startCampaign = function () {
+    const r = sc0.apply(this, arguments);
+    try { const s = this.story, f = s && s.flags; if (s && !s.step && f && !f.intro && !f.festejo && !Object.keys(f.presentados || {}).length) olvidarPartida(this); } catch (e) {}
+    return r;
   };
   const enCampania = S => S._gameMode === 'campaign' && !PRUEBAS;
 
@@ -471,6 +531,7 @@ body.ckp-on #ck-dialog, body.ckp-on #ck-prompt { opacity: 0 !important; transiti
 
   window.CK_PRESENTACIONES = {
     ELENCO, POR_ID, POR_TIPO, mostrar, tapado, cerrar: () => cerrar(true), pintarNombre, anchoNombre, nombreEn, activa: () => !!act,
-    olvidar: S => { const v = vistos(S); Object.keys(v).forEach(k => delete v[k]); }
+    olvidar: S => { olvidarPartida(S); const v = vistos(S); Object.keys(v).forEach(k => delete v[k]); },
+    TITULOS, rotulos, memoDe
   };
 })();

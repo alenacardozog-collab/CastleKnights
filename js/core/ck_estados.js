@@ -18,9 +18,11 @@
 
   // enemigo: estado → [efecto, dónde (pie|cabeza|pecho), escala, ícono, nombre]
   const DEB = {
-    quemado: { fx: 'st_quemar', en: 'pie', esc: 0.55, ic: 'quemado', fin: e => e._ckFuego && e._ckFuego.hasta },
-    congelado: { fx: 'st_hielo', en: 'pie', esc: 0.9, ic: 'congelado', fin: e => e._ckHielo },
-    aturdido: { fx: 'st_aturdido', en: 'cabeza', esc: 0.75, ic: 'aturdido', fin: e => e._ckAturdido },
+    // (21/11, notas del dueño en el editor: "lo quemado que se vea por delante del personaje"; el hielo lo encierra, también
+    // adelante; al aturdido se le saca el ícono de arriba: ya están las estrellas)
+    quemado: { fx: 'st_quemar', en: 'pie', esc: 0.55, ic: 'quemado', fin: e => e._ckFuego && e._ckFuego.hasta, detras: false },
+    congelado: { fx: 'st_hielo', en: 'pie', esc: 0.9, ic: 'congelado', fin: e => e._ckHielo, detras: false },
+    aturdido: { fx: 'st_aturdido', en: 'cabeza', esc: 0.75, ic: 'aturdido', fin: e => e._ckAturdido, sinIcono: true },
     sangrando: { fx: 'st_sangra', en: 'pecho', esc: 0.7, ic: 'sangrando', fin: e => e._ckSangre },
     lento: { fx: 'st_lento', en: 'pie', esc: 0.55, ic: 'lento', fin: e => e._ckLento },
     marcado: { fx: 'st_marca', en: 'cabeza', esc: 0.6, ic: 'marcado', fin: e => e._ckMarca }
@@ -42,26 +44,26 @@
       ORDEN.forEach(k => {
         const D = DEB[k], hasta = vivo ? (D.fin(e) || 0) : 0, on = hasta > now;
         if (on) activos.push([k, hasta - now]);
-        if (on && !st.fx[k]) st.fx[k] = V.fx(S, D.fx, e.x, e.y, { escala: D.esc * Math.min(1.4, (e.scaleX || 1) / 1.2), sigue: e, dy: lugar(e, D.en), detras: D.en === 'pie' });
+        if (on && !st.fx[k]) st.fx[k] = V.fx(S, D.fx, e.x, e.y, { escala: D.esc * Math.min(1.4, (e.scaleX || 1) / 1.2), sigue: e, dy: lugar(e, D.en), detras: D.detras != null ? D.detras : D.en === 'pie' });
         if (!on && st.fx[k]) { try { st.fx[k].destroy(); } catch (er) {} delete st.fx[k]; }
       });
       // íconos arriba de la cabeza
-      const y = e.y - (e.displayHeight || 60) * 0.42 - 6, n = activos.length;
-      Object.keys(st.ic).forEach(k => { if (!activos.find(a => a[0] === k)) { st.ic[k].destroy(); delete st.ic[k]; } });
-      activos.forEach(([k, resto], i) => {
+      const conIc = activos.filter(a => !DEB[a[0]].sinIcono), y = e.y - (e.displayHeight || 60) * 0.42 - 6, n = conIc.length;
+      Object.keys(st.ic).forEach(k => { if (!conIc.find(a => a[0] === k)) { st.ic[k].destroy(); delete st.ic[k]; } });
+      conIc.forEach(([k, resto], i) => {
         let im = st.ic[k];
         if (!im) { const key = tex(S, DEB[k].ic); if (!key) return; im = st.ic[k] = S.add.image(0, 0, key).setScale(0.42).setDepth(30010); }
         im.setPosition(e.x + (i - (n - 1) / 2) * 15, y);
         im.setAlpha(resto < 1000 ? (Math.floor(now / 120) % 2 ? 0.35 : 1) : 1);
       });
-      if (!vivo && !n) { e._ckSt = null; }
+      if (!vivo && !activos.length) { e._ckSt = null; }
     });
   };
 
   // héroe: buff → [efecto o null, dónde, escala, ícono, fin(), resto(), etiqueta]
   const BUF = {
     escudo: { fx: 'escudo', en: 'pecho', esc: 0.75, ic: 'escudo', fin: S => S._ckEscudo && S._ckEscudo.golpes > 0 ? S._ckEscudo.hasta : 0, n: S => (S._ckEscudo && S._ckEscudo.golpes) || '', total: 8000, nom: 'Escudo arcano' },
-    furia: { fx: 'aura_furia', en: 'pie', esc: 0.45, ic: 'furia', fin: S => S._ckFrenesi || 0, total: 8000, nom: 'Furia', detras: true, alfa: 0.6 },
+    furia: { fx: 'aura_furia', en: 'pie', esc: 0.45, ic: 'furia', fin: S => S._ckFrenesi || 0, total: 8000, nom: 'Furia', detras: false, alfa: 0.6 },   // (21/11) "que se vea por delante del personaje"
     grito: { fx: 'st_mejora', en: 'pie', esc: 0.7, ic: 'grito', fin: S => S._ckGrito || 0, total: 8000, nom: 'Grito de guerra (+1 daño)' },
     bosque: { fx: 'st_bosque', en: 'pecho', esc: 0.8, ic: 'regenera', fin: S => S._ckEspiritu || 0, total: 4000, nom: 'Espíritu del bosque', detras: true, alfa: 0.6 },
     hiberna: { fx: null, ic: 'hiberna', fin: S => S._osoHiberna || 0, total: 2000, nom: 'Hibernando' },

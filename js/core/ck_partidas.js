@@ -4,7 +4,20 @@
    - CAMPAÑA abre las ranuras: continuar, empezar una nueva (pide un nombre) o borrar.
    - Se guarda solo: cada avance de la historia, y el lugar y el tiempo jugado cada pocos segundos.
    - Las partidas viejas (una por héroe) pasan solas a las ranuras la primera vez.
-   Sacar la línea de index.html vuelve al guardado de antes (las partidas viejas siguen ahí). */
+   Sacar la línea de index.html vuelve al guardado de antes (las partidas viejas siguen ahí).
+   v2 (22/11, pedido del dueño: "necesito tótems de checkpoint para guardar partida… cuando recargo una partida igual me deja
+   en un punto avanzado al que dejé guardado o las animaciones no cargan o se bugea; pulí el sistema de guardado acorde al
+   mapa y al juego, que carguen las cosas, y para cuando necesitamos reintentar"):
+   - YA NO SE GUARDA SOLO. La partida se guarda en los TÓTEMS (ck_totems.js) con CK_PARTIDAS.guardarAqui: la historia
+     entera (una copia), el lugar del tótem, el héroe, la vida y las pociones. Al empezar una partida nueva se guarda el
+     arranque. Antes se guardaban la historia en cada avance y el lugar cada 5 s por separado: al cargar, el lugar podía ser
+     de más adelante que la historia (o de la mitad de una escena) y se rompían cosas.
+   - CONTINUAR (y "Reiniciar" en la pausa) vuelve al último guardado: la historia de ese momento y frente a su tótem.
+   - LA LLEGADA: mientras se carga el lugar guardado la pantalla queda negra y no arrancan escenas ni charlas de la aldea
+     (antes, en el medio segundo en la aldea podía empezar la payada de Don Anselmo y seguir en otro mapa).
+   - El tiempo jugado se suma al guardar. CK_PARTIDAS: guardarAqui, activa, ranura, lugarActual, sinGuardar.
+   - Sin ck_totems.js (si se borra su línea) se guarda solo como antes (la historia en cada avance y el lugar cada 5 s);
+     la llegada con pantalla negra queda igual. */
 (function () {
   if (typeof MainGameScene === 'undefined' || typeof SAVE_KEY === 'undefined') return;
   const P = MainGameScene.prototype;
@@ -106,9 +119,46 @@
     escribir(r);
   };
   const guardarHistoria0 = P.saveStory;
+  const conTotems = () => !!window.CK_TOTEMS;   // (v2) sin tótems, el guardado de antes
+  // (v2) ¿hay algo sin guardar? Se compara lo que importa de la historia (paso, nivel, monedas, pociones, misiones, cofres
+  // abiertos...) con lo del último guardado. No cuentan lo que el juego anota solo al llegar o al caminar (dónde van los
+  // cofres y las notas, el mapa descubierto, las ayudas vistas): si no, siempre diría que hay cosas sin guardar.
+  const AUTO = /(_pos\d*|_rev)$|^(ayudas|hab_vistas|gente|notas_cofre|carga_vistos|terrenoRoto|presentados)$/;
+  // (lo vacío tampoco: {} o ceros o false que el juego arma al llegar a un lugar)
+  const vacio = v => v == null || v === false || v === 0 || v === '' ||
+    (Array.isArray(v) ? v.every(vacio) : typeof v === 'object' ? Object.keys(v).every(k => vacio(v[k])) : false);
+  const firma = st => {
+    try {
+      if (!st) return '';
+      const f = {}; Object.keys(st.flags || {}).sort().forEach(k => { if (!AUTO.test(k) && !vacio(st.flags[k])) f[k] = st.flags[k]; });
+      return JSON.stringify([st.step, st.count, st.level, st.xp, st.coins, st.maxHealth, st.inv, st.up, f]);
+    } catch (e) { return ''; }
+  };
+  const marcarGuardado = s => { s._ckFirma = firma(s.story); s._ckSinGuardar = false; };
+  const sinGuardar = s => !!(s && s.story && (s._ckFirma !== undefined ? firma(s.story) !== s._ckFirma : s._ckSinGuardar));
   P.saveStory = function () {
     if (activa === null) return guardarHistoria0.apply(this, arguments);
-    guardar(this, true);
+    // (v2) no se escribe: la partida se guarda en los tótems. Sólo la partida nueva guarda su arranque.
+    if (!conTotems()) { guardar(this, true); return; }
+    if (nueva) { guardar(this, true, true); return; }
+    this._ckSinGuardar = true;
+  };
+  // (v2) guardar acá (los tótems): la historia entera (copia), el lugar dado y el resto. true si se guardó.
+  const guardarAqui = (s, lugar) => {
+    if (activa === null || s._gameMode !== 'campaign' || !s.story) return false;
+    const r = leer();
+    const slot = r[activa] || { nombre: 'Partida ' + (activa + 1), heroe: s.playerHero, tiempo: 0 };
+    let copia; try { copia = JSON.parse(JSON.stringify(s.story)); } catch (e) { return false; }
+    copia.savedAt = Date.now(); copia.maxHealth = s.maxHealth || copia.maxHealth;
+    slot.story = copia; slot.heroe = s.playerHero; slot.fecha = Date.now();
+    slot.lugar = lugar || lugarActual(s);
+    slot.hora = s.dayClock || 0;
+    slot.tiempo = Math.round((slot.tiempo || 0) + (s._ckJugado || 0)); s._ckJugado = 0;
+    r[activa] = slot; escribir(r);
+    // (si una prueba del panel no deja escribir, no quedó guardado)
+    const ok = (() => { const x = leer()[activa]; return !!(x && x.story && x.story.savedAt === copia.savedAt); })();
+    if (ok) marcarGuardado(s);
+    return ok;
   };
   const borrar0 = P.deleteSave;
   P.deleteSave = function (hero) {
@@ -128,24 +178,55 @@
     const lugar = this._ckIrA;
     this._ckIrA = null;
     const esNueva = !!nueva;
-    guardar(this, true, !!lugar);
+    if (!conTotems()) guardar(this, true, !!lugar);
+    else if (esNueva) guardar(this, true, true);       // (v2) la partida nueva guarda su arranque; al continuar no se escribe nada
+    marcarGuardado(this); this._ckJugado = 0;
     const slot = leer()[activa];
+    if (slot && slot.hora && !esNueva) this.dayClock = slot.hora;
     if (slot) this.time.delayedCall(1600, () => this.story && this.showZoneTitle(esNueva ? 'Capítulo 1 · La niebla del norte' : 'Partida recuperada', '«' + slot.nombre + '»'));
-    if (lugar && lugar.zona !== 'village' && lugar.zona) this.time.delayedCall(500, () => irA(this, lugar, 0));
-    else if (lugar) this.time.delayedCall(100, () => {
-      if (this.currentInterior) return;
-      this.placePlayerFeetAt(lugar.x, lugar.y - 10);
-      this.cameras.main.centerOn(this.player.x, this.player.y);
-    });
+    if (lugar && lugar.zona !== 'village' && lugar.zona) { llegada(this, true); this.time.delayedCall(300, () => irA(this, lugar, 0)); }
+    else if (lugar) { llegada(this, true); this.time.delayedCall(100, () => {
+      if (!this.currentInterior) { this.placePlayerFeetAt(lugar.x, lugar.y - 10); this.cameras.main.centerOn(this.player.x, this.player.y); }
+      this.time.delayedCall(500, () => llegada(this, false));
+    }); }
     return r;
   };
   const RETORNO = { camino_al_castillo: { x: 540, y: 610 }, taberna_2: { x: 454, y: 435 }, castle: { x: 540, y: 610 }, ruins: { x: 24, y: 168 } };
+  // (v2) la llegada a lo guardado: pantalla negra y sin escenas ni charlas hasta estar ahí (y un ratito más)
+  let negro = null;
+  const llegada = (s, on) => {
+    try {
+      if (!negro) {
+        negro = document.createElement('div'); negro.id = 'ck-llegada';
+        negro.style.cssText = 'position:absolute;inset:0;z-index:7990;background:#000;pointer-events:none;opacity:0;transition:opacity .35s';
+      }
+      const h = document.getElementById('game-wrapper') || document.body; if (negro.parentElement !== h) h.appendChild(negro);
+      if (on) { s._ckLlegando = true; negro.style.transition = 'none'; negro.style.opacity = '1'; }
+      else { s._ckLlegando = false; negro.style.transition = 'opacity .45s'; negro.style.opacity = '0'; }
+    } catch (e) {}
+  };
+  const llegue = (s, z, intento) => {
+    if (!s.story) return llegada(s, false);
+    if ((s.currentZoneKey() !== z || s._doorTransition) && intento < 40) { s.time.delayedCall(150, () => llegue(s, z, intento + 1)); return; }
+    s.time.delayedCall(450, () => llegada(s, false));
+  };
+  const engancharEscenas = () => {
+    const E = window.CK_ESCENA;
+    if (E && E.correr && !E.correr._ckLleg) {
+      const c0 = E.correr; E.correr = function (S) { if (S && S._ckLlegando) return Promise.resolve(false); return c0.apply(this, arguments); }; E.correr._ckLleg = true;
+    }
+  };
+  const dlg0 = P.openDialog;
+  if (dlg0) P.openDialog = function () { if (this._ckLlegando) return; return dlg0.apply(this, arguments); };
   const irA = (s, l, intento) => {
-    if (!s.story || s._gameMode !== 'campaign') return;
+    if (!s.story || s._gameMode !== 'campaign') return llegada(s, false);
+    engancharEscenas();
     if (s._doorTransition) {
       if (intento < 20) s.time.delayedCall(250, () => irA(s, l, intento + 1));
+      else llegada(s, false);
       return;
     }
+    llegue(s, l.zona, 0);
     let m = /^ed_(.+)\.main$/.exec(l.zona);
     if (m) {
       if (!s.ckEntrar || !s.ckEntrar(m[1], { x: l.x, y: l.y - 10 })) return;
@@ -168,19 +249,30 @@
     });
   };
 
-  // el lugar y el tiempo jugado se guardan solos
+  // el tiempo jugado se cuenta (se suma al guardar en un tótem). (v2) El lugar ya no se guarda solo.
   const update0 = P.update;
   P.update = function (time, delta) {
     const r = update0.apply(this, arguments);
     if (activa !== null && this._gameMode === 'campaign' && this.story && !this.isGamePaused) {
       this._ckJugado = (this._ckJugado || 0) + (delta || 16) / 1000;
-      this._ckGuardaEn = (this._ckGuardaEn || 0) - (delta || 16);
-      if (this._ckGuardaEn <= 0 && !this._doorTransition && !this.isDead) {
-        this._ckGuardaEn = 5000;
-        guardar(this, false);
+      // sin tótems: el lugar y el tiempo se guardan solos cada 5 s, como antes
+      if (!conTotems()) {
+        this._ckGuardaEn = (this._ckGuardaEn || 0) - (delta || 16);
+        if (this._ckGuardaEn <= 0 && !this._doorTransition && !this.isDead) { this._ckGuardaEn = 5000; guardar(this, false); }
       }
     }
     return r;
+  };
+  // (v2) "Reiniciar" (pausa) en la campaña: vuelve al último guardado, frente a su tótem
+  const camp0 = P.startCampaign;
+  P.startCampaign = function () {
+    try {
+      if (conTotems() && activa !== null && !nueva && !this._ckIrA && !this._ckPruebaArranca) {
+        const x = leer()[activa];
+        if (llena(x)) { this.playerHero = x.heroe; this._ckIrA = x.lugar || null; }
+      }
+    } catch (e) {}
+    return camp0.apply(this, arguments);
   };
 
   // ------------------------------------------------------------------ pantalla de ranuras
@@ -483,5 +575,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', vigilar);
   else vigilar();
 
-  window.CK_PARTIDAS = { leer, ultima, activa: () => activa, abrir: () => abrir(escenaActual()) };
+  // (v2) suma lo de los tótems: guardarAqui, ranura, lugarActual, sinGuardar, llegada
+  window.CK_PARTIDAS = { leer, ultima, activa: () => activa, abrir: () => abrir(escenaActual()),
+    guardarAqui, ranura: () => (activa === null ? null : leer()[activa]), lugarActual, sinGuardar, llegada, firma };
 })();

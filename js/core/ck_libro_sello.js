@@ -12,7 +12,8 @@
      muerto!"). Sin el libro, el cartel avisa que hay que ver al Padre Oswin.
    - AL SELLARLO suelta el CRISTAL VERDE (story.flags.cristales.verde, el primero de los tres del monolito).
    Banderas: story.flags.libro_sello, story.flags.cristales. Borrar la línea de index.html: el Nigromante muere a golpes
-   como antes. */
+   como antes.
+   (23/11, v2) Si está ck_brumavieja_historia.js, el cristal verde queda en el piso para juntarlo (nota 33). */
 (function () {
   if (typeof MainGameScene === 'undefined' || typeof STORY_NPCS === 'undefined') return;
   const P = MainGameScene.prototype;
@@ -146,6 +147,9 @@
       dm0.call(S, e, e.hp + 999, S.player.x, S.player.y);
       const s = st(S); if (!s) return;
       const c = fl(s).cristales || (fl(s).cristales = {});
+      // (23/11, v2, nota 33 del dueño: "suelta el cristal verde y hay que juntarlo") con ck_brumavieja_historia.js el cristal
+      // queda en el piso, brillando, y se junta pasando por encima o con T
+      if (!c.verde && window.CK_CRISTAL_VERDE && window.CK_CRISTAL_VERDE.soltar(S, e.x, e.y + 20)) return;
       if (!c.verde) {
         c.verde = true;
         // el cristal cae, brilla y se junta

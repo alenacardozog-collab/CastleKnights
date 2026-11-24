@@ -8,7 +8,8 @@
      aldea después de la emboscada de Brumavieja (story.flags.bruma_noche), Aby llega corriendo, lo frena y se va. Si el
      héroe que jugás es Aby, la escena la hace Lancent. Desde ahí los encuentros y misiones de los
      otros héroes (ck_heroes_npc.js) siguen como siempre.
-   Banderas: rey_gesto, aby_interrumpe. Borrar la línea de index.html lo saca. */
+   Banderas: rey_gesto, aby_interrumpe. Borrar la línea de index.html lo saca.
+   (23/11, v3) La emboscada pasó al Norte del Roble (ck_brumavieja.js v2): Aby (o Lancent) habla de eso y no de Brumavieja. */
 (function () {
   if (typeof MainGameScene === 'undefined') return;
   const P = MainGameScene.prototype;
@@ -67,12 +68,12 @@
       p.setFlipX(lado < 0);
       const n = nombreDe(quien), yo = nombreDe(S.playerHero);
       await E().dialogo(S, n, quien === 'swordsman' ? [
-        `¡Eh, vos! ¿Vos sos ${yo}? ¿El que se metió en Brumavieja antes que yo?`,
+        `¡Eh, vos! ¿Vos sos ${yo}? ¿El que se cargó a los muertos del Norte del Roble antes que yo?`,
         'Llegaste primero, te lo concedo. Y saliste entero, que ya es bastante.',
         'Pero no te vas a llevar toda la gloria. Ese encapuchado de la capilla me debe una, y la pienso cobrar.',
         'Soy Aby. Si algún día querés pelear al lado mío, ganátelo: tengo un par de cuentas pendientes por la zona.'
       ] : [
-        `¡Alto ahí! ¿Vos sos ${yo}? ¿La que se metió sola en Brumavieja?`,
+        `¡Alto ahí! ¿Vos sos ${yo}? ¿La que se cargó sola a los muertos del Norte del Roble?`,
         'Llegaste primero, te lo concedo. Pero no te vas a llevar toda la gloria.',
         'Soy Lancent. El Rey me mandó a mí también. Si querés que peleemos juntos, demostrá que no fue suerte.'
       ], base + '_idle');

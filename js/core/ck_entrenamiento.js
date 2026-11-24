@@ -13,7 +13,10 @@
    - RESALTADO: en los diálogos, lo que va entre [[dobles corchetes]] sale en MAYÚSCULAS y en rojo fuerte. A Bruno,
      mientras entrena, además se le resaltan solas las teclas que nombra (J, K, ESPACIO, SHIFT, H, Q, E, R, F, C, Z, X,
      M, L, TAB, clic). El objetivo del entrenamiento también las marca. Lo puede usar cualquier diálogo del juego.
-   Borrar la línea de index.html vuelve al entrenamiento de antes (con los muñecos de arriba). */
+   Borrar la línea de index.html vuelve al entrenamiento de antes (con los muñecos de arriba).
+   (23/11, v2, nota del dueño: "quitá estos muñecos en esta parte, los que tenemos que golpear son los de arriba"): ya no
+   se ponen los dos muñecos en la arena; los golpes y el combo se hacen en los muñecos de arriba (los de siempre del patio).
+   Bruno sigue mandando desde la arena. */
 (function () {
   if (typeof MainGameScene === 'undefined' || !window.CK_PROLOGO || !window.CK_ESCENA) return;
   const P = MainGameScene.prototype, E = window.CK_ESCENA, ent = window.CK_PROLOGO.entreno;
@@ -23,7 +26,8 @@
   const son = (k, v, o) => { try { return typeof sfx !== 'undefined' && sfx.fx(k, v, o); } catch (e) { return false; } };
   const CAP = typeof STORY_NPCS !== 'undefined' && STORY_NPCS.find(n => n.id === 'captain');
   // el campo de práctica (la arena cercada del medio; coordenadas del mapa)
-  const CAMPO = { heroe: [582, 338], bruno: [634, 302], munecos: [[540, 296], [676, 296]], limos: [[536, 262], [680, 262], [606, 250]] };
+  const CAMPO = { heroe: [582, 338], bruno: [634, 302], munecos: [],   // (v2) sin muñecos en la arena: se usan los de arriba
+    limos: [[536, 262], [680, 262], [606, 250]] };
 
   // ================================================================== resaltado de teclas y acciones
   const css = document.createElement('style'); css.id = 'ck-clave-css';
@@ -104,12 +108,12 @@
     if (T.bruno && T.bruno.sp && T.bruno.sp.active) T.bruno.sp.setPosition(T.bruno.x, T.bruno.y).setDepth(T.bruno.d).setFlipX(T.bruno.flip);
     if (T.cap && CAP) { try { CAP.x = T.cap.x; CAP.y = T.cap.y; } catch (e) {} }
   };
-  ent.muñecos = S => (S._ckEnt ? S._ckEnt.clones : munecos0(S));
+  ent.muñecos = S => munecos0(S);                 // (v2) siempre los de arriba
 
   // ------------------------------------------------------------------ los ejercicios
   ent.texto = {
     ida: () => 'Entrenamiento: al campo de práctica',
-    golpes: e => `Entrenamiento: [[atacar]] un muñeco ([[J]] o [[clic]]) · ${e.n}/5`,
+    golpes: e => `Entrenamiento: [[atacar]] un muñeco de arriba ([[J]] o [[clic]]) · ${e.n}/5`,
     combo: e => `Entrenamiento: [[combo]] de tres golpes seguidos ([[J]] [[J]] [[J]]) · ${e.n}/2`,
     dash: e => `Entrenamiento: [[paso rápido]] ([[espacio]]) · ${e.n}/3`,
     correr: () => 'Entrenamiento: [[correr]] una vuelta al campo (mantené [[shift]])',
@@ -118,7 +122,7 @@
   };
   ent.recordatorio = S => {
     const f = S._ckEntreno && S._ckEntreno.fase;
-    return { golpes: 'Dale, pegale al muñeco: [[J]] o [[clic]]. No muerde.', combo: 'Tres seguidos, sin frenar: [[J]], [[J]], [[J]].', dash: 'El [[paso rápido]]: [[espacio]], para el lado que quieras.',
+    return { golpes: 'Dale, pegale a un muñeco de los de arriba: [[J]] o [[clic]]. No muerde.', combo: 'Tres seguidos, sin frenar: [[J]], [[J]], [[J]].', dash: 'El [[paso rápido]]: [[espacio]], para el lado que quieras.',
       correr: 'Mantené [[shift]] mientras caminás. ¡Más rápido, recluta!', limos: 'Los limos son lentos, pero si te tocan, duele. ¡Dale!', charla: 'Vení, que te cuento lo que falta.' }[f] || '¡Atento!';
   };
   ent.empezar = function (S) {
@@ -142,7 +146,7 @@
       await E.dialogo(S, 'Capitán Bruno', [
         'Éste es el campo de práctica. Acá adentro nadie te mira… salvo yo.',
         'Te voy a ir diciendo qué hacer. Vos hacelo. Si te sale, pasamos a lo siguiente.',
-        'Primero: [[atacar]]. Pegale a uno de los muñecos con la espada: J o clic. Cinco golpes.'
+        'Primero: [[atacar]]. Andá a los muñecos de arriba y pegale a uno con la espada: J o clic. Cinco golpes.'
       ], 'g_knight_idle');
     }).then(() => { const e = S._ckEntreno; if (e && e.fase === 'ida') { e.fase = 'golpes'; e.n = 0; S.updateObjective(); } });
   };

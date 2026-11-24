@@ -178,42 +178,64 @@
     const g = S.add.ellipse(x, y, r * 2, r * 1.24).setStrokeStyle(2, 0xff4020, 0.95).setFillStyle(0xff3010, 0.18).setDepth(y - 1);
     S.tweens.add({ targets: g, scaleX: 0.85, scaleY: 0.85, alpha: { from: 0.5, to: 1 }, duration: ms, onComplete: () => g.destroy() });
   };
+  // (21/11, notas del dueño en el editor) las marcas sin borde (sólo el círculo rojo, tenue); pixelfx para la lluvia y la onda
+  const marcaSuave = (S, x, y, r, ms) => {
+    const g = S.add.ellipse(x, y, r * 2, r * 1.24, 0xff3010, 0.12).setDepth(y - 1);
+    S.tweens.add({ targets: g, fillAlpha: 0.3, duration: ms, onComplete: () => g.destroy() });
+    return g;
+  };
+  const pfx = (S, k, x, y, o) => { const V = window.CK_VFX; if (!V || !V.fx) return null; S._ckPedCrea = (S._ckPedCrea || 0) + 1; try { return V.fx(S, k, x, y, o || {}); } finally { S._ckPedCrea--; } };
+  const brasa = (S, x, y, col) => { const c = S.add.rectangle(x, y, R(2, 4), R(2, 5), col, 1).setBlendMode(ADD()).setDepth(Math.round(y) + 8); S.tweens.add({ targets: c, y: y - R(6, 24), alpha: 0, duration: R(280, 560), onComplete: () => c.destroy() }); };
   const golpeFuego = (S, n) => { const pu = S.parryUntil; S.parryUntil = 0; try { S.damagePlayer(n); } catch (e) {} S.parryUntil = pu; };
+  // (21/11) "las marcas en el piso que no tengan borde, sólo el círculo rojo con baja opacidad" y "proyectiles de fuego mejores,
+  // más partículas y peso de caída, que estallen en el piso y dejen fuego unos segundos": meteoros de pixelfx que caen con su
+  // estela y revientan; queda fuego 2,5 s (quema una vez si te parás encima)
   const lluvia = (S, e) => {
     e.isAttacking = true; e.setVelocity && e.setVelocity(0, 0);
     if (S.anims.exists(DEMONIO + '_attack1')) e.play(DEMONIO + '_attack1', true);
     son('ck_demonio_rugido', 0.6, { rate: 0.8 });
     const p = pies(S), pts = [[p.x, p.y]];
     for (let i = 0; i < 4; i++) pts.push([p.x + R(-120, 120), p.y + R(-70, 70)]);
-    pts.forEach(([x, y]) => marca(S, x, y, 26, 1100));
-    S.time.delayedCall(1100, () => {
-      pts.forEach(([x, y], i) => {
-        const b = S.add.circle(x, y - 170, 7, 0xffa040, 1).setDepth(30000).setBlendMode(ADD());
-        S.tweens.add({ targets: b, y: y - 4, duration: 200, delay: i * 50, ease: 'Quad.easeIn', onComplete: () => {
-          b.destroy(); try { T.chispas(S, x, y, 10, 0xff6020, 30); T.polvo(S, x, y, 8, 0x3a2420); } catch (er) {}
-          son('fireball', 0.4, { rate: 0.8 }) || son('ck_piedra', 0.4);
-          const q = pies(S); if (!S.isDashing && Math.hypot((q.x - x) / 26, (q.y - y) / 16) < 1) golpeFuego(S, 1);
+    pts.forEach(([x, y]) => marcaSuave(S, x, y, 26, 1100));
+    pts.forEach(([x, y], i) => {
+      const golpe = 1100 + i * 90;
+      S.time.delayedCall(golpe - 330, () => pfx(S, 'pfx_meteoro', x, y, { escala: 0.42, prof: Math.round(y) + 30 }));   // (su caída dura ~330 ms)
+      S.time.delayedCall(golpe, () => {
+        try { T.chispas(S, x, y, 14, 0xff6020, 40); T.polvo(S, x, y, 10, 0x3a2420); } catch (er) {}
+        S.cameras.main.shake(120, 0.005);
+        son('fireball', 0.45, { rate: 0.8 }) || son('ck_piedra', 0.4);
+        const q = pies(S); if (!S.isDashing && Math.hypot((q.x - x) / 26, (q.y - y) / 16) < 1) golpeFuego(S, 1);
+        // el fuego que queda
+        const f = pfx(S, 'st_quemar', x, y + 2, { escala: 0.9, prof: Math.round(y) + 2 });
+        let quemo = false; const t0 = S.time.now;
+        const ev = S.time.addEvent({ delay: 120, loop: true, callback: () => {
+          if (S.time.now - t0 > 2500) { ev.remove(); if (f && f.active) S.tweens.add({ targets: f, alpha: 0, duration: 300, onComplete: () => f.destroy() }); return; }
+          brasa(S, x + R(-10, 10), y + R(-3, 3), [0xffb04a, 0xff6a1a, 0xffe08a][Math.floor(R(0, 3))]);
+          const q2 = pies(S); if (!quemo && !S.isDashing && Math.hypot((q2.x - x) / 18, (q2.y - y) / 11) < 1) { quemo = true; golpeFuego(S, 1); }
         } });
       });
     });
-    S.time.delayedCall(1500, () => { if (vivo(e)) { e.isAttacking = false; if (S.anims.exists(DEMONIO + '_idle')) e.play(DEMONIO + '_idle', true); } });
+    S.time.delayedCall(1700, () => { if (vivo(e)) { e.isAttacking = false; if (S.anims.exists(DEMONIO + '_idle')) e.play(DEMONIO + '_idle', true); } });
   };
+  // (21/11) "la onda expansiva de partículas de fuego que se expanden y quitar la onda roja que sale del piso"
   const onda = (S, e) => {
     e.isAttacking = true; e.setVelocity && e.setVelocity(0, 0);
     if (S.anims.exists(DEMONIO + '_attack1')) e.play(DEMONIO + '_attack1', true);
     const cx = e.body.center.x, cy = e.body.bottom - 2;
-    marca(S, cx, cy, 44, 650);
+    marcaSuave(S, cx, cy, 44, 650);
     son('ck_demonio_rugido', 0.8, { rate: 0.6 });
     S.time.delayedCall(650, () => {
       if (!vivo(e)) return;
       S.cameras.main.shake(400, 0.008); son('ck_pisoton_jefe', 0.9) || son('ck_derrumbe', 0.8);
-      const ring = S.add.ellipse(cx, cy, 20, 12).setStrokeStyle(6, 0xff6020, 0.95).setDepth(9).setBlendMode(ADD()), k = { r: 10 };
+      pfx(S, 'pfx_anillo_fuego', cx, cy, { escala: 1.3, prof: Math.round(cy) - 5 });
+      const k = { r: 10 };
       let pego = false;
       S.tweens.add({ targets: k, r: 210, duration: 1000, ease: 'Sine.easeOut', onUpdate: () => {
-        ring.setDisplaySize(k.r * 2, k.r * 1.24); ring.setAlpha(1 - k.r / 240);
+        S._ckPedCrea = (S._ckPedCrea || 0) + 1;
+        try { const n = Math.round(6 + k.r / 18); for (let i = 0; i < n; i++) { if (Math.random() > 0.6) continue; const a = R(0, Math.PI * 2); brasa(S, cx + Math.cos(a) * k.r, cy + Math.sin(a) * k.r * 0.62, [0xffb04a, 0xff6a1a, 0xffe08a, 0xff3a1a][Math.floor(R(0, 4))]); } } finally { S._ckPedCrea--; }
         const p = pies(S), d = Math.hypot(p.x - cx, (p.y - cy) / 0.62);
         if (!pego && !S.isDashing && Math.abs(d - k.r) < 10) { pego = true; golpeFuego(S, 1); }
-      }, onComplete: () => ring.destroy() });
+      } });
       S.time.delayedCall(700, () => { if (vivo(e)) { e.isAttacking = false; if (S.anims.exists(DEMONIO + '_idle')) e.play(DEMONIO + '_idle', true); } });
     });
   };

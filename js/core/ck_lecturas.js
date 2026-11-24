@@ -428,5 +428,8 @@ body:has(#ck-lector.on) #ck-ayuda, body:has(#ck-lector.on) #ck-nota, body:has(#c
     return ids.map(obtener).filter(Boolean).sort((a, b) => (a.tipo === b.tipo ? 0 : a.tipo === 'libro' ? -1 : 1));
   };
   const total = () => NOTAS_COFRE.length + LIBROS.length + Object.keys(HISTORIA).length + ((window.CK_NOTAS && window.CK_NOTAS.TOTAL) || 0);
-  window.CK_LECTURAS = { abrir: (S, id) => abrir(S || ESCENA(), obtener(id)), cerrar, leidas, total, NOTAS_COFRE, LIBROS, HISTORIA };
+  // (23/11, v2) otros archivos pueden sumar un libro (con zona, aparece en ese lugar como los demás; sin zona, sólo se abre
+  // con abrir): lo usa ck_brumavieja_historia.js para el diario de Varek en la capilla
+  const sumar = b => { if (!b || !b.id || TODOS[b.id]) return TODOS[b && b.id] || null; TODOS[b.id] = Object.assign({ tipo: 'libro' }, b); if (b.zona) LIBROS.push(b); return TODOS[b.id]; };
+  window.CK_LECTURAS = { abrir: (S, id) => abrir(S || ESCENA(), obtener(id)), cerrar, leidas, total, NOTAS_COFRE, LIBROS, HISTORIA, sumar };
 })();

@@ -29,6 +29,15 @@
    - EL REY ORCO es GRUSHAK (el mismo diseño del jefe orco que ya estaba), sentado en su trono de huesos en la tribuna con la princesa encadenada (CK_COLISEO.tribuna): mira, se ríe cuando te pegan y grita
      al caer cada campeón. (La pelea con él queda para cuando esté el mapa del coliseo.)
    Probar: CK_COLISEO.probar(escena, 'campeon' | 'bestia' | 'cazador') pone al jefe al lado del héroe en cualquier mapa.
+   (21/11, notas del dueño en el editor de habilidades, ver PEDIDOS_HABILIDADES.md):
+   - Gorvak: el SALTO tiene 1 s más de anticipación y al caer parte el piso con polvo (pixelfx); el MURO DE ESCUDO se pone
+     en guardia 1,2 s y arremete con el escudo; la CUCHILLA es una cuchilla de verdad (hoja curva, filo y mango).
+   - Kragmor: la EMBESTIDA deja pisadas que quiebran el piso y polvo; el GOLPE SÍSMICO larga ondas de piedras y polvo (no el
+     anillo rojo) y el piso se parte (pixelfx); la LLUVIA DE PIEDRAS: se carga, golpea el piso, salen rocas y las arroja.
+   - (v10) Kragmor: la LLUVIA DE PIEDRAS con su animación de PixelLab (ck_jefes_anims_arte.js): golpea el piso, sale una roca,
+     la agarra, la sube al pecho y la arroja donde estás; al caer se parte y tres pedazos caen alrededor.
+   - Ulrak: la ANDANADA son lanzas; la CARGA DEL HUARGO deja un eco de velocidad; el AULLIDO ya no llama huargos: se pone
+     más rápido y más duro unos segundos (contorno, la mitad del daño).
    Borrar sus dos líneas de index.html lo saca. */
 (function () {
   if (typeof MainGameScene === 'undefined' || !window.CK_COLISEO_ARTE) return;
@@ -153,6 +162,13 @@
     if (p.body && !S.isDead) { p.body.setVelocity(Math.cos(a) * f, Math.sin(a) * f); S.time.delayedCall(160, () => p.body && p.body.setVelocity(0, 0)); }
   };
   const polvo = (S, x, y, r) => { if (window.CK_ONDAS) CK_ONDAS.estallido(S, 'tierra', x, y, r, 420); S.cameras.main.shake(220, 0.01); };
+  // (21/11) efectos de pixelfx y del código de los héroes (ck_heroes_pedidos.js): canalizar, contorno, chispas
+  const crea = (S, fn) => { S._ckPedCrea = (S._ckPedCrea || 0) + 1; try { return fn(); } finally { S._ckPedCrea--; } };   // (lo que lee el editor)
+  const pfx = (S, k, x, y, o) => { const V = window.CK_VFX; if (!V || !V.fx) return null; S._ckPedCrea = (S._ckPedCrea || 0) + 1; try { return V.fx(S, k, x, y, o || {}); } finally { S._ckPedCrea--; } };
+  const HP = () => window.CK_HEROES_PEDIDOS;
+  const canal = (S, e, col, ms, r) => { const H = HP(); if (H && H.canalizar) H.canalizar(S, e, col, ms, r || 50); };
+  const brillo = (S, e, col, ms) => { const H = HP(); if (H && H.contorno) H.contorno(S, e, col, ms); };
+  const chispas2 = (S, x, y, col, n, r) => { const H = HP(); if (H && H.estallar) H.estallar(S, x, y, col, n, r); };
 
   // ------------------------------------------------------------------ manejar el turno especial
   const empezar = (S, e) => { e._ckc.ocupado = true; e.state = 'ck_especial'; e.isAttacking = true; e.setVelocity(0, 0); };
@@ -166,11 +182,16 @@
 
   // ---------- GORVAK
   const salto = (S, e) => {
+    // (21/11) un segundo más de anticipación: se agacha juntando polvo; al caer, el piso se parte (pixelfx)
     empezar(S, e); const t = pies(S); mirar(S, e, t.x);
-    aviso(S, e, ROJO); marca(S, t.x, t.y, 64, ROJO, 900);
-    if (FX()) FX().sombraCaida(S, t.x, t.y, 64, 900);
-    S.time.delayedCall(250, () => {
+    aviso(S, e, ROJO); marca(S, t.x, t.y, 64, ROJO, 1900);
+    canal(S, e, [220, 200, 170], 1200, 46); brillo(S, e, 0xff8a6a, 1250);
+    const sx = e.scaleX, sy = e.scaleY;
+    S.tweens.add({ targets: e, scaleY: sy * 0.88, scaleX: sx * 1.05, duration: 1000, ease: 'Sine.easeOut' });
+    S.time.delayedCall(1000, () => { if (vivo(e) && FX()) FX().sombraCaida(S, t.x, t.y, 64, 900); });
+    S.time.delayedCall(1250, () => {
       if (!vivo(e)) return;
+      S.tweens.killTweensOf(e); e.setScale(sx, sy);
       e.play('orc_campeon_salto', true);
       const fx = e.x, fy = e.y, dx = t.x - e.body.center.x, dy = t.y - (e.body.bottom - 3), k = { t: 0 };
       e.body.enable = false;
@@ -179,7 +200,8 @@
         onComplete: () => {
           if (!vivo(e)) return;
           e.body.enable = true; e.body.reset(e.x, e.y);
-          polvo(S, t.x, t.y, 64); if (FX()) { FX().grieta(S, t.x, t.y, 60); FX().escombros(S, t.x, t.y, 60, 14); } son('ck_aterriza', 0.9) || son('bone_hit', 0.9, { rate: 0.6 });
+          polvo(S, t.x, t.y, 64); if (FX()) { FX().grieta(S, t.x, t.y, 60); FX().escombros(S, t.x, t.y, 60, 18); } son('ck_aterriza', 0.9) || son('bone_hit', 0.9, { rate: 0.6 });
+          pfx(S, 'pfx_impacto', t.x, t.y, { escala: 0.8, prof: Math.round(t.y) - 6 }); pfx(S, 'pfx_aterrizaje', t.x, t.y, { escala: 1.3, prof: Math.round(t.y) - 5 });
           const p = pies(S);
           if (Math.hypot((p.x - t.x) / 64, (p.y - t.y) / 40) < 1) { golpeRojo(S, 2); empujar(S, t.x, t.y, 260); }
           S.time.delayedCall(450, () => terminar(S, e));
@@ -187,13 +209,32 @@
     });
   };
   const escudo = (S, e) => {
+    // (21/11) "que se ponga en pose defensiva y luego arremeta con una embestida": guardia 1,2 s (de frente no le entra
+    // nada) y sale con el escudo adelante
     empezar(S, e); mirar(S, e, S.player.x);
     e.play('orc_campeon_block', true);
     S.createFloatingText(e.x, e.y - 66, '¡MURO DE ESCUDO!', 0xcbd5e1);
-    e._ckc.escudo = S.time.now + 2200;
-    e.isAttacking = false; e.state = 'chase';    // se mueve despacio con el escudo arriba
-    e._ckc.lento = true;
-    S.time.delayedCall(2200, () => { if (vivo(e)) { e._ckc.lento = false; terminar(S, e, R(2400, 3600)); } });
+    e._ckc.escudo = S.time.now + 2000;
+    brillo(S, e, 0xcbd5e1, 1200);
+    if (FX()) FX().chispas(S, e.body.center.x + (e.flipX ? -16 : 16), e.body.bottom - 30, 6, 0xffffff);
+    S.time.delayedCall(1200, () => {
+      if (!vivo(e)) return;
+      const p = pies(S), ox = e.body.center.x, oy = e.body.bottom - 4, a = Math.atan2(p.y - oy, p.x - ox), v = 400, L = Math.min(260, Math.hypot(p.x - ox, p.y - oy) + 60);
+      mirar(S, e, p.x); e.play('orc_campeon_block', true);
+      son('ck_embestida', 0.8) || son('dash', 0.7, { rate: 0.7 });
+      if (FX()) FX().rastro(S, e, L / v * 1000 + 200);
+      let pego = false; const t0 = S.time.now;
+      const ev = S.time.addEvent({ delay: 30, loop: true, callback: () => {
+        if (!vivo(e)) { ev.remove(); return; }
+        e.body.setVelocity(Math.cos(a) * v, Math.sin(a) * v);
+        const q = pies(S);
+        if (!pego && Math.hypot(q.x - e.body.center.x, q.y - (e.body.bottom - 4)) < 34) {
+          pego = true; golpeRojo(S, 2); empujar(S, e.body.center.x, e.body.bottom, 340);
+          if (FX()) FX().chispas(S, q.x, q.y - 14, 10, 0xffffff); S.cameras.main.shake(160, 0.008); son('ck_escudo_bloquea', 0.8) || son('sword_hit', 0.9, { rate: 0.6 });
+        }
+        if (S.time.now - t0 > L / v * 1000) { ev.remove(); e.body.setVelocity(0, 0); e._ckc.escudo = 0; terminar(S, e, R(2400, 3600)); }
+      } });
+    });
   };
   const cuchilla = (S, e) => {
     empezar(S, e); const t = pies(S); mirar(S, e, t.x);
@@ -216,12 +257,17 @@
         onComplete: () => { c.destroy(); terminar(S, e); } });
     });
   };
+  // (21/11, "mejorar el diseño del cuchillo arrojadizo") una cuchilla orca: hoja curva con filo claro, lomo oscuro, muesca y
+  // mango envuelto en cuero, con su contorno
   const texCuchilla = S => {
-    if (S.textures.exists('ckc_cuchilla')) return 'ckc_cuchilla';
-    const t = S.textures.createCanvas('ckc_cuchilla', 18, 18), g = t.getContext();
-    const p = (c, x, y, w, h) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
-    p('#1b0f0a', 3, 6, 12, 7); p('#8a8f96', 4, 7, 10, 5); p('#c8ccd2', 5, 7, 8, 2); p('#5a3a24', 7, 12, 3, 5); p('#1b0f0a', 7, 16, 3, 1); p('#d01819', 13, 8, 1, 3);
-    t.refresh(); return 'ckc_cuchilla';
+    if (S.textures.exists('ckc_cuchilla2')) return 'ckc_cuchilla2';
+    const t = S.textures.createCanvas('ckc_cuchilla2', 22, 22), g = t.getContext();
+    const p = (c, x, y, w, h) => { g.fillStyle = c; g.fillRect(x, y, w || 1, h || 1); };
+    p('#1b0f0a', 4, 3, 13, 2); p('#1b0f0a', 2, 5, 17, 2); p('#1b0f0a', 1, 7, 19, 4); p('#1b0f0a', 2, 11, 17, 2); p('#1b0f0a', 5, 13, 10, 2); p('#1b0f0a', 8, 15, 5, 6);
+    p('#4a4f56', 5, 4, 11, 1); p('#6c727a', 3, 6, 15, 1); p('#8c929a', 2, 7, 17, 3); p('#b8bec6', 3, 10, 15, 1); p('#e6ebf0', 4, 11, 13, 1); p('#ffffff', 7, 11, 5, 1); p('#e6ebf0', 6, 13, 8, 1);
+    p('#1b0f0a', 15, 7, 2, 2); p('#3a1010', 6, 7, 2, 1);
+    p('#5a3a24', 9, 15, 3, 5); p('#8a5a32', 9, 16, 3, 1); p('#8a5a32', 9, 18, 3, 1); p('#c8a060', 10, 20, 1, 1);
+    t.refresh(); return 'ckc_cuchilla2';
   };
 
   // ---------- KRAGMOR
@@ -240,9 +286,16 @@
       son(cazador ? 'ck_silbido' : 'ck_embestida', cazador ? 0.5 : 0.85);
       if (FX()) FX().rastro(S, e, L / v * 1000 + 300);
       let pego = false, ultimo = { x: e.x, y: e.y, t: t0 };
+      let paso = 0;
       const ev = S.time.addEvent({ delay: 30, loop: true, callback: () => {
         if (!vivo(e)) { ev.remove(); return; }
         e.body.setVelocity(Math.cos(a) * v, Math.sin(a) * v);
+        // (21/11) Kragmor deja pisadas que quiebran el piso y polvo; el huargo, un eco de velocidad
+        if (++paso % 4 === 0) {
+          const fx0 = e.body.center.x, fy0 = e.body.bottom - 2;
+          if (!cazador) { if (FX()) { FX().grieta(S, fx0 + R(-6, 6), fy0, 14); FX().escombros(S, fx0, fy0, 12, 3); } pfx(S, 'pfx_polvo', fx0, fy0, { escala: 0.6, prof: Math.round(fy0) - 4 }); }
+          else { S._ckPedCrea = (S._ckPedCrea || 0) + 1; try { const c = S.add.sprite(e.x, e.y, e.texture.key, e.frame.name).setFlipX(e.flipX).setScale(e.scaleX, e.scaleY).setTintFill(0xd8e8ff).setAlpha(0.45).setBlendMode(1).setDepth(e.depth - 1); S.tweens.add({ targets: c, alpha: 0, duration: 260, onComplete: () => c.destroy() }); } finally { S._ckPedCrea--; } chispas2(S, fx0 - Math.cos(a) * 20, fy0 - 20, [220, 235, 255], 3, 14); }
+        }
         const q = pies(S);
         if (!pego && Math.hypot(q.x - e.body.center.x, q.y - (e.body.bottom - 4)) < (cazador ? 34 : 40)) { pego = true; golpeRojo(S, 2); empujar(S, e.body.center.x, e.body.bottom, 320); }
         const ahora = S.time.now, quieto = Math.hypot(e.x - ultimo.x, e.y - ultimo.y) < 2 && ahora - t0 > 160;
@@ -267,44 +320,136 @@
     });
   };
   const sismo = (S, e) => {
+    // (21/11) "las ondas expansivas que sean de piedras y polvo con partículas y las roturas del piso más elaboradas"
     empezar(S, e); mirar(S, e, S.player.x); aviso(S, e, ROJO);
     e.play('bestia_kragmor_slam', true);
     const cx = e.body.center.x, cy = e.body.bottom - 4;
     marca(S, cx, cy, 40, ROJO, 700);
+    canal(S, e, [200, 180, 150], 700, 50);
     S.time.delayedCall(700, () => {
       if (!vivo(e)) return;
-      polvo(S, cx, cy, 50); if (FX()) { FX().grieta(S, cx, cy, 70); FX().escombros(S, cx, cy, 50, 16); } son('ck_pisoton_jefe', 1) || son('bone_hit', 1, { rate: 0.45 });
+      polvo(S, cx, cy, 50); if (FX()) { FX().grieta(S, cx, cy, 70); FX().escombros(S, cx, cy, 50, 18); } son('ck_pisoton_jefe', 1) || son('bone_hit', 1, { rate: 0.45 });
+      pfx(S, 'pfx_impacto', cx, cy, { escala: 0.85, prof: Math.round(cy) - 6 });
+      pfx(S, 'pfx_sismo', cx, cy, { escala: 0.9, prof: Math.round(cy) - 7 });
       [0, 380, 760].forEach((d, i) => S.time.delayedCall(d, () => {
-        const viva = FX() && FX().ondaViva ? FX().ondaViva(S, cx, cy, ROJO) : null;   // (11/11) borde quebrado, frente claro, estela y polvo
-        const ring = S.add.ellipse(cx, cy, 20, 12).setStrokeStyle(5, ROJO, 0.9).setDepth(9).setVisible(!viva), k = { r: 10 }, golpeados = new Set();
+        const k = { r: 10 }, golpeados = new Set();
+        if (window.CK_ONDAS) CK_ONDAS.estallido(S, 'tierra', cx, cy, 190, 900);
         S.tweens.add({ targets: k, r: 190, duration: 900, ease: 'Sine.easeOut',
           onUpdate: () => {
-            ring.setSize(k.r * 2, k.r * 1.24); ring.setDisplaySize(k.r * 2, k.r * 1.24); ring.setAlpha(1 - k.r / 220);
-            if (viva) viva.poner(k.r, 1 - k.r / 220);
-            if (FX() && Math.random() < 0.35) { const aa = R(0, Math.PI * 2); FX().escombros(S, cx + Math.cos(aa) * k.r, cy + Math.sin(aa) * k.r * 0.62, 8, 2); }
-            const p = pies(S), d = Math.hypot(p.x - cx, (p.y - cy) / 0.62);
-            if (!golpeados.has(i) && Math.abs(d - k.r) < 10) { golpeados.add(i); golpeRojo(S, 1); }
-          },
-          onComplete: () => { ring.destroy(); if (viva) viva.fin(); } });
+            // la onda son piedras y polvo que saltan por donde pasa
+            if (FX()) for (let j = 0; j < 2; j++) { const aa = R(0, Math.PI * 2); FX().escombros(S, cx + Math.cos(aa) * k.r, cy + Math.sin(aa) * k.r * 0.62, 8, 2); }
+            if (Math.random() < 0.5) { const aa = R(0, Math.PI * 2); chispas2(S, cx + Math.cos(aa) * k.r, cy + Math.sin(aa) * k.r * 0.62, [200, 180, 150], 3, 12); }
+            const p = pies(S), dd = Math.hypot(p.x - cx, (p.y - cy) / 0.62);
+            if (!golpeados.has(i) && Math.abs(dd - k.r) < 10) { golpeados.add(i); golpeRojo(S, 1); }
+          } });
       }));
       S.time.delayedCall(1500, () => terminar(S, e));
     });
   };
+  // (v10) Kragmor tira la roca con su animación de PixelLab (ck_jefes_anims_arte.js: la agarra del piso, la sube al pecho y la
+  // arroja). Sus cuadros son más altos (100x130, para que entre parado): mientras dura, el pivote va en los pies y su cuerpo
+  // físico se corre lo mismo (offset), así no se mueve nada; cualquier otra animación lo vuelve a lo normal.
+  const tiroK = (S, e, AK, alSoltar) => {
+    const d = AK.fh * AK.piv[1] - 50;
+    const fin = () => { if (!e._ckTiro) return; if (e.body) e.body.offset.y -= e._ckTiro; e._ckTiro = 0; e.setOrigin(0.5, 0.5); };
+    if (!e._ckTiroPlay) {
+      const play0 = e.play; e._ckTiroPlay = true;
+      e.play = function (key) { try { const k = typeof key === 'string' ? key : key && key.key; if (this._ckTiro && k !== 'bestia_kragmor_tiro') fin(); } catch (er) {} return play0.apply(this, arguments); };
+    }
+    if (!e._ckTiro) { e._ckTiro = d; if (e.body) e.body.offset.y += d; }
+    e.play('bestia_kragmor_tiro', true);
+    let solto = false;
+    const upd = (an, fr) => { if (!solto && an.key === 'bestia_kragmor_tiro' && fr.index - 1 >= AK.suelta) { solto = true; try { alSoltar(); } catch (er) { console.warn('[coliseo] tiro', er); } } };
+    e.on('animationupdate', upd);
+    e.once('animationcomplete', an => { e.off('animationupdate', upd); if (an && an.key !== 'bestia_kragmor_tiro') return; fin(); if (vivo(e)) e.play('bestia_kragmor_idle', true); });
+    S.time.delayedCall(2500, () => { e.off('animationupdate', upd); if (vivo(e) && e._ckTiro && !(e.anims.currentAnim && e.anims.currentAnim.key === 'bestia_kragmor_tiro' && e.anims.isPlaying)) fin(); });
+  };
+  const caeRoca = (S, r, x, y, ms, alto, radio, alCaer) => {
+    marca(S, x, y, radio, ROJO, ms); if (FX()) FX().sombraCaida(S, x, y, radio, ms);
+    const x0 = r.x, y0 = r.y, k = { t: 0 }, giro = R(300, 520) * (Math.random() < 0.5 ? -1 : 1);
+    S.tweens.add({ targets: k, t: 1, duration: ms, ease: 'Sine.easeIn', onUpdate: () => { if (r.active) r.setPosition(x0 + (x - x0) * k.t, y0 + (y - 6 - y0) * k.t - Math.sin(k.t * Math.PI) * alto).setAngle(k.t * giro).setDepth(26000); },
+      onComplete: () => {
+        if (r.active) r.destroy();
+        polvo(S, x, y, radio * 0.9); if (FX()) { FX().escombros(S, x, y, radio * 0.9, 10); FX().grieta(S, x, y, radio * 0.8); }
+        pfx(S, 'pfx_aterrizaje', x, y, { escala: radio / 38, prof: Math.round(y) - 4 });
+        son('ck_piedra', 0.5, { rate: 0.9 + Math.random() * 0.2 }) || son('bone_hit', 0.6, { rate: 0.7 });
+        const q = pies(S); if (Math.hypot((q.x - x) / radio, (q.y - y) / (radio * 0.62)) < 1) golpeRojo(S, 1);
+        if (alCaer) alCaer();
+      } });
+  };
   const piedras = (S, e) => {
+    const AK = window.CK_JEFES_ANIMS_ARTE && window.CK_JEFES_ANIMS_ARTE.kragmor_tiro;
+    if (AK && FX() && S.anims.exists('bestia_kragmor_tiro')) return piedrasTiro(S, e, AK);
+    return piedrasViejo(S, e);
+  };
+  // golpea el piso, sale UNA roca, la agarra y la arroja donde estás; al caer se parte y los pedazos caen alrededor
+  const piedrasTiro = (S, e, AK) => {
     empezar(S, e); aviso(S, e, ROJO); e.play('bestia_kragmor_slam', true);
+    canal(S, e, [200, 180, 150], 900, 50); brillo(S, e, 0xffb070, 900);
+    S.time.delayedCall(900, () => {
+      if (!vivo(e)) return;
+      const lado = e.flipX ? -1 : 1, sx = Math.abs(e.scaleX), sy = Math.abs(e.scaleY);
+      const fx0 = e.body.center.x + lado * 30, fy0 = e.body.bottom - 4;
+      polvo(S, fx0, fy0, 40); pfx(S, 'pfx_impacto', fx0, fy0, { escala: 0.6, prof: Math.round(fy0) - 6 }); if (FX()) FX().grieta(S, fx0, fy0, 40);
+      son('ck_pisoton_jefe', 0.9) || son('bone_hit', 0.9, { rate: 0.5 });
+      // sale la roca del piso, justo donde la va a agarrar
+      const rx = e.x + AK.roca0[0] * sx * lado, ry = e.y + AK.roca0[1] * sy;
+      const r = crea(S, () => FX().roca(S, rx, ry + 8)).setScale(AK.rocaEsc * sx, AK.rocaEsc * sy * 0.3).setFlipX(lado < 0).setDepth(e.depth + 1);
+      S.tweens.add({ targets: r, y: ry, scaleY: AK.rocaEsc * sy, duration: 240, ease: 'Back.easeOut' });
+      if (FX()) FX().escombros(S, rx, ry + 6, 16, 6);
+      S.time.delayedCall(260, () => {
+        if (!vivo(e)) { r.destroy(); terminar(S, e); return; }
+        r.setVisible(false);                                               // (la agarra: desde acá la roca es la de su dibujo)
+        tiroK(S, e, AK, () => {
+          // la suelta: la roca vuela desde sus manos hasta donde estás
+          const l2 = e.flipX ? -1 : 1, q = pies(S);
+          r.setPosition(e.x + AK.rocaSuelta[0] * sx * l2, e.y + AK.rocaSuelta[1] * sy).setScale(AK.rocaEsc * sx * 1.15).setVisible(true).setDepth(26000);
+          son('sword_swing2', 0.6, { rate: 0.45 });
+          caeRoca(S, r, q.x, q.y, 620, 70, 34, () => {
+            // y se parte: tres pedazos caen alrededor
+            const lejos = Math.atan2(q.y - e.y, q.x - e.x);              // (hacia el lado contrario a él)
+            for (let i = 0; i < 3; i++) {
+              const a = lejos + (i - 1) * 0.9 + R(-0.3, 0.3), dd = R(55, 105), px = q.x + Math.cos(a) * dd, py = q.y + Math.sin(a) * dd * 0.62;
+              const f = FX() ? FX().roca(S, q.x, q.y - 6) : S.add.circle(q.x, q.y - 6, 6, 0x6b5a4a).setDepth(26000);
+              caeRoca(S, f, px, py, 460 + i * 60, 46, 24);
+            }
+          });
+        });
+      });
+      S.time.delayedCall(260 + 900 + 620 + 640 + 300, () => terminar(S, e));
+    });
+  };
+  const piedrasViejo = (S, e) => {
+    // (21/11) "que haga una anticipación: golpea el piso, sale una roca y luego la arroja"
+    empezar(S, e); aviso(S, e, ROJO); e.play('bestia_kragmor_slam', true);
+    canal(S, e, [200, 180, 150], 900, 50); brillo(S, e, 0xffb070, 900);
     const p = pies(S), pts = [[p.x, p.y]];
     for (let i = 0; i < 3; i++) pts.push([p.x + R(-110, 110), p.y + R(-60, 60)]);
-    pts.forEach(([x, y]) => { marca(S, x, y, 30, ROJO, 1100); if (FX()) FX().sombraCaida(S, x, y, 30, 1280); });
-    S.time.delayedCall(1100, () => {
+    S.time.delayedCall(900, () => {
+      if (!vivo(e)) return;
+      const fx0 = e.body.center.x + (e.flipX ? -30 : 30), fy0 = e.body.bottom - 4;
+      polvo(S, fx0, fy0, 40); pfx(S, 'pfx_impacto', fx0, fy0, { escala: 0.6, prof: Math.round(fy0) - 6 }); if (FX()) FX().grieta(S, fx0, fy0, 40);
+      son('ck_pisoton_jefe', 0.9) || son('bone_hit', 0.9, { rate: 0.5 });
       pts.forEach(([x, y], i) => {
-        const r = FX() ? FX().roca(S, x, y - 160) : S.add.circle(x, y - 160, 9, 0x6b5a4a).setStrokeStyle(2, 0x1b0f0a).setDepth(26000);
-        if (FX()) S.tweens.add({ targets: r, angle: R(-200, 200), duration: 220, delay: i * 40 });
-        S.tweens.add({ targets: r, y: y - 6, duration: 180, delay: i * 40, ease: 'Quad.easeIn', onComplete: () => {
-          r.destroy(); polvo(S, x, y, 26); if (FX()) { FX().escombros(S, x, y, 26, 8); FX().grieta(S, x, y, 24); } son('ck_piedra', 0.5, { rate: 0.9 + Math.random() * 0.2 }) || son('bone_hit', 0.6, { rate: 0.7 });
-          const q = pies(S); if (Math.hypot((q.x - x) / 30, (q.y - y) / 19) < 1) golpeRojo(S, 1);
-        } });
+        const ox = fx0 + R(-16, 16), oy = fy0 - 4;
+        const r = FX() ? FX().roca(S, ox, oy) : S.add.circle(ox, oy, 9, 0x6b5a4a).setStrokeStyle(2, 0x1b0f0a).setDepth(26000);
+        r.setScale(r.scaleX * 1.4);
+        S.tweens.add({ targets: r, y: oy - 34 - i * 6, duration: 260, ease: 'Quad.easeOut' });          // sale del piso
+        S.time.delayedCall(300 + i * 160, () => {
+          if (!r.active) return;
+          marca(S, x, y, 30, ROJO, 560); if (FX()) FX().sombraCaida(S, x, y, 30, 560);
+          const x0 = r.x, y0 = r.y, k = { t: 0 };
+          son('sword_swing2', 0.5, { rate: 0.5 });
+          S.tweens.add({ targets: k, t: 1, duration: 560, ease: 'Sine.easeIn', onUpdate: () => { r.setPosition(x0 + (x - x0) * k.t, y0 + (y - 6 - y0) * k.t - Math.sin(k.t * Math.PI) * 90).setAngle(k.t * 400); },
+            onComplete: () => {
+              r.destroy(); polvo(S, x, y, 26); if (FX()) { FX().escombros(S, x, y, 26, 10); FX().grieta(S, x, y, 24); }
+              pfx(S, 'pfx_aterrizaje', x, y, { escala: 0.8, prof: Math.round(y) - 4 });
+              son('ck_piedra', 0.5, { rate: 0.9 + Math.random() * 0.2 }) || son('bone_hit', 0.6, { rate: 0.7 });
+              const q = pies(S); if (Math.hypot((q.x - x) / 30, (q.y - y) / 19) < 1) golpeRojo(S, 1);
+            } });
+        });
       });
-      S.time.delayedCall(700, () => terminar(S, e));
+      S.time.delayedCall(300 + pts.length * 160 + 700, () => terminar(S, e));
     });
   };
 
@@ -325,7 +470,8 @@
         if (!vivo(e)) return;
         son('bow_shot', 0.8) || son('sword_swing2', 0.6, { rate: 1.8 }); S.time.delayedCall(90, () => son('ck_silbido', 0.45));
         [-0.28, 0, 0.28].forEach(d => {
-          const ang = a + d, f = FX() ? FX().flecha(S, ox, oy, ang) : S.add.rectangle(ox, oy, 16, 2, 0xe8d8b0).setStrokeStyle(1, 0x3a2414).setRotation(ang).setDepth(26000);
+          const ang = a + d, f = S.add.image(ox, oy, texLanza(S)).setRotation(ang).setDepth(26000).setScale(1.3);   // (21/11) lanzas, no flechas
+          if (FX() && FX().estela) FX().estela(S, f, 160);
           let pego = false; const v = 360, t0 = S.time.now;
           const ev = S.time.addEvent({ delay: 16, loop: true, callback: () => {
             const dt = (S.time.now - t0) / 1000, x = ox + Math.cos(ang) * v * dt, y = oy + Math.sin(ang) * v * dt;
@@ -339,25 +485,42 @@
       });
     });
   };
+  const texLanza = S => {
+    if (S.textures.exists('ckc_lanza')) return 'ckc_lanza';
+    const t = S.textures.createCanvas('ckc_lanza', 34, 7), g = t.getContext(), p = (c, x, y, w, h) => { g.fillStyle = c; g.fillRect(x, y, w || 1, h || 1); };
+    // apunta a la derecha: el regatón, el asta de madera, una tira de cuero y la punta de hierro
+    p('#1b0f0a', 0, 2, 3, 3); p('#6c727a', 1, 3, 1, 1);
+    p('#1b0f0a', 2, 2, 24, 3); p('#6b4426', 3, 3, 22, 1); p('#8a5a32', 3, 2, 22, 1);
+    p('#c8a060', 16, 2, 2, 3); p('#8a2a1a', 18, 2, 1, 3);
+    p('#1b0f0a', 25, 1, 7, 5); p('#1b0f0a', 32, 3, 2, 1); p('#8c929a', 26, 2, 5, 3); p('#d5dbe1', 27, 3, 5, 1);
+    t.refresh(); return 'ckc_lanza';
+  };
   const cargaHuargo = (S, e) => embestida(S, e, true);
   const aullido = (S, e) => {
+    // (21/11) "con el aullido no invoca lobos, sólo se vuelve más rápido y resistente unos segundos"
     empezar(S, e); mirar(S, e, S.player.x);
     e.play('cazador_ulrak_aullido', true);
     S.createFloatingText(e.x, e.y - 70, '¡AUUUUU!', 0xcbd5e1); if (FX()) FX().ondaVoz(S, e.x + (e.flipX ? -26 : 26), e.y - 30, e.flipX); son('warg_howl', 0.9) || son('necro_cast', 0.6, { rate: 0.6 });
     S.cameras.main.shake(300, 0.006);
+    if (window.CK_ONDAS) CK_ONDAS.estallido(S, 'hielo', e.body.center.x, e.body.bottom, 80, 500);
     S.time.delayedCall(700, () => {
       if (!vivo(e)) return;
-      const vivos = S.enemies.getChildren().filter(m => vivo(m) && m.type === 'warg').length;
-      for (let i = vivos; i < 2 && typeof ENEMY_TYPES !== 'undefined' && ENEMY_TYPES.warg; i++) {
-        const a = R(0, Math.PI * 2), m = S.spawnEnemy(e.x + Math.cos(a) * 90, e.y + Math.sin(a) * 60, 'warg');
-        if (!m) continue;
-        if (S.placeEnemyClear && !S.placeEnemyClear(m)) { m.destroy(); continue; }
-        m.zone = e.zone; S.time.delayedCall(250, () => vivo(m) && S.alertEnemy(m));
-      }
-      S.time.delayedCall(500, () => terminar(S, e));
+      const MS = 6000;
+      e._ckFuria = S.time.now + MS;
+      if (!e._ckc.velFuria) { e._ckc.velFuria = e.def.speed; e._ckc.cdFuria = e.def.cd; e.def = Object.assign({}, e.def, { speed: e.def.speed * 1.35, cd: Math.round(e.def.cd * 0.8) }); }
+      brillo(S, e, 0xbfe0ff, MS);
+      S.createFloatingText(e.x, e.y - 76, '¡MÁS RÁPIDO Y DURO!', 0xbfe0ff);
+      S.time.delayedCall(MS, () => { if (vivo(e) && e._ckc.velFuria) { e.def = Object.assign({}, e.def, { speed: e._ckc.velFuria, cd: e._ckc.cdFuria }); e._ckc.velFuria = 0; } });
+      S.time.delayedCall(300, () => terminar(S, e));
     });
   };
 
+  // (21/11) el aullido de Ulrak: mientras dura, recibe la mitad del daño
+  const deF0 = P.damageEnemy;
+  P.damageEnemy = function (enemy, amount) {
+    try { if (enemy && enemy._ckFuria > this.time.now && amount > 0) arguments[1] = Math.max(1, Math.floor(amount / 2)); } catch (er) {}
+    return deF0.apply(this, arguments);
+  };
   // qué hace cada uno (con peso) según la vida
   const TURNOS = {
     orc_campeon: (e, mitad) => mitad ? [[salto, 3], [escudo, 2], [cuchilla, 3]] : [[salto, 3], [escudo, 2]],

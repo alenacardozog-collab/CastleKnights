@@ -13,6 +13,9 @@
    - METEORITOS: como los rayos cuando llueve, cada tanto cae uno del cielo: primero una marca roja en el piso, después
      la piedra encendida con su estela, el impacto (destello, temblor, onda, esquirlas, polvo), un cráter que humea y
      queda ardiendo un rato. Lastima a quien esté abajo (héroe, demonios, vecinos) y rompe lo que haya.
+   (23/11, v2, nota 3 del dueño: "que corran y se resguarden en casa; si matan a más de esos perdemos") el vecino que cae
+   pide ayuda 8 segundos: si el héroe no lo levanta con T, se muere (queda tirado y se apaga). ck_capitulo3.js v8 lleva la
+   cuenta (window.CK_C3_VECINOS: salvo / muerto); los vecinos que llegan a una casa también le avisan.
    Todo hecho por código (sin arte nuevo) y con los sonidos que ya están. Va después de ck_capitulo3.js.
    Borrar su línea de index.html lo saca. */
 (function () {
@@ -212,7 +215,7 @@
   /** A quién va: el vecino más cercano que siga en pie (si el héroe está lejos), si no el héroe. */
   const apuntar = (S, e) => {
     const V = S._ckiv; if (!V || !esDemonio(e) || e._c3guarda) return;
-    const libres = V.gente.filter(v => !v.down && !v.salvo && v.sprite.active);
+    const libres = V.gente.filter(v => !v.down && !v.salvo && !v.muerto && v.sprite.active);
     let m = null, md = 280;
     libres.forEach(v => { const d = Math.hypot(v.sprite.x - e.x, v.sprite.y - e.y); if (d < md) { md = d; m = v; } });
     // nadie a quien perseguir: va a golpear la puerta de un refugio (donde se metió la gente)
@@ -244,10 +247,21 @@
     V.gente.push(v); return v;
   };
   const libre = (S, x, y) => { try { return S.navIsFree ? S.navIsFree(x, y) : true; } catch (e) { return true; } };
+  const AGUANTA = 8000;   // (v2) lo que aguanta tirado antes de morir
+  const aviso = (S, v, k) => { try { const H = window.CK_C3_VECINOS; if (H && H[k]) H[k](S, v); } catch (e) { console.warn('[infierno vivo]', e); } };
   const moverVecino = (S, V, v, dt) => {
-    const sp = v.sprite; if (!sp.active || v.salvo) return;
+    const sp = v.sprite; if (!sp.active || v.salvo || v.muerto) return;
     if (v.down) {
-      if (!v._tirado) { v._tirado = true; sp.setAngle(sp.flipX ? -84 : 84).setOrigin(0.5, 0.8); sp.anims.stop(); }
+      if (!v._tirado) { v._tirado = true; sp.setAngle(sp.flipX ? -84 : 84).setOrigin(0.5, 0.8); sp.anims.stop(); v.muere = S.time.now + AGUANTA; }
+      // (v2) si nadie lo levanta, se muere
+      if (v.muere && S.time.now > v.muere) {
+        v.muerto = true;                 // (sigue 'down': los demonios lo sueltan)
+        sp.setTint(0x6a5050);
+        S.tweens.add({ targets: sp, alpha: 0, delay: 1500, duration: 1200, onComplete: () => sp.destroy() });
+        aviso(S, v, 'muerto');
+        return;
+      }
+      if (v.muere && v.muere - S.time.now < 3000) sp.setAlpha(0.65 + 0.35 * Math.abs(Math.sin(S.time.now / 140)));
       v.pide = (v.pide || 0) - dt;
       if (v.pide <= 0 && window.CK_ESCENA) { v.pide = R(3500, 6000); window.CK_ESCENA.globo(S, sp, UNO(['¡Ayuda!', '¡Auxilio!', 'Mi pierna…']), 1400); }
       return;
@@ -274,6 +288,7 @@
       else if (r === 'arrived') {
         v.salvo = true;
         S.tweens.add({ targets: sp, alpha: 0, duration: 350, onComplete: () => sp.destroy() });   // destruido: los demonios lo sueltan
+        aviso(S, v, 'salvo');
         return;
       } else if (r === 'stuck') { v.tiron = null; v.refugio = null; v.nav = {}; }
       sp.setDepth(sp.y);
@@ -490,10 +505,10 @@
     try {
       const V = this._ckiv;
       if (V && !this.dialogOpen && !this._ckEscena) {
-        const p = this.player, v = V.gente.find(q => q.down && q.sprite.active && Math.hypot(q.sprite.x - p.x, q.sprite.y - p.y) < 34);
+        const p = this.player, v = V.gente.find(q => q.down && !q.muerto && q.sprite.active && Math.hypot(q.sprite.x - p.x, q.sprite.y - p.y) < 34);
         if (v) {
-          v.down = false; v._tirado = false; v.hp = 2; v.refugio = null;
-          v.sprite.setAngle(0).setOrigin(0.5, 1).clearTint();
+          v.down = false; v._tirado = false; v.hp = 2; v.refugio = null; v.muere = 0;
+          v.sprite.setAngle(0).setOrigin(0.5, 1).clearTint().setAlpha(1);
           this.createFloatingText(v.sprite.x, v.sprite.y - 40, '¡Gracias!', 0x86efac);
           sonar('heal', 0.4, { rate: 1.3 });
           return;
@@ -515,5 +530,5 @@
     if (f0) P[k] = function () { const r = f0.apply(this, arguments); try { limpiar(this); } catch (e) {} return r; };
   });
 
-  window.CK_INFIERNO_VIVO = { corromper, meteoro, grieta, vecino, texturas, est, calmar };
+  window.CK_INFIERNO_VIVO = { corromper, meteoro, grieta, vecino, texturas, est, calmar, AGUANTA };
 })();

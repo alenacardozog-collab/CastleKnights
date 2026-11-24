@@ -14,6 +14,10 @@
        TAURAX, el Minotauro de Brasa (Campos) .... la embestida, más pesada
        GROMM, el Martillo del Abismo (San Roque) . el martillazo que levanta una onda de fuego
        MORVANE, el Caballero Negro (Norte) ....... clava la espada y abre pilares de fuego hasta vos
+   (23/11, v2, notas del dueño: "sale el segundo boss" en el Camino, "sale el tercer boss acá" en la Aldea y "sale el último
+   boss" en los Campos, con el lugar marcado): en esos tres el jefe sale en ese lugar (con la cámara mostrándolo), no al
+   lado del héroe. El orden del reino ahora es San Roque, Camino, Aldea y Campos (ck_capitulo3.js v8); Orbath y Morvane ya
+   no son jefes de un lugar del reino (Morvane, el del caballo, espera en el Salón del Trono: ck_capitulo3_castillo.js).
    Cómo se engancha: ck_capitulo3.js pregunta window.CK_C3_CASILLAS (qué criatura va en cada casilla, y la del jefe) y
    window.CK_C3_HUD_DEM (el cartel de arriba). Borrar las dos líneas de index.html vuelve a los diablillos de antes. */
 (function () {
@@ -86,12 +90,12 @@
   const LUGAR = {
     'ed_bosque_de_la_frontera.main': { jefe: 'demonio_j_ojo', punto: [300, 300], de: 'del Claro del Monolito',
       m: ['demonio_lava', 'demonio_murcielago', 'demonio_menor', 'demonio_lava', 'demonio_murcielago'], b: ['demonio_bruto'], g: [] },
-    'ed_camino_al_castillo.main': { jefe: 'demonio_j_sabueso', punto: [640, 470], de: 'del Camino al Castillo',
+    'ed_camino_al_castillo.main': { jefe: 'demonio_j_sabueso', punto: [1275, 196], fijo: true, de: 'del Camino al Castillo',
       m: ['demonio_sabueso', 'demonio_garra', 'demonio_sabueso', 'demonio_murcielago', 'demonio_garra', 'demonio_sabueso'], b: ['demonio_bruto'], g: [] },
-    village: { jefe: 'demonio_j_segadora', punto: [420, 380], de: 'de la Aldea',
+    village: { jefe: 'demonio_j_segadora', punto: [292, 326], fijo: true, de: 'de la Aldea',
       m: ['demonio_arquero', 'demonio_menor'], b: ['demonio_sangre', 'demonio_bruto'],
       g: ['demonio_garra', 'demonio_menor', 'demonio_arquero', 'demonio_bruja', 'demonio_garra', 'demonio_menor', 'demonio_bruja', 'demonio_arquero', 'demonio_garra', 'demonio_bruja'] },
-    'ed_campos_del_roble.main': { jefe: 'demonio_j_minotauro', punto: [600, 300], de: 'de los Campos',
+    'ed_campos_del_roble.main': { jefe: 'demonio_j_minotauro', punto: [610, 150], fijo: true, de: 'de los Campos',
       m: ['demonio_coagulo', 'demonio_lava'], b: ['demonio_sangre'],
       g: ['demonio_lava', 'demonio_tridente', 'demonio_coagulo', 'demonio_sangre', 'demonio_tridente', 'demonio_lava', 'demonio_coagulo', 'demonio_tridente', 'demonio_sangre', 'demonio_lava'] },
     'ed_san_roque.main': { jefe: 'demonio_j_martillo', punto: [760, 450], de: 'de San Roque',
@@ -337,7 +341,12 @@
     S.createFloatingText(S.player.x, S.player.y - 56, '¡La tierra tiembla…!', 0xfca5a5);
     S.time.delayedCall(900, () => {
       if (S._c3Inf !== I) { S._rcSale = false; return; }
-      const q = lugarCerca(S, Q), y0 = q.y - 10 * sc;      // (el sprite va con los pies 10 px abajo del centro, por la escala)
+      // (v2) en el Camino, la Aldea y los Campos sale donde lo marcó el dueño, y la cámara lo va a buscar
+      const q = Q.fijo ? { x: area(S).x + Q.punto[0], y: area(S).y + Q.punto[1] } : lugarCerca(S, Q), y0 = q.y - 10 * sc;
+      if (Q.fijo && window.CK_ESCENA && !Phaser.Geom.Rectangle.Contains(S.cameras.main.worldView, q.x, q.y - 30)) {
+        const E = window.CK_ESCENA;
+        E.correr(S, async () => { await E.camara(S, Q.punto[0], Q.punto[1] - 30, 900); await E.esperar(2600); });
+      }
       const listo = e => {
         S._rcSale = false;
         if (!e) return;

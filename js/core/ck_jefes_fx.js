@@ -271,11 +271,14 @@
   // - los jefes: su animación de carga (windup, PixelLab) en bucle o, si no tienen, se agachan y se tensan; al pegar, un tajo;
   // - los golpes pesados de cualquiera: el aviso a píxel en el piso (aro que gira y se llena) en lugar del círculo rojo liso.
   const JEFES = { orc_campeon: 1, bestia_kragmor: 1, cazador_ulrak: 1, orc_warlord: 1, werebear_jefe: 1 };
+  // (21/11) cada jefe puede tener su propio golpe (en vez del tajo y la onda roja de siempre) y más anticipación
+  // (ck_jefes_pedidos.js los pone): GOLPE[tipo](S, e, def, pesado) y ANTICIPA[tipo] (ms de más)
+  const GOLPE = {}, ANTICIPA = {};
   if (typeof MainGameScene !== 'undefined') MainGameScene.prototype.ckAvisoGolpe = function (enemy, def, heavy, hitAt, anim, swing) {
     const S = this, jefe = !!(def.boss || JEFES[enemy.type]);
     if (!jefe && !heavy) { enemy.play(anim); return 0; }
     const wu = enemy.type + '_windup', tiene = jefe && S.anims.exists(wu);
-    const warn = jefe ? (tiene ? Math.max(380, Math.min(620, S.anims.get(wu).duration)) : (heavy ? 420 : 280)) : 380;
+    const warn = (jefe ? (tiene ? Math.max(380, Math.min(620, S.anims.get(wu).duration)) : (heavy ? 420 : 280)) : 380) + (ANTICIPA[enemy.type] || 0);
     const b = enemy.body, fx = b ? b.center.x : enemy.x, fy = b ? b.bottom : enemy.y + 8;
     if (heavy) {
       // del lado al que mira y del tamaño del brazo (no un círculo enorme alrededor)
@@ -292,10 +295,11 @@
     });
     if (jefe) S.time.delayedCall(warn + Math.max(0, hitAt - 70), () => {
       if (!enemy.active || enemy.isDead || enemy.swingId !== swing) return;
+      if (GOLPE[enemy.type]) { try { GOLPE[enemy.type](S, enemy, def, heavy); } catch (er) {} return; }
       tajo(S, enemy, def.reach || 40, heavy ? 0xff9a7a : null);
       if (heavy) { const bb = enemy.body; onda(S, bb ? bb.center.x + (enemy.flipX ? -14 : 14) : enemy.x, bb ? bb.bottom - 2 : enemy.y, (def.reach || 40) * 0.9, 0xff3b2f, 380); }
     });
     return warn;
   };
-  window.CK_JEFES_FX = { JEFES, carga, flecha, roca, sombraCaida, escombros, grieta, rastro, estela, chispas, ondaVoz, zona, franjaViva, ondaViva, onda, anticipar, soltar, tajo };
+  window.CK_JEFES_FX = { JEFES, GOLPE, ANTICIPA, carga, flecha, roca, sombraCaida, escombros, grieta, rastro, estela, chispas, ondaVoz, zona, franjaViva, ondaViva, onda, anticipar, soltar, tajo };
 })();

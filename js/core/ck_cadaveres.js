@@ -10,6 +10,10 @@
   if (typeof MainGameScene === 'undefined') return;
   const P = MainGameScene.prototype;
   const DURA = 25000, DESVANECE = 3000, MAX = 30;
+  // (23/11, nota 29 del dueño: "en las partes donde hay muchos npc en pantalla los cadáveres tardan menos en desaparecer"):
+  // con más de MUCHOS enemigos vivos en el lugar (o en una batalla), cada cuerpo queda DURA_CORTA y como mucho MAX_CORTO
+  const MUCHOS = 10, DURA_CORTA = 5000, MAX_CORTO = 12;
+  const lleno = S => { try { return !!S._ckBat || (S.enemies && S.enemies.getChildren().filter(e => e.active && !e.isDead).length > MUCHOS); } catch (e) { return false; } };
 
   const quitarTodos = S => {
     (S._ckCadaveres || []).forEach(c => { try { S.tweens.killTweensOf(c); c.destroy(); } catch (e) {} });
@@ -37,9 +41,9 @@
     e.destroy();
     S._ckCadaveres = S._ckCadaveres || [];
     S._ckCadaveres.push(c);
-    const vivos = S._ckCadaveres.filter(o => !o._ckYendo);
-    if (vivos.length > MAX) desvanecer(S, vivos[0], 600);
-    S.time.delayedCall(DURA, () => desvanecer(S, c, DESVANECE));
+    const vivos = S._ckCadaveres.filter(o => !o._ckYendo), corto = lleno(S);
+    if (vivos.length > (corto ? MAX_CORTO : MAX)) vivos.slice(0, vivos.length - (corto ? MAX_CORTO : MAX)).forEach(o => desvanecer(S, o, 600));
+    S.time.delayedCall(corto ? DURA_CORTA : DURA, () => desvanecer(S, c, corto ? 1200 : DESVANECE));
   };
 
   const dmg0 = P.damageEnemy;
