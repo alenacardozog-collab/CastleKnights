@@ -30,7 +30,10 @@ const order = (a, b, why) => { const i = scripts.findIndex(s => a.test(s)), j = 
 order(/maps\/data\//, /config\/world_constants/, 'js/maps/data/* must load before js/config/world_constants.js');
 order(/maps\/layout_kit/, /maps\/(interiors\/|castle|ruins)/, 'js/maps/layout_kit.js must load before the layouts');
 order(/scene\/main_scene/, /scene\/(world|characters|ui|editor|assets_preload)/, 'js/scene/main_scene.js must load before the other scene files');
-if (scripts[scripts.length - 1] !== 'js/game.js') err('js/game.js (bootstrap) must be the last script');
+// (24/11) ck_aspecto.js goes after the bootstrap on purpose (it resizes the game once it exists); nothing else may
+const DESPUES = ['js/core/ck_aspecto.js'];
+const ultimos = scripts.filter(s => !DESPUES.includes(s));
+if (ultimos[ultimos.length - 1] !== 'js/game.js') err('js/game.js (bootstrap) must be the last script (only ' + DESPUES.join(', ') + ' may follow it)');
 
 // ---- 2. syntax
 const code = scripts.concat(dynamic.filter(d => !scripts.includes(d))).filter(s => exists(s));

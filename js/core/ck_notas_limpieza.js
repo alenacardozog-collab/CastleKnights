@@ -10,6 +10,8 @@
      Argentina). La lista queda en cero; las que se hagan después no se tocan.
    - TANDA 4 (23/11, v4): las 14 notas de notas_para_corregir (5).json, hechas en las tandas 9a a 9c, por su número de nota
      exacto (las que se hagan después no se tocan).
+   - TANDA 5 (23/11, v5): las 12 notas de notas_para_corregir (6).json, hechas en las tandas 11a a 11c, por su número de nota
+     exacto (las que se hagan después no se tocan).
    Cada tanda se borra UNA sola vez: queda anotado en el navegador (localStorage) y no vuelve a borrar nada. Las notas nuevas
    (las que se hagan después) no se tocan. Se puede sacar su línea de index.html cuando quieras. */
 (function () {
@@ -27,6 +29,10 @@
     { marca: 'ck_notas_limpias_20261123_9', hasta: 1795471118850, ids: [
     'mwtt59tu6v3y', 'mwtt3pn7lmf1', 'mwtt0dwb7jvh', 'mwtsychc2h7e', 'mwtsw620ky1t', 'mwtstn7fi1uy', 'mwtssx7djj0k', 'mwtsra3g83iz',
     'mwtspdamci94', 'mwtsobl3zvye', 'mwtsm0w9ws1l', 'mwtsl3c3xrag', 'mwtsjopz3x1v', 'mwtsiinnifcb'
+    ] },
+    { marca: 'ck_notas_limpias_20261123_11', hasta: 1795479931786, ids: [
+    'mwtye5xmabud', 'mwtyalb2zp4r', 'mwtya9hr8owv', 'mwty8abmwhyk', 'mwty7nke4cqm', 'mwty7183dzjn', 'mwty56rj9ucl', 'mwty4bsrif75',
+    'mwty2acl5o88', 'mwty1yeu63u3', 'mwtxz22mz40y', 'mwtxwb0ivea4'
     ] }
   ];
   const pendientes = TANDAS.filter(t => { try { return !localStorage.getItem(t.marca); } catch (e) { return false; } });

@@ -20,7 +20,10 @@
    (23/11, v4) El Cementerio Real con las tumbas y las reliquias: dos eventos en vez del Nigromante de antes (las tumbas, y
    las cuatro reliquias ya halladas para ponerlas en el círculo).
    (23/11, v5) El Rey y la llave del portón del norte, el portón con cadena y la emboscada del Norte del Roble (en vez de la de
-   Brumavieja de noche). */
+   Brumavieja de noche).
+   (23/11, v6) La emboscada y el ritual del Capítulo 3, al día con ck_capitulo3.js v9 (sólo el texto del evento).
+   (23/11, v7) El Camino al Castillo y el castillo infestado, al día con ck_notas_arreglos_5.js y _6.js (sólo el texto).
+   (24/11, v8) Dos eventos nuevos del final (ck_final.js): la vuelta con Elia y el juicio del Rey con el FIN. */
 (function () {
   if (typeof MainGameScene === 'undefined') return;
   const escena = () => window.activeGameScene || (window.game && game.scene && game.scene.scenes.find(s => s.startCampaign));
@@ -116,17 +119,17 @@
     // (23/11, v3) el Capítulo 3 rehecho (ck_capitulo3.js v8, ck_capitulo3_castillo.js, ck_mazmorra_lava.js)
     { c: 'Capítulo 3', n: 'El campamento de Bruno', d: 'Bruno espera en el camino del Bosque de la Frontera y habla del Rey traidor; al terminar la charla, de noche, sigue la emboscada.',
       h: { step: 8, flags: con(CAP2, { c3: 1 }) }, ir: 'bosque_de_la_frontera', z: 'ed_bosque_de_la_frontera.main', luego: hablar('bruno_c3', 2200) },
-    { c: 'Capítulo 3', n: 'La emboscada y el ritual del monolito', d: 'De noche junto al fogón: los caballeros negros de Gaspar voltean a los soldados; se pelea con Bruno hasta caer (32 s), quedan atados y el ritual: el portal se lleva a Elia, la columna de luz, el rojo, los portales y las tres oleadas.',
+    { c: 'Capítulo 3', n: 'La emboscada y el ritual del monolito', d: 'De noche junto al fogón: los caballeros negros de Gaspar salen de las carpas y voltean a los soldados; se pelea con Bruno hasta caer (32 s) mientras los soldados de la cuarentena pelean y caen; atados, el ritual: la verde, la roja y la gema de la corona se juntan, el monolito despierta (cinco latidos), el portal se lleva a Elia, la columna de luz, el claro en llamas y las tres oleadas desde portales del campamento.',
       h: { step: 8, flags: con(CAP2, { c3: 2 }) }, ir: 'bosque_de_la_frontera', z: 'ed_bosque_de_la_frontera.main', noche: true },
     { c: 'Capítulo 3', n: 'El reino en llamas: San Roque (el primero)', d: 'Gromm, los demonios y 20 vecinos que corren a las casas: hay que salvar 15; con 6 muertos el lugar empieza de nuevo.',
       h: { step: 8, flags: con(CAP2, { c3: 3, infierno: true }) }, ir: 'san_roque', z: 'ed_san_roque.main' },
-    { c: 'Capítulo 3', n: 'El reino en llamas: el Camino al Castillo', d: 'Con San Roque limpio: los soldados de Bruno pelean por todo el camino (la cámara lo recorre) y sale Fauces.',
+    { c: 'Capítulo 3', n: 'El reino en llamas: el Camino al Castillo', d: 'Con San Roque limpio: cada soldado de Bruno sale a pelear con un demonio (la cámara lo recorre), tres caballeros negros pelean frente al portón (alzado) y Fauces sale en el cruce de abajo.',
       h: { step: 8, flags: con(CAP2, { c3: 3, infierno: true, inf: { 'ed_san_roque.main': { g: [], m: [], s: 20, x: 0, ok: true } } }) }, ir: 'camino_al_castillo', z: 'ed_camino_al_castillo.main' },
     { c: 'Capítulo 3', n: 'El reino en llamas: la Aldea', d: 'Con San Roque y el Camino limpios: Seravel, los demonios y los 20 vecinos.',
       h: { step: 8, flags: con(CAP2, { c3: 3, infierno: true, inf: { 'ed_san_roque.main': { g: [], m: [], s: 20, x: 0, ok: true }, 'ed_camino_al_castillo.main': { g: [], m: [], s: 0, x: 0, ok: true } } }) }, ir: '_aldea', z: 'village' },
     { c: 'Capítulo 3', n: 'El reino en llamas: los Campos (el último)', d: 'Con los otros tres limpios: Taurax, el último jefe, y los 20 vecinos. Al terminar, el portón del castillo se abre.',
       h: { step: 8, flags: con(CAP2, { c3: 3, infierno: true, inf: { 'ed_san_roque.main': { g: [], m: [], s: 20, x: 0, ok: true }, 'ed_camino_al_castillo.main': { g: [], m: [], s: 0, x: 0, ok: true }, village: { g: [], m: [], s: 20, x: 0, ok: true } } }) }, ir: 'campos_del_roble', z: 'ed_campos_del_roble.main' },
-    { c: 'Capítulo 3', n: 'El castillo infestado (el patio)', d: 'El portón abierto: el patio, el jardín, la muralla y el patio de armas tienen demonios (cartel "CASTILLO n/4"); la herrería y la cocina, trancadas.',
+    { c: 'Capítulo 3', n: 'El castillo infestado (el patio)', d: 'El portón abierto: el patio, el jardín, la muralla y el patio de armas tienen demonios (cartel "CASTILLO n/4"); la primera vez, la gente del patio corre a la cocina y a la herrería, que quedan trancadas; los lanceros de la escalinata bajan a pelear.',
       h: { step: 8, flags: con(CAP2, { c3: 4, infierno: true, inf: INF_LIMPIO }) }, ir: '@castle:courtyard', z: 'castle.courtyard' },
     { c: 'Capítulo 3', n: 'El Gran Salón: Gaspar y Morvane', d: 'Los caballeros negros caídos, Gaspar pide ayuda, Morvane y su escolta; al vencerlos se elige: derrotarlo de un golpe o dejarlo ir humillado.',
       h: { step: 8, flags: con(CAP2, { c3: 5, infierno: true, inf: INF_LIMPIO, castillo: CASTILLO_LIMPIO }) }, ir: 'salon_del_trono_3', z: 'ed_salon_del_trono_3.main' },
@@ -137,7 +140,12 @@
     { c: 'Capítulo 3', n: 'La Mazmorra del Sello: Malakar', d: 'En la arena del Sello: la luz late, Elia grita en su domo y aparece Malakar, el Brujo del Sello.',
       h: { step: 8, flags: con(CAP2, { c3: 8, infierno: true, mz: { llego: 1, portalCerrado: 1, reja: 1 } }) }, ir: 'mazmorra_sello', z: 'ed_mazmorra_sello.main', luego: alSello },
     { c: 'Capítulo 3', n: 'La Mazmorra del Sello: Azrath en el Abismo', d: 'Con Malakar vencido: un destello y Azrath, el Rey Demonio, en una isla de roca en medio de un mar de lava.',
-      h: { step: 8, flags: con(CAP2, { c3: 8, infierno: true, mz: { llego: 1, portalCerrado: 1, reja: 1, brujo: 1 } }) }, ir: 'mazmorra_sello', z: 'ed_mazmorra_sello.main', luego: alSello }
+      h: { step: 8, flags: con(CAP2, { c3: 8, infierno: true, mz: { llego: 1, portalCerrado: 1, reja: 1, brujo: 1 } }) }, ir: 'mazmorra_sello', z: 'ed_mazmorra_sello.main', luego: alSello },
+    // (24/11, v8) el final del juego (ck_final.js)
+    { c: 'Final', n: 'El final: la vuelta con Elia', d: 'Con Azrath vencido, de vuelta por el portal de Oswin: Elia sale detrás, Bruno los recibe en el portón y Elia pide a su padre en el Gran Salón.',
+      h: { step: 8, flags: con(CAP2, { c3: 8, infierno: true, inf: INF_LIMPIO, castillo: CASTILLO_LIMPIO, gaspar_fin: 'perdonado', cristales: { rojo: true, entregados: true, portal: true }, mz: { llego: 1, reja: 1, brujo: 1, demonio: 1, final: 1 } }) }, ir: 'camino_al_castillo', z: 'ed_camino_al_castillo.main' },
+    { c: 'Final', n: 'El final: el juicio del Rey y el FIN', d: 'En el Gran Salón: traen al Rey, Elia lo destierra, Bruno grita por la reina, el héroe es nombrado Caballero de Valcairn; el epílogo y la pantalla de FIN con los créditos.',
+      h: { step: 8, flags: con(CAP2, { c3: 9, infierno: true, inf: INF_LIMPIO, castillo: CASTILLO_LIMPIO, gaspar_fin: 'derrotado', cristales: { rojo: true, entregados: true, portal: true }, mz: { llego: 1, reja: 1, brujo: 1, demonio: 1, final: 1 } }) }, ir: 'salon_del_trono_3', z: 'ed_salon_del_trono_3.main' }
   ];
 
   // ------------------------------------------------------------------ probar

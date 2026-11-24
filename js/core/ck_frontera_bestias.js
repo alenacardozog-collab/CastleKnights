@@ -4,6 +4,11 @@
      élite 1,62. El cuerpo de choque queda del tamaño de antes, así pasan por los mismos lugares.
    - Bestias de los orcos hechas con PixelLab (ck_frontera_bestias_arte.js): huargos y jabalíes de guerra, que salen en la
      Frontera Orca junto a los orcos. Gorak y los orcos quietos de los mapas también se agrandan.
+   (23/11, v5, notas del dueño del 23/11, 10 y 11: "los caballeros negros no llegan desde la parte orca sino spawnean desde
+   dentro del campamento"; "los demonios empiezan a spawnear desde los portales, no desde el lado orco") la regla de abajo
+   (ninguna bestia del lado humano de la empalizada) corría también a los caballeros negros de la emboscada y a los demonios
+   del Capítulo 3: nacían en el campamento y aparecían de golpe amontonados en el portón, como si llegaran del lado orco.
+   Ellos ya no cuentan: los caballeros negros de Gaspar ("mercenario") y los demonios ("demonio_…") se quedan donde nacen.
    Borrar las 2 líneas de index.html lo deshace. */
 (function () {
   if (typeof MainGameScene === 'undefined' || typeof ENEMY_TYPES === 'undefined') return;
@@ -55,6 +60,7 @@
   // la que aparece ahí (refuerzos del cuerno, bestias que llegan corriendo) se corre al lado orco, y la que cruza por el portón
   // persiguiendo al héroe vuelve a su lado. Los murciélagos vuelan y no cuentan.
   const LIMITE_X = 1048, VUELA = /^(bat|fantasma|ghost|wisp|cuervo)$/;
+  const DEL_REINO = /^(mercenario|demonio_)/;      // (v5) los de la historia del Capítulo 3: invaden el lado humano
   const enBosque = S => S.currentZoneKey && S.currentZoneKey() === ZB && S.currentInterior && S.currentInterior.area;
   // (13/11, v4) las que nacían del lado humano se amontonaban todas contra la empalizada (x 1110-1135) y las que cruzaban
   // persiguiendo al héroe volvían de golpe: ahora se reparten al azar por el lado orco (en un lugar caminable) y en el límite
@@ -63,7 +69,7 @@
   const sp0 = P.spawnEnemy;
   P.spawnEnemy = function (x, y, tipo) {
     try {
-      if (enBosque(this) && !VUELA.test(tipo)) {
+      if (enBosque(this) && !VUELA.test(tipo) && !DEL_REINO.test(tipo || '')) {
         const a = this.currentInterior.area, lim = a.x + LIMITE_X;
         if (x < lim + 10) {
           x = Math.min(a.x + a.w - 40, lim + REPARTO[0] + Math.random() * (REPARTO[1] - REPARTO[0]));
@@ -84,7 +90,7 @@
       if (!enBosque(this) || !this.enemies) return r;
       const a = this.currentInterior.area, lim = a.x + LIMITE_X + 4;
       this.enemies.getChildren().forEach(e => {
-        if (!e.active || e.isDead || VUELA.test(e.type) || !e.body || e.x >= lim) return;
+        if (!e.active || e.isDead || VUELA.test(e.type) || DEL_REINO.test(e.type || '') || !e.body || e.x >= lim) return;
         if (e.x < lim - 60) { e.body.reset(lim + 30, e.y); e.body.setVelocity(0, 0); }   // (las que nacieron mal de alguna otra forma)
         else { e.body.reset(lim, e.y); if (e.body.velocity.x < 0) e.body.setVelocityX(0); }
         if (e.home) { e.home.x = Math.max(e.home.x, lim + 60); }

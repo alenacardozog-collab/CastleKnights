@@ -3,7 +3,9 @@
    - CK_ESCENA.correr(S, async () => {...}): franjas negras arriba y abajo, el HUD se esconde, el héroe no se mueve ni pelea.
    - actor / caminar / globo / dialogo / camara / esperar: piezas para armar la escena.
    - globo(): un globito chico sobre la cabeza (no los carteles grandes que el dueño sacó en ck_sin_carteles.js).
-   No cambia nada por sí solo: lo usan ck_intro.js, ck_gente.js y ck_heroes_npc.js. Borrar su línea apaga esos tres. */
+   No cambia nada por sí solo: lo usan ck_intro.js, ck_gente.js y ck_heroes_npc.js. Borrar su línea apaga esos tres.
+   (23/11, v4) El seguro de los 90 s ya no cuenta el tiempo con un diálogo abierto (las escenas largas no se cortan si se lee
+   despacio). */
 (function () {
   if (typeof MainGameScene === 'undefined') return;
   const P = MainGameScene.prototype;
@@ -143,8 +145,12 @@ body.ck-escena #ck-prompt, body.ck-escena #ck-ayuda, body.ck-escena #ck-nota { o
     let iv;
     const cambio = new Promise(r => { iv = setInterval(() => { if (S.currentZoneKey && S.currentZoneKey() !== z0) r(); }, 250); });
     let completa = false;
-    try { await Promise.race([fn().then(() => { completa = true; }), cambio, new Promise(r => setTimeout(r, 90000))]); } catch (e) { console.warn('[escena]', e); }
-    clearInterval(iv);
+    // (23/11, v4) los 90 s cuentan sólo mientras no hay un diálogo abierto: una escena larga que alguien lee despacio (el
+    // ritual del monolito del Capítulo 3) ya no se corta en la mitad
+    let iv2, quieto = 0;
+    const seguro = new Promise(r => { iv2 = setInterval(() => { if (!(S.dialogOpen && S._dlg)) quieto += 250; if (quieto >= 90000) r(); }, 250); });
+    try { await Promise.race([fn().then(() => { completa = true; }), cambio, seguro]); } catch (e) { console.warn('[escena]', e); }
+    clearInterval(iv); clearInterval(iv2);
     franjas(false);
     document.body.classList.remove('ck-escena');
     if (S.dialogOpen && S._dlg) { /* el diálogo se cierra solo */ }

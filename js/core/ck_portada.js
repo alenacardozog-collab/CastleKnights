@@ -11,6 +11,8 @@
    "Seleccioná tu héroe" va en la misma letra gótica, crema dorada con contorno, bien legible; el subtítulo sin el doble.
    (17/11, pedido del dueño) El reino se llama VALCAIRN: el título de la portada dice "Valcairn", con la misma letra, el
    mismo oro y la misma animación; la V, un 20 % más grande que el resto (la capitular).
+   (24/11, v6, para publicar) Sin el subtítulo "✦ Capítulo 1 — La niebla del norte ✦" debajo del título: el juego ya tiene
+   el prólogo, los tres capítulos y el final.
    Borrar la línea de index.html deja todo como antes. */
 (function () {
   const ov = document.getElementById('start-menu-overlay');
@@ -126,7 +128,7 @@ body.ck-ui2 #hero-selection-modal #hero-modal-subtitle { color: #ead9b4 !importa
     t.setAttribute('aria-label', TITULO);
     // la primera letra lleva .cap (más grande); el brillo repite el mismo tamaño para cruzar justo por encima de las letras
     t.innerHTML = '<span class="pal">' + [...TITULO].map((c, i) => `<span class="l${i ? '' : ' cap'}" style="--i:${i}">${c}</span>`).join('') +
-      `<span class="brillo" aria-hidden="true"><span class="cap">${TITULO.charAt(0)}</span>${TITULO.slice(1)}</span></span><span class="sub">✦ Capítulo 1 — La niebla del norte ✦</span>`;
+      `<span class="brillo" aria-hidden="true"><span class="cap">${TITULO.charAt(0)}</span>${TITULO.slice(1)}</span></span>`;   // (24/11, v6) sin el subtítulo "Capítulo 1 — La niebla del norte": el juego ya tiene los tres capítulos y el final
     logo.insertBefore(t, logo.querySelector('.sm-logo-flash') || logo.firstChild);
     // la letra gótica tiene que estar cargada antes de que caigan las letras (si tarda, arrancan igual)
     if (document.fonts && document.fonts.load) {

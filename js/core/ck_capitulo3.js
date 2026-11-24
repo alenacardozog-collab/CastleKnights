@@ -45,6 +45,18 @@
      persiguen: el que cae pide ayuda (T lo levanta) y si nadie llega se muere. Hay que salvar al menos 15: si se mueren
      6, se pierde y el lugar empieza de nuevo. El Claro del Monolito y el Norte del Roble ya no son lugares a limpiar.
    - Con los cuatro limpios, el portón del castillo se abre (la segunda parte, ck_capitulo3_castillo.js).
+   (23/11, v9, notas del dueño del 23/11, tanda 11b: 7, 8, 10 y 11 de notas_para_corregir (6).json)
+   - La emboscada: los caballeros negros salen de ADENTRO del campamento (de al lado de las carpas), nunca del lado de la
+     empalizada; los refuerzos salen de las carpas que quedan cerca del héroe. Los soldados del campamento de la cuarentena
+     (el cabo, el arquero del portón y el del fogón) pelean contra ellos y caen; al rendirse Bruno ya no queda ninguno en pie
+     y desde ahí quedan caídos (flags.c3_este).
+   - El ritual: la cámara se acerca al monolito y son TRES piedras: la verde, la roja y la gema de la corona del Rey (la
+     sangre de su casa); giran, se juntan en una sola y la piedra entra al monolito, que tarda más en despertar (cinco latidos),
+     siempre de noche.
+   - La pelea del claro: los demonios salen sólo de portales que se abren en el campamento y el claro (antes, alrededor del
+     héroe, aunque estuviera junto a la empalizada); en el bosque, en el Capítulo 3, no aparece nada más (ni bestias ni orcos).
+   - Desde el despertar el claro queda rojo y en caos para siempre (las carpas y la cabaña arden, el haz del monolito,
+     brasas y meteoritos), también en la pelea.
    Va después de ck_capitulo2.js, ck_coliseo_historia.js, ck_consejero.js, ck_monolito.js, ck_fuegos_vivos.js v3 y
    ck_ambiente_mapas.js v2. Borrar su línea de index.html lo saca (el Capítulo 2 vuelve a cerrar como antes). */
 (function () {
@@ -72,7 +84,14 @@
     fogon: { x: 430, y: 392 }, unidades: [['templar', 378, 410], ['lancer', 452, 420], ['axeman', 506, 398], ['archer', 548, 376], ['templar', 476, 356]],
     mercs: [[300, 470], [350, 500], [430, 510], [520, 500], [580, 470], [250, 440]], sur: { x: 610, y: 400 },
     cautivos: { heroe: { x: 306, y: 398 }, bruno: { x: 336, y: 400 }, guardias: [[282, 404], [362, 404]] }, rey: { x: 298, y: 356 },
-    escondite: { x: 330, y: 262 }, brunoEsc: { x: 358, y: 270 } };
+    escondite: { x: 330, y: 262 }, brunoEsc: { x: 358, y: 270 },
+    // (v9, nota 11: "los caballeros negros no llegan desde la parte orca sino spawnean desde dentro del campamento") al lado de
+    // las carpas: las del campamento de Bruno y las de la cuarentena (de x 760 para la derecha)
+    carpas: [[330, 330], [425, 284], [520, 520], [442, 556], [820, 300], [884, 316], [1000, 342], [850, 240]], este: 760,
+    // (v9, nota 10: "los demonios empiezan a spawnear desde los portales, no desde el lado orco… todo pasa en el campamento")
+    portales: [[300, 300], [250, 380], [220, 440], [120, 400], [420, 470], [540, 410], [600, 420]],
+    // (v9, nota 7: "a partir de acá todo queda rojo y en caos") lo que arde: las carpas y el techo de la cabaña [x, y, tamaño, profundidad]
+    fuegos: [[392, 300, 1.2, 352], [418, 318, 1, 352], [476, 252, 1.1, 275], [440, 500, 1.2, 545], [466, 522, 1, 545], [270, 470, 1.3, 520], [302, 456, 1, 520]] };
 
   // ================================================================== 1. LOS DEMONIOS
   const DEM = {
@@ -112,6 +131,9 @@
     });
     cristal('ckc3_cristal_verde', '#eafff0', '#3ad07a', '#126a3a');
     cristal('ckc3_cristal_rojo', '#ffe4dc', '#e8402c', '#7a1410');
+    // (v9, nota 8) la gema de la corona (la sangre de la casa real) y la piedra que sale de juntar las tres
+    cristal('ckc3_cristal_corona', '#fff8dc', '#f0b42a', '#8a4a08');
+    cristal('ckc3_cristal_unido', '#ffffff', '#ff4a6a', '#5a0a2a');
     hacer('ckc3_portal', 96, 96, (g, w, h) => {
       const r = g.createRadialGradient(48, 48, 2, 48, 48, 48);
       r.addColorStop(0, 'rgba(20,0,0,1)'); r.addColorStop(0.45, 'rgba(120,8,6,0.95)'); r.addColorStop(0.75, 'rgba(255,70,30,0.9)'); r.addColorStop(1, 'rgba(255,90,40,0)');
@@ -275,6 +297,9 @@
     b.setFlipX(true);
     if (n === 2 || n === 3) b.setPosition(area(S).x + CAMPO.fogon.x + 26, area(S).y + CAMPO.fogon.y);
     if (n >= 4) b.setVisible(false).setActive(false);   // ya está en el portón
+    // (v9) los soldados de la cuarentena, caídos desde la emboscada; y el claro en llamas desde el despertar del monolito
+    if (n >= 3 || (n === 2 && fl(S.story).c3_este)) esteCaidos(S);
+    if (n >= 2 && infierno(S.story)) fuegosClaro(S, false);
     // (v8) sus hombres junto al fogón: en pie hasta la emboscada; después, caídos
     S._c3Unidades = CAMPO.unidades.map(([t, x, y], i) => {
       const u = guardia(S, t, x, y); u.setFlipX(i % 2 === 1);
@@ -311,8 +336,8 @@
   const cristalVuela = (S, color, de, x, y) => new Promise(r => {
     const a = area(S), k = 'ckc3_cristal_' + color;
     const c = S.add.image(de.x, de.y - 30, k).setScale(1.4).setDepth(27540); obj(S).push(c);
-    (S._c3Luces = S._c3Luces || []).push({ o: c, c: color === 'verde' ? [80, 255, 140] : [255, 70, 50], r: 40, f: 0.9 });
-    sonar('heal', 0.4, { rate: color === 'verde' ? 0.8 : 0.6 });
+    (S._c3Luces = S._c3Luces || []).push({ o: c, c: color === 'verde' ? [80, 255, 140] : color === 'corona' ? [255, 210, 90] : [255, 70, 50], r: 40, f: 0.9 });
+    sonar('heal', 0.4, { rate: color === 'verde' ? 0.8 : color === 'corona' ? 1 : 0.6 });
     S.tweens.add({ targets: c, x: a.x + x, y: a.y + y, duration: 1100, ease: 'Sine.easeInOut', onComplete: () => { sonar('book_clasp', 0.4); r(c); } });
   });
   const rayo = (S, tx, ty) => {
@@ -363,6 +388,128 @@
   /** Un efecto de pixelfx suelto (CK_VFX.fx), sumado a la lista de la escena. */
   const efecto = (S, k, x, y, o) => { const vx = VX(); const s = vx && vx.fx(S, k, x, y, o); if (s) obj(S).push(s); return s; };
 
+  // ---------- (v9, nota 11) de adentro del campamento: aparecen al lado de una carpa, como saliendo de ella, con un poco de polvo
+  const polvo = (S, x, y) => {
+    for (let i = 0; i < 6; i++) {
+      const c = S.add.circle(x + R(-8, 8), y + R(-3, 3), R(3, 6), 0x9a8a78, 0.55).setDepth(y + 1); obj(S).push(c);
+      S.tweens.add({ targets: c, x: c.x + R(-14, 14), y: c.y - R(4, 12), alpha: 0, scale: R(1.5, 2.4), duration: R(450, 750), onComplete: () => c.destroy() });
+    }
+  };
+  const asomar = (S, sp) => { if (!sp || !sp.active) return sp; sp.setAlpha(0); S.tweens.add({ targets: sp, alpha: 1, duration: 420 }); polvo(S, sp.x, sp.y); return sp; };
+  /** Lugares al lado de las carpas (del mundo) para los refuerzos: los que quedan a 110–460 del héroe (si no hay, los más cerca). */
+  const carpasCerca = (S, n) => {
+    const a = area(S), p = pies(S);
+    const l = CAMPO.carpas.map(([x, y]) => ({ x: a.x + x, y: a.y + y, d: Math.hypot(a.x + x - p.x, a.y + y - p.y) }));
+    let ok = l.filter(q => q.d > 110 && q.d < 460);
+    if (!ok.length) ok = l.slice().sort((u, v) => u.d - v.d).filter(q => q.d > 60).slice(0, 3);
+    return Phaser.Utils.Array.Shuffle(ok).slice(0, n || 2);
+  };
+  // ---------- (v9, nota 11: "luego estos npc también pelean y pierden, los aliados digo") los soldados de la cuarentena
+  // (ck_cuarentena.js: el cabo y el arquero del portón, el arquero del fogón) pasan a pelear como los guardias del castillo
+  // (con su vida, golpes y caídas) y el que cae no se levanta más
+  const esEste = (S, o) => o && o.active && o.type === 'Sprite' && o.texture && /^g_(templar|archer)_idle$/.test(o.texture.key) &&
+    o.x - area(S).x > CAMPO.este && o.x - area(S).x < 1045;
+  const tirado = (S, sp) => {
+    if (!sp || !sp.active) return;
+    const base = String(sp.texture.key).replace(/_(idle|walk2?|attack\d*|hurt|death|block|rise)$/, ''), k = base + '_death';
+    if (S.textures.exists(k)) { sp.anims.stop(); sp.setTexture(k, Math.max(0, S.textures.get(k).frameTotal - 2)); }
+    sp.setTint(0xb8bcc6);
+  };
+  const soldadosEste = S => {
+    const A = S.currentInterior && S.currentInterior.area; if (!A) return [];
+    A.actors = A.actors || [];
+    const nuevos = [];
+    (S._ckCuar || []).filter(o => esEste(S, o)).forEach(sp => {
+      if (A.actors.some(t => t.sprite === sp)) return;
+      const base = sp.texture.key.replace(/_idle$/, '');
+      // el cuerpo fijo que ck_cuarentena.js le pone a los pies: afuera (si no, queda un bloque invisible donde estaba parado)
+      (S._ckCuar || []).forEach(z => {
+        if (z && z.type === 'Zone' && z.body && z.body.enable && Math.hypot(z.x - sp.x, z.y - (sp.y - 4)) < 14) { z.body.enable = false; try { S.interiorObstacles && S.interiorObstacles.remove(z); } catch (e) {} }
+      });
+      const t = { type: 'walker', sprite: sp, pts: [[sp.x, sp.y, 600000]], i: 0, wait: 600000, speed: 30, idle: base + '_idle', walk: base + '_walk',
+        lines: null, talkAt: 0, moving: false, role: base === 'g_archer' ? 'archer' : 'guard', hp: 4, maxHp: 4, _c3Sold: true, _c3Este: true };
+      A.actors.push(t); nuevos.push(t);
+    });
+    S._navGrid = null; S._navGrids = {};
+    return nuevos;
+  };
+  /** Los que cayeron quedan caídos (todos = también los que siguen en pie: Bruno se rinde y ya no queda nadie). */
+  const caenEste = (S, todos) => {
+    const A = S.currentInterior && S.currentInterior.area; if (!A || !A.actors) return;
+    A.actors.forEach(t => {
+      if (!t._c3Este || (!t.down && !todos)) return;
+      if (!t.down) { t.down = true; t.fight = null; t.moving = false; tirado(S, t.sprite); }
+      t.downUntil = Infinity;
+    });
+  };
+  const vivosEste = S => { const A = S.currentInterior && S.currentInterior.area; return A && A.actors ? A.actors.filter(t => t._c3Este && !t.down && t.sprite && t.sprite.active).length : 0; };
+  /** Al volver al bosque después de la emboscada: los soldados de la cuarentena, caídos. */
+  const esteCaidos = S => { (S._ckCuar || []).forEach(o => { if (esEste(S, o)) tirado(S, o); }); };
+  // el cabo y el arquero del fogón, caídos: ya no se les habla
+  if (typeof STORY_NPCS !== 'undefined') ['cabo_cuarentena', 'soldado_campo_0'].forEach(id => {
+    const n = STORY_NPCS.find(q => q.id === id); if (!n) return;
+    const d = Object.getOwnPropertyDescriptor(n, 'zone'), z0 = d && d.get ? d.get : () => d && d.value;
+    Object.defineProperty(n, 'zone', { configurable: true, get() {
+      const S = window.activeGameScene, s = S && S._gameMode === 'campaign' && S.story;
+      return s && (c3(s) >= 3 || (c3(s) === 2 && fl(s).c3_este)) ? '-' : z0.call(n);
+    } });
+  });
+  // ---------- (v9, nota 8) las tres piedras giran alrededor de (cx, cy) del mundo, cada vez más rápido y más cerca, y se
+  // juntan en una sola, más grande (la devuelve)
+  const juntar = (S, cs, cx, cy) => new Promise(r => {
+    const vivos = cs.filter(c => c && c.active);
+    if (!vivos.length) return r(null);
+    const a0 = vivos.map(c => Math.atan2(c.y - cy, c.x - cx)), r0 = vivos.map(c => Math.max(16, Math.hypot(c.x - cx, c.y - cy)));
+    const tinte = c => (c.texture.key === 'ckc3_cristal_verde' ? 0x7dffa8 : c.texture.key === 'ckc3_cristal_corona' ? 0xffd870 : 0xff6a50);
+    const o = { t: 0 }; let n = 0;
+    sonar('ck_portal_abre', 0.35, { rate: 1.6 });
+    S.tweens.add({ targets: o, t: 1, duration: 2800, ease: 'Sine.easeIn',
+      onUpdate: () => {
+        vivos.forEach((c, i) => {
+          const an = a0[i] + o.t * o.t * Math.PI * 5, rr = r0[i] * (1 - o.t * 0.94);
+          c.setPosition(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr * 0.7).setScale(1.4 + o.t * 0.5);
+        });
+        if (++n % 3) return;
+        vivos.forEach(c => {
+          const s = S.add.image(c.x, c.y, 'ckc3_brasa').setDepth(27539).setBlendMode(Phaser.BlendModes.ADD).setTint(tinte(c)).setScale(1.4); obj(S).push(s);
+          S.tweens.add({ targets: s, alpha: 0, scale: 0.3, duration: 420, onComplete: () => s.destroy() });
+        });
+      },
+      onComplete: () => {
+        vivos.forEach(c => { S._c3Luces = (S._c3Luces || []).filter(l => l.o !== c); c.destroy(); });
+        S.cameras.main.flash(220, 255, 230, 210);
+        if (window.CK_LUZ && window.CK_LUZ.destello) window.CK_LUZ.destello([255, 200, 220], 0.5, 300);
+        sonar('book_clasp', 0.6, { rate: 0.7 }); sonar('heal', 0.5, { rate: 0.5 });
+        const u = S.add.image(cx, cy, 'ckc3_cristal_unido').setScale(0.4).setDepth(27541); obj(S).push(u);
+        (S._c3Luces = S._c3Luces || []).push({ o: u, c: [255, 120, 160], r: 60, f: 1 });
+        S.tweens.add({ targets: u, scale: 2.4, duration: 520, ease: 'Back.easeOut', onComplete: () => r(u) });
+      } });
+  });
+  // ---------- (v9, nota 7: "a partir de acá todo queda rojo y en caos") el claro en llamas: arden las carpas y el techo de
+  // la cabaña, y el haz del monolito sigue latiendo (crecer: los fuegos se prenden de a uno, en el momento del despertar)
+  const fuegosClaro = (S, crecer) => {
+    if (zonaDe(S) !== Z.bosque || !S.currentInterior || (S._c3FuegosClaro || []).some(s => s && s.active)) return;
+    texturas(S);
+    const a = area(S), L = LLAMA(), FV = window.CK_FUEGOS_VIVOS;
+    // la llama se carga la primera vez que hace falta (ck_fuegos_vivos.js): después se vuelve a probar
+    if (!S.textures.exists(L) && FV && FV.cargar && !S._c3FuegoEspera) { S._c3FuegoEspera = true; const z = zonaDe(S); FV.cargar(S).then(ok => { S._c3FuegoEspera = false; if (ok && zonaDe(S) === z) fuegosClaro(S, crecer); }); }
+    if (S.textures.exists(L)) S._c3FuegosClaro = CAMPO.fuegos.map(([x, y, k, d], i) => {
+      const s = S.add.sprite(a.x + x, a.y + y, L).setOrigin(0.5, 1).setDepth(a.y + d);
+      if (S.anims.exists(L)) { s.play({ key: L, startFrame: Math.floor(R(0, 7)) }); s.anims.timeScale = R(0.85, 1.15); }
+      obj(S).push(s);
+      (S._c3Luces = S._c3Luces || []).push({ o: s, c: [255, 120, 44], r: 46 + 26 * k, f: 0.85 });
+      if (crecer) {
+        s.setScale(0);
+        S.time.delayedCall(400 + i * R(250, 500), () => { if (!s.active) return; S.tweens.add({ targets: s, scale: k, duration: 600, ease: 'Back.easeOut' }); sonar('fire_hit', 0.3, { rate: R(0.7, 0.9) }); });
+      } else s.setScale(k);
+      return s;
+    });
+    if (!S._c3Haz || !S._c3Haz.active) {
+      const haz = S._c3Haz = S.add.image(a.x + MONO.x, a.y + MONO.y - 30, 'ckc3_haz').setOrigin(0.5, 1).setDisplaySize(40, 640).setDepth(27530).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.8);
+      obj(S).push(haz);
+    }
+  };
+
   // ---------- 8a. la emboscada: los caballeros negros de Gaspar voltean a los hombres de Bruno
   const emboscada = async S => {
     const e = E(); if (!e || S._c3Ritual || zonaDe(S) !== Z.bosque) return;
@@ -372,6 +519,8 @@
     S.dayClock = NOCHE;
     let bruno = S._c3Bruno;
     if (!bruno || !bruno.active) bruno = S._c3Bruno = guardia(S, 'knight', CAMPO.fogon.x + 30, CAMPO.fogon.y);
+    // (v9) si quedaba alguna bestia de antes en el bosque, se va: esta noche sólo están los de Gaspar
+    (S.enemies ? S.enemies.getChildren() : []).filter(m => m && m.active && !m.isDead && !m._c3Merc && !esDemonio(m)).forEach(m => { try { if (m.hpBar) m.hpBar.destroy(); m.destroy(); } catch (er) {} });
     const unidades = (S._c3Unidades || []).filter(u => u.active);
     let mercs = [];
     const ok = await e.correr(S, async () => {
@@ -383,8 +532,12 @@
       sonar('ck_paso_armadura', 0.6);
       if (unidades[0]) e.globo(S, unidades[0], '¿Oyeron eso?', 1500);
       await e.esperar(1000);
-      mercs = CAMPO.mercs.map(([x, y]) => merc(S, x, y));
-      await e.camara(S, CAMPO.fogon.x, CAMPO.fogon.y + 60, 700);
+      // (v9, nota 11) salen de al lado de las carpas del campamento (antes aparecían en el camino, del lado de afuera)
+      const salidas = CAMPO.carpas.filter(([x]) => x < CAMPO.este);
+      await e.camara(S, CAMPO.fogon.x, CAMPO.fogon.y + 10, 700);
+      mercs = CAMPO.mercs.map((q, i) => { const c = salidas[i % salidas.length]; return asomar(S, merc(S, c[0] + R(-10, 10), c[1] + R(-4, 4))); });
+      sonar('ck_paso_armadura', 0.5, { rate: 0.9 });
+      await e.esperar(600);
       await e.dialogo(S, 'Mercenario', ['Por orden de Sir Gaspar: del Capitán Bruno no queda nadie en pie.'], 'mercenario_idle');
       // cada uno va por un soldado y lo voltea
       await Promise.all(unidades.map((u, i) => (async () => {
@@ -417,14 +570,19 @@
     const a = area(S);
     S._c3Emb = { t0: S.time.now, fin: false, dijo: false };
     if (window.CK_MUSICA_MOMENTOS) window.CK_MUSICA_MOMENTOS.fijar(S, 'boss');
-    const traer = (x, y) => {
+    const traer = (x, y, sale) => {
       const m = S.spawnEnemy(x, y, ENEMY_TYPES.mercenario ? 'mercenario' : 'orc');
-      if (!m) return;
+      if (!m) return null;
       m.zone = Z.bosque; m._c3Merc = true; m._ckSinSusto = true; m._ckAullo = true; m._ckLlamadas = true;
+      if (sale) asomar(S, m);                                   // (v9) sale de al lado de una carpa
       S.time.delayedCall(150, () => m.active && S.alertEnemy && S.alertEnemy(m));
+      return m;
     };
     pos.forEach(([x, y]) => traer(x, y));
     S._c3Emb.traer = traer;
+    // (v9, nota 11) los soldados de la cuarentena pelean (y caen); dos caballeros negros salen de las carpas de allá
+    soldadosEste(S);
+    CAMPO.carpas.filter(([x]) => x >= CAMPO.este).slice(0, 2).forEach(([x, y]) => traer(a.x + x, a.y + y, true));
     S.showZoneTitle('¡Emboscada!', 'Los caballeros negros de Sir Gaspar');
   };
   const vivosMerc = S => (S.enemies ? S.enemies.getChildren().filter(m => m.active && !m.isDead && m._c3Merc).length : 0);
@@ -432,10 +590,18 @@
     const D = S._c3Emb; if (!D || D.fin) return;
     const t = S.time.now - D.t0, a = area(S);
     if (zonaDe(S) !== Z.bosque) { S._c3Emb = null; return; }
-    // siempre llegan más (de a dos, desde el sur)
+    // siempre llegan más, de a dos (v9, nota 11: salen de al lado de las carpas cerca del héroe; antes, del camino del sur,
+    // y se iban juntando en el portón de la empalizada, como si vinieran del lado orco)
     if (vivosMerc(S) < 4 && (!D.prox || S.time.now > D.prox)) {
       D.prox = S.time.now + 2200;
-      [[-30, 0], [30, 10]].forEach(([dx, dy]) => D.traer(a.x + CAMPO.sur.x + dx + R(-20, 20), a.y + CAMPO.sur.y + dy));
+      carpasCerca(S, 2).forEach(q => D.traer(q.x + R(-8, 8), q.y + R(-4, 4), true));
+    }
+    // y mientras quede un soldado de la cuarentena en pie, allá siempre hay con quién pelear (los soldados pierden)
+    caenEste(S, false);
+    if (vivosEste(S) && (!D.proxEste || S.time.now > D.proxEste)) {
+      D.proxEste = S.time.now + 3000;
+      const alla = (S.enemies ? S.enemies.getChildren() : []).filter(m => m.active && !m.isDead && m._c3Merc && m.x - a.x >= CAMPO.este).length;
+      if (alla < 2) { const q = UNO(CAMPO.carpas.filter(([x]) => x >= CAMPO.este)); D.traer(a.x + q[0], a.y + q[1], true); }
     }
     if (!D.dijo && t > 14000) { D.dijo = true; if (S._c3Bruno && E()) E().globo(S, S._c3Bruno, '¡Son demasiados! ¡No paran de llegar!', 2200); }
     if (t > 32000) derrota(S);
@@ -462,6 +628,8 @@
       await e.dialogo(S, 'Mercenario', ['Sir Gaspar los quiere vivos para lo que viene esta noche.', 'Que miren. Y que aprendan a quién sirven.'], 'mercenario_idle');
       S.cameras.main.fadeOut(500, 0, 0, 0);
       await e.esperar(650);
+      // (v9, nota 11) de los soldados de la cuarentena ya no queda ninguno en pie, y quedan caídos
+      caenEste(S, true); fl(S.story).c3_este = true; S.saveStory();
       (S.enemies ? S.enemies.getChildren() : []).filter(m => m.active && m._c3Merc).forEach(m => { try { if (m.hpBar) m.hpBar.destroy(); m.destroy(); } catch (er) {} });
       S.tweens.killTweensOf(S.player); S.player.setAngle(0).clearTint();
       S.placePlayerFeetAt(a.x + CAMPO.cautivos.heroe.x, a.y + CAMPO.cautivos.heroe.y);
@@ -526,32 +694,61 @@
       if (bruno) e.globo(S, bruno, '…El Rey. Y la princesa.', 1800);
       await e.esperar(900);
       await e.dialogo(S, 'Rey Aldric', ['Mi abuelo cerró esta puerta con tres llaves. Y le tuvo miedo toda su vida.',
-        'Yo no. Lo que hay del otro lado no es un castigo: es poder. Y el poder obedece a quien abre la puerta.', 'El verde de los muertos del norte…'], 'king_idle');
-      await cristalVuela(S, 'verde', rey, MONO.x - 14, MONO.y - 34);
+        'Yo no. Lo que hay del otro lado no es un castigo: es poder. Y el poder obedece a quien abre la puerta.'], 'king_idle');
+      // (v9, nota 8: "acá enfoca el monolito, y son 3 diamantes, los diamantes se combinan y el monolito se activa") la cámara se
+      // acerca a la piedra; la verde, la roja y la gema de la corona del Rey suben, giran, se juntan en una y esa entra al monolito
+      const cam = S.cameras.main, z0 = S._c3Z0 = cam.zoom;
+      await e.camara(S, MONO.x, MONO.y - 46, 1100);
+      await new Promise(r => S.tweens.add({ targets: cam, zoom: z0 * 1.35, duration: 900, ease: 'Sine.easeInOut', onComplete: r }));
+      await e.dialogo(S, 'Rey Aldric', ['El verde de los muertos del norte…'], 'king_idle');
+      const cv = await cristalVuela(S, 'verde', rey, MONO.x - 24, MONO.y - 40);
       await e.dialogo(S, 'Rey Aldric', ['…el rojo de los clanes…'], 'king_idle');
-      await cristalVuela(S, 'rojo', rey, MONO.x + 14, MONO.y - 34);
-      // el monolito despierta: el anillo de runas en el piso, la energía que se junta arriba y tres latidos que crecen
-      if (window.CK_MONOLITO) window.CK_MONOLITO.despertar();
+      const cr = await cristalVuela(S, 'rojo', rey, MONO.x + 24, MONO.y - 40);
+      await e.dialogo(S, 'Rey Aldric', ['…y la tercera, la que mi abuelo escondió en la corona: la sangre de mi casa.'], 'king_idle');
+      // la gema sale de la corona (un destello dorado sobre la cabeza del Rey)
+      if (rey && rey.active) { rey.setTint(0xfff0c0); S.time.delayedCall(260, () => rey.active && rey.clearTint()); }
+      const cc = await cristalVuela(S, 'corona', { x: rey.x, y: rey.y - 18 }, MONO.x, MONO.y - 70);
+      await e.esperar(500);
       const mx = a.x + MONO.x, my = a.y + MONO.y;
+      const u = await juntar(S, [cv, cr, cc], mx, my - 50);
+      if (u && u.active) {
+        S.tweens.add({ targets: u, scale: 2.0, duration: 260, yoyo: true, repeat: 2 });
+        await e.esperar(1300);
+        sonar('ck_portal_abre', 0.4, { rate: 0.6 });
+        await new Promise(r => S.tweens.add({ targets: u, y: my - 32, scale: 0.6, alpha: 0, duration: 900, ease: 'Quad.easeIn', onComplete: r }));
+        S._c3Luces = (S._c3Luces || []).filter(l => l.o !== u); u.destroy();
+      }
+      // el monolito despierta: el anillo de runas en el piso, la energía que se junta arriba y latidos que crecen
+      // (v9, nota 10: "cuando vemos el monolito que se va a activar tarda un poco más": cinco latidos, más espaciados)
+      if (window.CK_MONOLITO) window.CK_MONOLITO.despertar();
       aura.push(efecto(S, 'pfx_c3_runas', mx, my + 6, { escala: 1.2, prof: my - 30, suma: true }));
       aura.push(efecto(S, 'pfx_c3_carga', mx + 4, my - 40, { escala: 1.1, prof: 27540, suma: true }));
       const halo = S.add.ellipse(mx, my - 30, 70, 110, 0xff3020, 0.0).setDepth(27530).setBlendMode(Phaser.BlendModes.ADD); obj(S).push(halo); aura.push(halo);
       (S._c3Luces = S._c3Luces || []).push({ o: halo, c: [255, 50, 40], r: 120, f: 0.9 });
-      for (let i = 0; i < 3; i++) {
-        sonar('thunder_strike', 0.35 + i * 0.15, { rate: 0.55 - i * 0.05 });
-        S.cameras.main.shake(300 + i * 150, 0.003 + i * 0.003);
-        S.tweens.add({ targets: halo, alpha: { from: 0.15 + i * 0.15, to: 0.05 }, scaleX: { from: 1 + i * 0.25, to: 1 }, scaleY: { from: 1 + i * 0.25, to: 1 }, duration: 700, ease: 'Quad.easeOut' });
-        if (window.CK_LUZ && window.CK_LUZ.destello) window.CK_LUZ.destello([255, 60, 40], 0.25 + i * 0.15, 300);
-        await e.esperar(1050 - i * 200);
+      await e.esperar(700);
+      for (let i = 0; i < 5; i++) {
+        sonar('thunder_strike', 0.3 + i * 0.1, { rate: 0.6 - i * 0.04 });
+        S.cameras.main.shake(300 + i * 140, 0.002 + i * 0.0022);
+        S.tweens.add({ targets: halo, alpha: { from: 0.12 + i * 0.1, to: 0.05 }, scaleX: { from: 1 + i * 0.2, to: 1 }, scaleY: { from: 1 + i * 0.2, to: 1 }, duration: 800, ease: 'Quad.easeOut' });
+        if (window.CK_LUZ && window.CK_LUZ.destello) window.CK_LUZ.destello([255, 60, 40], 0.2 + i * 0.1, 300);
+        await e.esperar(1500 - i * 150);
       }
       S.tweens.add({ targets: halo, alpha: 0.35, duration: 400 });
+      await e.esperar(900);
+      // la cámara vuelve a abrirse: el Rey, la princesa y los cautivos
+      await new Promise(r => S.tweens.add({ targets: cam, zoom: z0, duration: 900, ease: 'Sine.easeInOut', onComplete: r }));
+      S._c3Z0 = null;
+      await e.camara(S, 250, 290, 700);
       // se abre el portal en el piso, al pie de la piedra
       po = S._c3Portal = portalFx(S, mx, my + 44, 1.1, my + 40);
       await e.esperar(1400);
     });
+    // (v9) si la escena se cortó con la cámara cerca del monolito, vuelve al zoom de siempre
+    if (S._c3Z0) { S.tweens.killTweensOf(S.cameras.main); S.cameras.main.setZoom(S._c3Z0); S._c3Z0 = null; }
     if (!ok1 || zonaDe(S) !== Z.bosque) { S._c3Ritual = false; return; }
     const ok2 = await e.correr(S, async () => {
-      await e.dialogo(S, 'Rey Aldric', ['…y la sangre de mi casa.'], 'king_idle');
+      // (v9) las tres llaves abrieron; la sangre de la casa real ya fue la gema de la corona
+      await e.dialogo(S, 'Rey Aldric', ['Abierta. Pero no se conforma con una gota de la casa real…'], 'king_idle');
       await e.dialogo(S, 'Princesa Elia', ['¡Padre, no! ¡Vos sabés lo que hay del otro lado!', '¡Nos vas a matar a todos!'], 'npc8_villager');
       await e.dialogo(S, 'Rey Aldric', ['A ellos, hija. No a mí.'], 'king_idle');
       if (bruno) e.globo(S, bruno, '¡Suéltenme! ¡ALTEZA!', 1600);
@@ -601,6 +798,7 @@
       e.globo(S, rey, '¡¿Qué…?! ¡No! ¡Esto no es lo que…!', 2000);
       await e.camara(S, CAMPO.rey.x, CAMPO.rey.y - 40, 600);
       const IV = window.CK_INFIERNO_VIVO; if (IV && IV.texturas) IV.texturas(S);
+      fuegosClaro(S, true);                                   // (v9, nota 7) y desde acá el claro arde y queda así
       [[120, 300], [380, 250], [200, 420], [430, 470], [90, 470]].forEach(([x, y], i) => S.time.delayedCall(200 + i * 380, () => {
         if (zonaDe(S) !== Z.bosque) return;
         const p = portalFx(S, a.x + x, a.y + y, 0.6); if (p) S.time.delayedCall(2600, () => p.cerrar && p.cerrar());
@@ -646,13 +844,18 @@
     const a = area(S), lista = TANDAS[P3.tanda].filter(t => ENEMY_TYPES[t]), p = pies(S);
     P3.total = (P3.total || 0) + lista.length;
     S.showZoneTitle('Oleada ' + (P3.tanda + 1) + ' de ' + TANDAS.length, 'Bruno pelea a tu lado');
+    // (v9, nota 10: "los demonios empiezan a spawnear desde los portales, no desde el lado orco… todo pasa en el campamento")
+    // los portales se abren en el campamento y el claro, en los tres lugares más cerca del héroe (antes, a su alrededor
+    // estuviera donde estuviera: junto a la empalizada parecían venir del lado orco)
+    const sitios = CAMPO.portales.map(([x, y]) => ({ x: a.x + x, y: a.y + y, d: Math.hypot(a.x + x - p.x, a.y + y - p.y) }))
+      .filter(q => q.d > 70).sort((u, v) => u.d - v.d).slice(0, 3);
     lista.forEach((t, i) => S.time.delayedCall(300 + i * 500, () => {
       if (zonaDe(S) !== Z.bosque || S._c3Pelea !== P3) return;
-      let x = 0, y = 0;
-      for (let k = 0; k < 20; k++) {
-        const an = R(0, Math.PI * 2), d = R(90, 150);
-        x = p.x + Math.cos(an) * d; y = p.y + Math.sin(an) * d * 0.7;
-        if (!S.navIsFree || S.navIsFree(x, y, true)) break;
+      const q = sitios[i % sitios.length];
+      let x = q.x, y = q.y;
+      for (let k = 0; k < 8; k++) {
+        const xx = q.x + R(-14, 14), yy = q.y + R(-8, 8);
+        if (!S.navIsFree || S.navIsFree(xx, yy, true)) { x = xx; y = yy; break; }
       }
       const po = portalFx(S, x, y, 0.55);
       S.time.delayedCall(650, () => {
@@ -751,15 +954,20 @@
   const cerrado = (s, z) => c3(s) === 3 && !!ZONAS[z] && z !== Z.camino && !limpia(s, z) && turno(s) !== z;
   /** El lugar en que se está y cómo está: 'caos' (sin limpiar), 'limpia', 'adentro-caos', 'adentro-limpia' o null (no es del reino). */
   const estado = S => {
-    const s = S.story; if (!infierno(s) || c3(s) < 3) return null;
+    const s = S.story;
+    // (v9, nota 7: "a partir de acá todo queda rojo y en caos") el claro, desde el despertar del monolito (también en su
+    // pelea) y para siempre: rojo, brasas, meteoritos y nada que no sea un demonio (antes, después de su pelea, 'limpia')
+    if (infierno(s) && c3(s) >= 2 && zonaInf(S) === Z.bosque) return 'caos';
+    if (!infierno(s) || c3(s) < 3) return null;
     const z = zonaInf(S);
-    if (z === Z.bosque) return 'limpia';                                       // (v8) el claro, después de su pelea
     if (ZONAS[z]) return limpia(s, z) ? 'limpia' : turno(s) === z ? 'caos' : 'espera';
     const p = ADENTRO[z];
     if (p) return limpia(s, p) ? 'adentro-limpia' : 'adentro-caos';
     return null;
   };
-  const enCaos = S => estado(S) === 'caos';
+  // (v9) el claro, después de su pelea, sigue rojo y ardiendo pero ya sin meteoritos (es donde espera Bruno): para
+  // ck_infierno_vivo.js no está "en caos"
+  const enCaos = S => estado(S) === 'caos' && !(zonaInf(S) === Z.bosque && c3(S.story) >= 3);
   const piezaEn = (S, x, y) => {
     let mejor = null;
     S.children.list.forEach(o => {
@@ -1090,6 +1298,9 @@
       const def = typeof ENEMY_TYPES !== 'undefined' && ENEMY_TYPES[tipo];
       if (this._gameMode === 'campaign' && def && !def.boss && !/^demonio_/.test(tipo || '') && !this._ckPermitirBestias) {
         const e = estado(this); if (e === 'caos' || e === 'limpia') return null;
+        // (v9, nota 10: "no saques nada del lado orco en esta instancia… todo pasa en el campamento") en el bosque, en todo el
+        // Capítulo 3, ni bestias ni orcos: sólo los caballeros negros de la emboscada (y los demonios)
+        if (c3(this.story) >= 1 && zonaDe(this) === Z.bosque && tipo !== 'mercenario') return null;
       }
     } catch (er) {}
     return se0.apply(this, arguments);
@@ -1152,7 +1363,8 @@
         try {
           campamento(S);
           armarInf(S);
-          if (z === Z.bosque && c3(S.story) === 2 && !S._c3Ritual) S.time.delayedCall(700, () => emboscada(S));   // (v8) si se cortó, empieza de nuevo
+          // (v8) si se cortó, empieza de nuevo (v9: si se cortó en la pelea del claro, después del despertar, sigue la pelea)
+          if (z === Z.bosque && c3(S.story) === 2 && !S._c3Ritual) S.time.delayedCall(700, () => { if (zonaDe(S) !== Z.bosque || S._c3Pelea) return; if (infierno(S.story)) peleaRitual(S); else emboscada(S); });
         } catch (e) { console.warn('[capítulo 3]', e); }
       });
     } catch (e) {}
@@ -1221,6 +1433,8 @@
         if (I && I.haz) I.haz.setAlpha(0.75 + 0.25 * Math.sin(time / 260));
         if (I && I.portal && I.portal._giro) I.portal._giro.rotation += dt / 900;
         if (S._c3Portal && S._c3Portal.active && S._c3Portal._giro) S._c3Portal._giro.rotation += dt / 700;
+        // (v9) el haz del monolito sigue latiendo en el claro
+        if (S._c3Haz && S._c3Haz.active && !S._ckEscena && zonaDe(S) === Z.bosque) S._c3Haz.setAlpha(0.7 + 0.22 * Math.sin(time / 320));
         // sin lluvia mientras arde el reino
         const CL = window.CK_CLIMA;
         if (CL && CL.poner && CL.estado && CL.estado.forzado !== 'despejado') { CL.poner('despejado', true); S._c3Clima = true; }
@@ -1276,6 +1490,12 @@
   // (v8, nota 10: "acá los npc aliados están heridos, sólo peleamos Bruno y nosotros") los soldados del bosque no pelean
   const ad0 = P.updateActorDanger;
   if (ad0) P.updateActorDanger = function (a) {
+    // (v9, nota 11) los soldados de la cuarentena sí pelean contra los caballeros negros (ck_ajustes_juego.js no deja pelear a
+    // los guardias en la campaña: para ellos la rutina corre como fuera de la campaña, igual que en la batalla del Sendero)
+    if (a && a._c3Este && this._gameMode === 'campaign') {
+      this._gameMode = 'ck_batalla';
+      try { return ad0.apply(this, arguments); } finally { this._gameMode = 'campaign'; }
+    }
     try {
       if (a && (a.role === 'guard' || a.role === 'archer') && !a._c3Sold && this.story && c3(this.story) >= 2 && zonaDe(this) === Z.bosque) {
         if (!a._c3Herido && a.sprite && a.sprite.active) {
